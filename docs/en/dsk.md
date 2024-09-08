@@ -40,16 +40,16 @@ This tool does not overwrite existing files with the same name inside the DSK; a
 
 Create a new DSK file with a BASIC program:
 
-> python3 dsk.py archivo.dsk --new --put-ascii programa.bas
+> python3 dsk.py file.dsk --new --put-ascii program.bas
  
 List the contents of the DSK file to verify that our program is included:
 
-> python3 dsk.py archivo.dsk --cat
+> python3 dsk.py file.dsk --cat
 
 Add a binary file to the DSK file which should be loaded and executed from address 0x4000:
 
-> python3 dsk.py --new archivo.dsk --put-bin programa.bin --load-addr 0x4000 --start-addr 0x4000
+> python3 dsk.py --new file.dsk --put-bin program.bin --load-addr 0x4000 --start-addr 0x4000
 
 Add a binary file to the DSK file which should be loaded at address 0x4000. It imports a MAP file called program.map that includes the symbol MAIN which is used to stablish the call address.
 
-> python3 dsk.py --new archivo.dsk --put-bin programa.bin --map-file program.map --load-addr 0x4000 --start-addr MAIN
+> python3 dsk.py --new file.dsk --put-bin program.bin --map-file program.map --load-addr 0x4000 --start-addr MAIN
