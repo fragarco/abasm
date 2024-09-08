@@ -13,7 +13,7 @@ Esta herramienta no sobreescribe ficheros existentes con el mismo nombre dentro 
 
 ## Uso básico
 
-> python cdt.py <cdtfile> [opciones]
+> python3 cdt.py <cdtfile> [opciones]
 
 ## Opciones disponibles
 - `--new`: Crea un nuevo archivo CDT vacío.
