@@ -6,7 +6,7 @@ BASM is a cross-assembler specifically designed for the Amstrad CPC platform and
 
 BASM is based on the fantastic pyZ80 project, initially created by Andrew Collier and later modified by Simon Owen.
 
-## **Why Another Assembler for Amstrad?**
+### **Why Another Assembler for Amstrad?**
 
 BASM was conceived from the idea of having a portable tool that is easy to modify by anyone, without relying on specific operating systems or development environments. One of its goals is to provide a syntax compatible with the old MAXAM assembler, WinAPE syntax, and Virtual Machine Simulator. This gives developers several options to debug their code during development.
 
@@ -24,13 +24,13 @@ To assemble a source file written in assembly language (e.g., `program.asm`), si
 
 This command will assemble the `program.asm` file and generate a binary file with the same name, `program.bin`.
 
-## **Available Options**
+### **Available Options**
 
 - `-d` or `--define`: Allows defining `SYMBOL=VALUE` pairs. These symbols can be used in the code as constants or labels. This option can be used multiple times to define several symbols.
 - `--start`: Defines the memory address that will be used as the starting point for loading the program. By default, this address is `0x4000`, but it can also be set directly in the code using the `ORG` directive.
 - `-o` or `--output`: Specifies the name of the output binary file. If this option is not used, the name of the input file will be used, with its extension changed to `.bin`.
 
-## **Usage Examples**
+### **Usage Examples**
 
 Define a constant used in the code:
 

@@ -6,7 +6,7 @@ BASM es un ensamblador cruzado diseñado específicamente para la plataforma Ams
 
 BASM está basado en el fantástico proyecto pyZ80, creado inicialmente por Andrew Collier y modificado posteriormente por Simon Owen.
 
-## **¿Por qué otro ensamblador para Amstrad?**
+### **¿Por qué otro ensamblador para Amstrad?**
 
 BASM surge de la idea de contar con una herramienta portable y fácil de modificar por cualquiera, sin depender de sistemas operativos específicos o entornos de desarrollo particulares. Uno de sus objetivos es proporcionar una sintaxis compatible con el antiguo ensamblador MAXAM, con la sintaxis de WinAPE y con la de Virtual Machine Simulator. De esta forma, los desarrolladores pueden contar con varias opciones para depurar su código durante el desarrollo.
 
@@ -24,13 +24,13 @@ Para ensamblar un archivo fuente de código en ensamblador (por ejemplo, `progra
 
 Este comando ensamblará el archivo `program.asm` y generará un fichero binario con el mismo nombre, `program.bin`.
 
-## **Opciones disponibles**
+### **Opciones disponibles**
 
 - `-d` o `--define`: Permite definir pares `SÍMBOLO=VALOR`. Dichos símbolos pueden utilizarse en el código como constantes o etiquetas. Esta opción se puede emplear múltiples veces para definir varios símbolos.
 - `--start`: Define la dirección de memoria que se tomará como punto de inicio para la carga del programa. Por defecto, esta dirección es `0x4000`, aunque también puede establecerse directamente dentro del código usando la directiva `ORG`.
 - `-o` o `--output`: Especifica el nombre del archivo binario de salida. Si no se utiliza esta opción, se empleará el nombre del archivo de entrada cambiando su extensión por `.bin`.
 
-## **Ejemplos de uso**
+### **Ejemplos de uso**
 
 Definir una constante utilizada en el código:
 
