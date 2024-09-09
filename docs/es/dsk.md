@@ -1,6 +1,4 @@
-# dsk.py
-
-## Descripción
+# Descripción
 `dsk.py` es una herramienta simple basada en Python 3.X para crear y gestionar archivos DSK como los utilizados en simuladores y emuladores de disquetera para ordenadores Amstrad CPC. Puede realizar varias operaciones para trabajar con estos archivos, siendo su principal objetivo ayudar en el empaquetado de programas desarrollados desde ordenadores modernos.
 
 Actualmente solo soporta el formato de datos de una cara:
@@ -16,9 +14,11 @@ Para más información sobre el formato se pueden consultar las siguientes pági
 
 Esta herramienta no sobreescribe ficheros existentes con el mismo nombre dentro del fichero DSK, todas las operaciones añaden ficheros. Por eso, se puede combinar la opción --new con las operaciones de insertado, de forma que se pueda generar el mismo fichero DSK cada vez que se ejecute el comando. 
 
-## Uso básico
+# Uso básico
 
-> python dsk.py <dskfile> [opciones]
+```
+python dsk.py <dskfile> [opciones]
+```
 
 ## Opciones disponibles
 
@@ -40,16 +40,24 @@ Esta herramienta no sobreescribe ficheros existentes con el mismo nombre dentro 
 
 Crear un nuevo archivo DSK con un programa en BASIC
 
-> python3 dsk.py archivo.dsk --new --put-ascii programa.bas
+```
+python3 dsk.py archivo.dsk --new --put-ascii programa.bas
+```
 
 Listar el contenido del archivo DSK para verificar que nuestro programa está incluido
 
-> python3 dsk.py archivo.dsk --cat
+```
+python3 dsk.py archivo.dsk --cat
+```
 
 Crear un fichero DSK con un programa binario que debe cargarse y ejecutarse en la dirección 0x4000
 
-> python3 dsk.py --new archivo.dsk --new --put-bin programa.bin --load-addr 0x4000 --start-addr 0x4000
+```
+python3 dsk.py --new archivo.dsk --new --put-bin programa.bin --load-addr 0x4000 --start-addr 0x4000
+```
 
 Crear un fichero DSK con un programa binario que debe cargarse en la dirección 0x4000 y ejecutarse saltando a la dirección asociada al símbolo MAIN contenido en el archivo simbols.map
 
-> python3 dsk.py --new archivo.dsk --new --put-bin programa.bin --map-file simbols.map --load-addr 0x4000 --start-addr MAIN
+```
+python3 dsk.py --new archivo.dsk --new --put-bin programa.bin --map-file simbols.map --load-addr 0x4000 --start-addr MAIN
+```

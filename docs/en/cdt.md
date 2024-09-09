@@ -1,6 +1,4 @@
-# cdt.py
-
-## Description
+# Description
 `cdt.py` is a simple Python 3.X-based tool for creating and managing CDT files used in simulators and tape emulators for Amstrad CPC computers. It can perform various operations to work with these files, with its main focus on aiding in packaging programs developed on modern computers.
 
 Additional information about the CDT format can be found at the following link:
@@ -11,7 +9,7 @@ For further understanding of how information was stored on actual tapes, refer t
 
 This tool does not overwrite existing files with the same name within the CDT file; all operations add files. Therefore, you can combine the `--new` option with insertion operations, allowing you to generate the same CDT file every time the command is executed.
 
-## Basic Usage
+# Basic Usage
 
 > python3 cdt.py <cdtfile> [options]
 
@@ -32,16 +30,24 @@ This tool does not overwrite existing files with the same name within the CDT fi
 
 Create a new CDT file with a BASIC program:
 
-> python3 cdt.py tape.cdt --new --put-ascii program.bas
+```
+python3 cdt.py tape.cdt --new --put-ascii program.bas
+```
 
 List the blocks in the CDT file:
 
-> python3 cdt.py tape.cdt --cat
+```
+python3 cdt.py tape.cdt --cat
+```
 
 Add a binary file to the CDT file that displays the name "MYPROGRAM" when each block is loaded:
 
-> python3 cdt.py tape.cdt --put-bin program.bin --load-addr 0x8000 --start-addr 0x8000 --name "MYPROGRAM"
+```
+python3 cdt.py tape.cdt --put-bin program.bin --load-addr 0x8000 --start-addr 0x8000 --name "MYPROGRAM"
+```
 
 Create a new CDT file and add a binary file which should be loaded at address 0x4000. It imports a MAP file called program.map that includes the symbol MAIN which is used to stablish the call address.
 
-> python3 cdt.py tape.cdt --new --put-bin program.bin --map-file program.map --load-addr 0x4000 --start-addr MAIN --name "MYPROGRAM"
+```
+python3 cdt.py tape.cdt --new --put-bin program.bin --map-file program.map --load-addr 0x4000 --start-addr MAIN --name "MYPROGRAM"
+```
