@@ -43,7 +43,6 @@ class AsmContext:
         self.lettable = {}
         self.symusetable = {}
         self.memory = bytearray()
-        self.forstack=[]
         self.ifstack = []
         self.ifstate = IFSTATE_DISABLED
         self.currentfile = "",
@@ -216,7 +215,7 @@ class AsmContext:
         mapfile = os.path.splitext(filename)[0] + '.map'
         with open(mapfile, 'w') as f:
             f.write('# List of symbols in Python dictionary format\n')
-            f.write('# Symbol: [address in hexadecimal, total number of times used in the code]\n')
+            f.write('# Symbol: [address, total number of appearances]\n')
             f.write('{\n')
             for sym, addr in sorted(self.symboltable.items()):
                 used = 0 if sym not in self.symusetable else self.symusetable[sym]
@@ -322,7 +321,7 @@ class AsmContext:
         return statements
 
     def assembler_pass(self, p, inputfile):
-        # file references are local, so assembler_pass can be called recursively (op_INCLUDE)
+        # file references are local, so assembler_pass can be called recursively (op_READ)
         # but copied to a global identifier in g_context for warning printouts
         self.currentfile = "command line"
         self.currentline = "0"
@@ -359,11 +358,6 @@ class AsmContext:
             print("[basm] Error: mismatched IF and ENDIF statements, too many IF")
             for item in self.ifstack:
                 print(item[0])
-            sys.exit(1)
-        if len(self.forstack) > 0:
-            print("[basm] Error: Mismatched EQU FOR and NEXT statements, too many EQU FOR")
-            for item in self.forstack:
-                print(item[1])
             sys.exit(1)
         self.save_memory(outputfile)
 
@@ -478,17 +472,18 @@ def op_DUMP(p, opargs):
     return 0
 
 def op_PRINT(p, opargs):
-    text = []
-    for expr in opargs.split(","):
-        if expr.strip().startswith('"'):
-            text.append(expr.strip().rstrip()[1:-1])
-        else:
-            a = g_context.parse_expression(expr)
-            if a:
-                text.append(str(a))
+    if p == 2:
+        text = []
+        for expr in opargs.split(","):
+            if expr.strip().startswith('"'):
+                text.append(expr.strip().rstrip()[1:-1])
             else:
-                text.append("?")
-    print("[basm]", os.path.basename(g_context.currentfile) + ":", "PRINT ", ",".join(text))
+                a = g_context.parse_expression(expr)
+                if a:
+                    text.append(str(a))
+                else:
+                    text.append("?")
+        print("[basm]", os.path.basename(g_context.currentfile) + ":", "PRINT ", ",".join(text))
     return 0
 
 def op_EQU(p, opargs):
@@ -509,20 +504,6 @@ def op_EQU(p, opargs):
                       ": expected " + str(existing) +
                       " but calculated " + str(expr_result) +
                       ", has this symbol been used twice?")
-    return 0
-
-def op_NEXT(p, opargs):
-    check_args(opargs, 1)
-    foritem = g_context.forstack.pop()
-    if opargs != foritem[0]:
-        abort("NEXT symbol " + opargs + " doesn't match FOR: expected " + foritem[0])
-    foritem[2] += 1
-
-    g_context.set_symbol(foritem[0], foritem[2])
-
-    if foritem[2] < foritem[3]:
-        g_context.currentfile = foritem[1]
-        g_context.forstack.append(foritem)
     return 0
 
 def op_ALIGN(p, opargs):
@@ -639,13 +620,13 @@ def op_INCBIN(p, opargs):
     g_context.store(p, content)
     return len(content)
 
-def op_FOR(p,opargs):
-    args = opargs.split(',',1)
+def op_FOR(p, opargs):
+    args = opargs.split(',', 1)
     limit = g_context.parse_expression(args[0])
     bytes = 0
     for iterate in range(limit):
         g_context.symboltable['FOR'] = iterate
-        bytes += g_context.assemble_instruction(p,args[1].strip())
+        bytes += g_context.assemble_instruction(p, args[1].strip())
 
     if limit != 0:
         del g_context.symboltable['FOR']
