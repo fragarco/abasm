@@ -17,8 +17,8 @@ set SOURCE=main
 set TARGET=sprite
 
 set RUNASM=%ASM% --start=%LOADADDR% %SOURCE%.asm 
-set RUNDSK=%DSK% --new --put-bin %SOURCE%.bin --load-addr %LOADADDR% --map-file %SOURCE%.map --start-addr MAIN %TARGET%.dsk
-set RUNCDT=%CDT% --new --name %TARGET% --put-bin %SOURCE%.bin --load-addr %LOADADDR% --map-file %SOURCE%.map --start-addr MAIN %TARGET%.cdt
+set RUNDSK=%DSK% %TARGET%.dsk --new --put-bin %SOURCE%.bin --load-addr %LOADADDR% --map-file %SOURCE%.map --start-addr MAIN
+set RUNCDT=%CDT% %TARGET%.cdt --new --name %TARGET% --put-bin %SOURCE%.bin --load-addr %LOADADDR% --map-file %SOURCE%.map --start-addr MAIN 
 
 IF "%1"=="clear" (
     del %SOURCE%.bin

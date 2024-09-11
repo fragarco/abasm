@@ -375,7 +375,6 @@ def abort(message):
     print('\t', g_context.currentline.strip())
     sys.exit(1)
 
-
 def double(arg, allow_af_instead_of_sp=0, allow_af_alt=0, allow_index=1):
     # decode double register [bc, de, hl, sp][ix,iy] --special:  af af'
     double_mapping = {'BC':([],0), 'DE':([],1), 'HL':([],2), 'SP':([],3), 'IX':([0xdd],2), 'IY':([0xfd],2), 'AF':([],5), "AF'":([],4) }
@@ -461,6 +460,174 @@ def check_args(args, expected):
         received = len(AsmContext.split_line(args, ','))
     if expected != received:
         abort("wrong number of arguments, expected "+str(expected)+" but received "+str(args))
+
+def noargs_type(p, opargs, instr):
+    check_args(opargs, 0)
+    if p == 2:
+        g_context.store(p, instr)
+    return len(instr)
+
+def register_arg_type(p, opargs, offset, ninstr, step_per_register=1):
+    check_args(opargs, 1)
+    pre, r, post = single(p, opargs, allow_half=1)
+    instr = pre
+    if r == -1:
+        match = re.search(r"\A\s*\(\s*(.*)\s*\)\s*\Z", opargs)
+        if match:
+            abort ("illegal indirection")
+
+        instr.extend(ninstr)
+        if p == 2:
+            n = g_context.parse_expression(opargs, byte=1)
+        else:
+            n = 0
+        instr.append(n)
+    else:
+        instr.append(offset + step_per_register * r)
+    instr.extend(post)
+    if p == 2:
+        g_context.store(p, instr)
+    return len(instr)
+
+def cbshifts_type(p, opargs, offset, step_per_register=1):
+    args = opargs.split(',', 1)
+    if len(args) == 2:
+        # compound instruction of the form RLC B,(IX+c)
+        pre1, r1, post1 = single(p, args[0], allow_half=0, allow_index=0)
+        pre2, r2, post2 = single(p, args[1], allow_half=0, allow_index=1)
+        if r1 == -1 or r2 == -1:
+            abort("registers not recognized for compound instruction")
+        if r1 == 6:
+            abort("(HL) not allowed as target of compound instruction")
+        if len(pre2) == 0:
+            abort("must use index register as operand of compound instruction")
+
+        instr=pre2
+        instr.extend([0xcb])
+        instr.extend(post2)
+        instr.append(offset + step_per_register * r1)
+    else:
+        check_args(opargs, 1)
+        pre, r, post = single(p, opargs, allow_half=0)
+        instr = pre
+        instr.extend([0xcb])
+        instr.extend(post)
+        if r == -1:
+            abort("invalid argument")
+        else:
+            instr.append(offset + step_per_register * r)
+    if p == 2:
+        g_context.store(p, instr)
+    return len(instr)
+
+def registerorpair_arg_type(p, opargs, rinstr, rrinstr, step_per_register=8, step_per_pair=16):
+    check_args(opargs, 1)
+    pre,r,post = single(p, opargs)
+
+    if r==-1:
+        pre,rr = double(opargs)
+        if rr==-1:
+            abort ("Invalid argument")
+
+        instr = pre
+        instr.append(rrinstr + step_per_pair * rr)
+    else:
+        instr = pre
+        instr.append(rinstr + step_per_register * r)
+        instr.extend(post)
+    if (p==2):
+        g_context.store(p, instr)
+    return len(instr)
+
+def add_type(p, opargs, rinstr, ninstr, rrinstr, step_per_register=1, step_per_pair=16):
+    args = opargs.split(',', 1)
+    r=-1
+    if len(args) == 2:
+        pre,r,post = single(p, args[0])
+    if len(args) == 1 or r == 7:
+        pre, r, post = single(p, args[-1])
+        instr = pre
+        if r == -1:
+            match = re.search(r"\A\s*\(\s*(.*)\s*\)\s*\Z", args[-1])
+            if match:
+                abort("illegal indirection")
+            instr.extend(ninstr)
+            if p == 2:
+                n = g_context.parse_expression (args[-1], byte=1)
+            else:
+                n = 0
+            instr.append(n)
+        else:
+            instr.extend(rinstr)
+            instr[-1] += step_per_register * r
+        instr.extend(post)
+    else:
+        pre, rr1 = double(args[0])
+        dummy, rr2 = double(args[1])
+
+        if rr1 == rr2 and pre != dummy:
+            abort("Can't mix index registers and HL")
+        if len(rrinstr) > 1 and pre:
+            abort("can't use index registers in this instruction")
+
+        if len(args) != 2 or rr1 != 2 or rr2 == -1:
+            abort("invalid argument")
+        instr = pre
+        instr.extend(rrinstr)
+        instr[-1] += step_per_pair * rr2
+
+    if p == 2:
+        g_context.store(p, instr)
+    return len(instr)
+
+def bit_type(p,opargs,offset):
+    check_args(opargs,2)
+    arg1,arg2 = opargs.split(',',1)
+    b = g_context.parse_expression(arg1)
+    if b>7 or b<0:
+        abort ("argument out of range")
+    pre,r,post = single(p, arg2,allow_half=0)
+    if r==-1:
+        abort ("Invalid argument")
+    instr = pre
+    instr.append(0xcb)
+    instr.extend(post)
+    instr.append(offset + r + 8*b)
+    if (p==2):
+        g_context.store(p, instr)
+    return len(instr)
+
+def pushpop_type(p,opargs,offset):
+    check_args(opargs,1)
+    prefix, rr = double(opargs, allow_af_instead_of_sp=1)
+    instr = prefix
+    if rr==-1:
+        abort ("Invalid argument")
+    else:
+        instr.append(offset + 16 * rr)
+    if (p==2):
+        g_context.store(p, instr)
+    return len(instr)
+
+def jumpcall_type(p, opargs, offset, condoffset):
+    args = opargs.split(',', 1)
+    if len(args) == 1:
+        instr = [offset]
+    else:
+        cond = condition(args[0])
+        if cond == -1:
+            abort ("expected condition but received '" + opargs + "'")
+        instr = [condoffset + 8 * cond]
+
+    match = re.search(r"\A\s*\(\s*(.*)\s*\)\s*\Z", args[-1])
+    if match:
+        abort ("Illegal indirection")
+
+    if p == 2:
+        nn = g_context.parse_expression(args[-1], word=1)
+        instr.extend([nn%256, nn//256])
+        g_context.store(p, instr)
+    return 3
 
 def op_ORG(p, opargs):
     check_args(opargs, 1)
@@ -633,12 +800,6 @@ def op_FOR(p, opargs):
 
     return bytes
 
-def op_noargs_type(p,opargs,instr):
-    check_args(opargs,0)
-    if (p==2):
-        g_context.store(p, instr)
-    return len(instr)
-
 def op_ASSERT(p,opargs):
     check_args(opargs,1)
     if (p==2):
@@ -649,108 +810,108 @@ def op_ASSERT(p,opargs):
 
 
 def op_NOP(p, opargs):
-    return op_noargs_type(p, opargs, [0x00])
+    return noargs_type(p, opargs, [0x00])
 
 def op_RLCA(p, opargs):
-    return op_noargs_type(p, opargs, [0x07])
+    return noargs_type(p, opargs, [0x07])
 
 def op_RRCA(p, opargs):
-    return op_noargs_type(p, opargs, [0x0F])
+    return noargs_type(p, opargs, [0x0F])
 
 def op_RLA(p, opargs):
-    return op_noargs_type(p, opargs, [0x17])
+    return noargs_type(p, opargs, [0x17])
 
 def op_RRA(p, opargs):
-    return op_noargs_type(p, opargs, [0x1F])
+    return noargs_type(p, opargs, [0x1F])
 
 def op_DAA(p, opargs):
-    return op_noargs_type(p, opargs, [0x27])
+    return noargs_type(p, opargs, [0x27])
 
 def op_CPL(p, opargs):
-    return op_noargs_type(p, opargs, [0x2F])
+    return noargs_type(p, opargs, [0x2F])
 
 def op_SCF(p, opargs):
-    return op_noargs_type(p, opargs, [0x37])
+    return noargs_type(p, opargs, [0x37])
 
 def op_CCF(p, opargs):
-    return op_noargs_type(p, opargs, [0x3F])
+    return noargs_type(p, opargs, [0x3F])
 
 def op_HALT(p, opargs):
-    return op_noargs_type(p, opargs, [0x76])
+    return noargs_type(p, opargs, [0x76])
 
 def op_DI(p, opargs):
-    return op_noargs_type(p, opargs, [0xf3])
+    return noargs_type(p, opargs, [0xf3])
 
 def op_EI(p, opargs):
-    return op_noargs_type(p, opargs, [0xfb])
+    return noargs_type(p, opargs, [0xfb])
 
 def op_EXX(p, opargs):
-    return op_noargs_type(p, opargs, [0xd9])
+    return noargs_type(p, opargs, [0xd9])
 
 def op_NEG(p, opargs):
-    return op_noargs_type(p, opargs, [0xed, 0x44])
+    return noargs_type(p, opargs, [0xed, 0x44])
 
 def op_RETN(p, opargs):
-    return op_noargs_type(p, opargs, [0xed, 0x45])
+    return noargs_type(p, opargs, [0xed, 0x45])
 
 def op_RETI(p, opargs):
-    return op_noargs_type(p, opargs, [0xed, 0x4d])
+    return noargs_type(p, opargs, [0xed, 0x4d])
 
 def op_RRD(p, opargs):
-    return op_noargs_type(p, opargs, [0xed, 0x67])
+    return noargs_type(p, opargs, [0xed, 0x67])
 
 def op_RLD(p, opargs):
-    return op_noargs_type(p, opargs, [0xed, 0x6F])
+    return noargs_type(p, opargs, [0xed, 0x6F])
 
 def op_LDI(p, opargs):
-    return op_noargs_type(p, opargs, [0xed, 0xa0])
+    return noargs_type(p, opargs, [0xed, 0xa0])
 
 def op_CPI(p, opargs):
-    return op_noargs_type(p, opargs, [0xed, 0xa1])
+    return noargs_type(p, opargs, [0xed, 0xa1])
 
 def op_INI(p, opargs):
-    return op_noargs_type(p, opargs, [0xed, 0xa2])
+    return noargs_type(p, opargs, [0xed, 0xa2])
 
 def op_OUTI(p, opargs):
-    return op_noargs_type(p, opargs, [0xed, 0xa3])
+    return noargs_type(p, opargs, [0xed, 0xa3])
 
 def op_LDD(p, opargs):
-    return op_noargs_type(p, opargs, [0xed, 0xa8])
+    return noargs_type(p, opargs, [0xed, 0xa8])
 
 def op_CPD(p, opargs):
-    return op_noargs_type(p, opargs, [0xed, 0xa9])
+    return noargs_type(p, opargs, [0xed, 0xa9])
 
 def op_IND(p, opargs):
-    return op_noargs_type(p, opargs, [0xed, 0xaa])
+    return noargs_type(p, opargs, [0xed, 0xaa])
 
 def op_OUTD(p,opargs):
-    return op_noargs_type(p, opargs, [0xed, 0xab])
+    return noargs_type(p, opargs, [0xed, 0xab])
 
 def op_LDIR(p, opargs):
-    return op_noargs_type(p, opargs, [0xed, 0xb0])
+    return noargs_type(p, opargs, [0xed, 0xb0])
 
 def op_CPIR(p, opargs):
-    return op_noargs_type(p, opargs, [0xed, 0xb1])
+    return noargs_type(p, opargs, [0xed, 0xb1])
 
 def op_INIR(p, opargs):
-    return op_noargs_type(p, opargs, [0xed, 0xb2])
+    return noargs_type(p, opargs, [0xed, 0xb2])
 
 def op_OTIR(p, opargs):
-    return op_noargs_type(p, opargs, [0xed, 0xb3])
+    return noargs_type(p, opargs, [0xed, 0xb3])
 
 def op_LDDR(p, opargs):
-    return op_noargs_type(p, opargs, [0xed, 0xb8])
+    return noargs_type(p, opargs, [0xed, 0xb8])
 
 def op_CPDR(p, opargs):
-    return op_noargs_type(p, opargs, [0xed, 0xb9])
+    return noargs_type(p, opargs, [0xed, 0xb9])
 
 def op_INDR(p, opargs):
-    return op_noargs_type(p, opargs, [0xed, 0xba])
+    return noargs_type(p, opargs, [0xed, 0xba])
 
 def op_OTDR(p, opargs):
-    return op_noargs_type(p, opargs, [0xed, 0xbb])
+    return noargs_type(p, opargs, [0xed, 0xbb])
 
-def op_cbshifts_type(p, opargs, offset, step_per_register=1):
+def cbshifts_type(p, opargs, offset, step_per_register=1):
     args = opargs.split(',', 1)
     if len(args) == 2:
         # compound instruction of the form RLC B,(IX+c)
@@ -782,58 +943,36 @@ def op_cbshifts_type(p, opargs, offset, step_per_register=1):
     return len(instr)
 
 def op_RLC(p, opargs):
-    return op_cbshifts_type(p, opargs, 0x00)
+    return cbshifts_type(p, opargs, 0x00)
 
 def op_RRC(p, opargs):
-    return op_cbshifts_type(p, opargs, 0x08)
+    return cbshifts_type(p, opargs, 0x08)
 
 def op_RL(p, opargs):
-    return op_cbshifts_type(p, opargs, 0x10)
+    return cbshifts_type(p, opargs, 0x10)
 
 def op_RR(p, opargs):
-    return op_cbshifts_type(p, opargs, 0x18)
+    return cbshifts_type(p, opargs, 0x18)
 
 def op_SLA(p, opargs):
-    return op_cbshifts_type(p, opargs, 0x20)
+    return cbshifts_type(p, opargs, 0x20)
 
 def op_SRA(p, opargs):
-    return op_cbshifts_type(p, opargs, 0x28)
+    return cbshifts_type(p, opargs, 0x28)
 
 def op_SLL(p, opargs):
     if p == 1:
         warning("SLL doesn't do what you probably expect on z80b! Use SL1 if you know what you're doing.")
-    return op_cbshifts_type(p, opargs, 0x30)
+    return cbshifts_type(p, opargs, 0x30)
 
 def op_SL1(p, opargs):
-    return op_cbshifts_type(p, opargs, 0x30)
+    return cbshifts_type(p, opargs, 0x30)
 
 def op_SRL(p, opargs):
-    return op_cbshifts_type(p, opargs, 0x38)
-
-def op_register_arg_type(p, opargs, offset, ninstr, step_per_register=1):
-    check_args(opargs, 1)
-    pre, r, post = single(p, opargs, allow_half=1)
-    instr = pre
-    if r == -1:
-        match = re.search(r"\A\s*\(\s*(.*)\s*\)\s*\Z", opargs)
-        if match:
-            abort ("illegal indirection")
-
-        instr.extend(ninstr)
-        if p == 2:
-            n = g_context.parse_expression(opargs, byte=1)
-        else:
-            n = 0
-        instr.append(n)
-    else:
-        instr.append(offset + step_per_register * r)
-    instr.extend(post)
-    if p == 2:
-        g_context.store(p, instr)
-    return len(instr)
+    return cbshifts_type(p, opargs, 0x38)
 
 def op_SUB(p, opargs):
-    return op_register_arg_type(p, opargs, 0x90, [0xd6])
+    return register_arg_type(p, opargs, 0x90, [0xd6])
 
 def op_AND(p, opargs):
     # Z80 Aseembly language programming book lists AND without register A
@@ -844,10 +983,10 @@ def op_AND(p, opargs):
     if len(args) > 1:
         warning('invalid <ADD expr,expr> opcode. Assuming alias ADD A,expr')
         opargs = args[1]
-    return op_register_arg_type(p, opargs, 0xa0, [0xe6])
+    return register_arg_type(p, opargs, 0xa0, [0xe6])
 
 def op_XOR(p, opargs):
-    return op_register_arg_type(p, opargs, 0xa8, [0xee])
+    return register_arg_type(p, opargs, 0xa8, [0xee])
 
 def op_OR(p, opargs):
     # Z80 Aseembly language programming book lists OR without register A
@@ -858,7 +997,7 @@ def op_OR(p, opargs):
     if len(args) > 1:
         warning('invalid <OR expr,expr> opcode. Assuming alias OR A,expr')
         opargs = args[1]
-    return op_register_arg_type(p, opargs, 0xb0, [0xf6])
+    return register_arg_type(p, opargs, 0xb0, [0xf6])
 
 def op_CP(p, opargs):
     # Z80 Aseembly language programming book lists CP without register A
@@ -869,147 +1008,38 @@ def op_CP(p, opargs):
     if len(args) > 1:
         warning('invalid <CP expr,expr> opcode. Assuming alias CP A,expr')
         opargs = args[1]
-    return op_register_arg_type(p, opargs, 0xb8, [0xfe])
-
-def op_registerorpair_arg_type(p, opargs, rinstr, rrinstr, step_per_register=8, step_per_pair=16):
-    check_args(opargs, 1)
-    pre,r,post = single(p, opargs)
-
-    if r==-1:
-        pre,rr = double(opargs)
-        if rr==-1:
-            abort ("Invalid argument")
-
-        instr = pre
-        instr.append(rrinstr + step_per_pair * rr)
-    else:
-        instr = pre
-        instr.append(rinstr + step_per_register * r)
-        instr.extend(post)
-    if (p==2):
-        g_context.store(p, instr)
-    return len(instr)
+    return register_arg_type(p, opargs, 0xb8, [0xfe])
 
 def op_INC(p, opargs):
-    return op_registerorpair_arg_type(p,opargs, 0x04, 0x03)
+    return registerorpair_arg_type(p,opargs, 0x04, 0x03)
 
 def op_DEC(p, opargs):
-    return op_registerorpair_arg_type(p,opargs, 0x05, 0x0b)
-
-def op_add_type(p, opargs, rinstr, ninstr, rrinstr, step_per_register=1, step_per_pair=16):
-    args = opargs.split(',', 1)
-    r=-1
-    if len(args) == 2:
-        pre,r,post = single(p, args[0])
-    if len(args) == 1 or r == 7:
-        pre, r, post = single(p, args[-1])
-        instr = pre
-        if r == -1:
-            match = re.search(r"\A\s*\(\s*(.*)\s*\)\s*\Z", args[-1])
-            if match:
-                abort("illegal indirection")
-            instr.extend(ninstr)
-            if p == 2:
-                n = g_context.parse_expression (args[-1], byte=1)
-            else:
-                n = 0
-            instr.append(n)
-        else:
-            instr.extend(rinstr)
-            instr[-1] += step_per_register * r
-        instr.extend(post)
-    else:
-        pre, rr1 = double(args[0])
-        dummy, rr2 = double(args[1])
-
-        if rr1 == rr2 and pre != dummy:
-            abort("Can't mix index registers and HL")
-        if len(rrinstr) > 1 and pre:
-            abort("can't use index registers in this instruction")
-
-        if len(args) != 2 or rr1 != 2 or rr2 == -1:
-            abort("invalid argument")
-        instr = pre
-        instr.extend(rrinstr)
-        instr[-1] += step_per_pair * rr2
-
-    if p == 2:
-        g_context.store(p, instr)
-    return len(instr)
+    return registerorpair_arg_type(p,opargs, 0x05, 0x0b)
 
 def op_ADD(p,opargs):
-    return op_add_type(p,opargs,[0x80], [0xc6],[0x09])
+    return add_type(p,opargs,[0x80], [0xc6],[0x09])
 
 def op_ADC(p,opargs):
-    return op_add_type(p,opargs,[0x88], [0xce],[0xed,0x4a])
+    return add_type(p,opargs,[0x88], [0xce],[0xed,0x4a])
 
 def op_SBC(p,opargs):
-    return op_add_type(p,opargs,[0x98], [0xde],[0xed,0x42])
-
-def op_bit_type(p,opargs,offset):
-    check_args(opargs,2)
-    arg1,arg2 = opargs.split(',',1)
-    b = g_context.parse_expression(arg1)
-    if b>7 or b<0:
-        abort ("argument out of range")
-    pre,r,post = single(p, arg2,allow_half=0)
-    if r==-1:
-        abort ("Invalid argument")
-    instr = pre
-    instr.append(0xcb)
-    instr.extend(post)
-    instr.append(offset + r + 8*b)
-    if (p==2):
-        g_context.store(p, instr)
-    return len(instr)
+    return add_type(p,opargs,[0x98], [0xde],[0xed,0x42])
 
 def op_BIT(p,opargs):
-    return op_bit_type(p,opargs, 0x40)
+    return bit_type(p,opargs, 0x40)
 
 def op_RES(p,opargs):
-    return op_bit_type(p,opargs, 0x80)
+    return bit_type(p,opargs, 0x80)
 
 def op_SET(p,opargs):
-    return op_bit_type(p,opargs, 0xc0)
-
-def op_pushpop_type(p,opargs,offset):
-    check_args(opargs,1)
-    prefix, rr = double(opargs, allow_af_instead_of_sp=1)
-    instr = prefix
-    if rr==-1:
-        abort ("Invalid argument")
-    else:
-        instr.append(offset + 16 * rr)
-    if (p==2):
-        g_context.store(p, instr)
-    return len(instr)
+    return bit_type(p,opargs, 0xc0)
 
 def op_POP(p, opargs):
-    return op_pushpop_type(p,opargs, 0xc1)
+    return pushpop_type(p,opargs, 0xc1)
 
 def op_PUSH(p, opargs):
-    return op_pushpop_type(p,opargs, 0xc5)
+    return pushpop_type(p,opargs, 0xc5)
  
-def op_jumpcall_type(p, opargs, offset, condoffset):
-    args = opargs.split(',', 1)
-    if len(args) == 1:
-        instr = [offset]
-    else:
-        cond = condition(args[0])
-        if cond == -1:
-            abort ("expected condition but received '" + opargs + "'")
-        instr = [condoffset + 8 * cond]
-
-    match = re.search(r"\A\s*\(\s*(.*)\s*\)\s*\Z", args[-1])
-    if match:
-        abort ("Illegal indirection")
-
-    if p == 2:
-        nn = g_context.parse_expression(args[-1], word=1)
-        instr.extend([nn%256, nn//256])
-        g_context.store(p, instr)
-    return 3
-
 def op_JP(p,opargs):
     if (len(opargs.split(',',1)) == 1):
         prefix, r, postfix = single(p, opargs, allow_offset=0,allow_half=0)
@@ -1019,10 +1049,10 @@ def op_JP(p,opargs):
             if (p==2):
                 g_context.store(p, instr)
             return len(instr)
-    return op_jumpcall_type(p,opargs, 0xc3, 0xc2)
+    return jumpcall_type(p,opargs, 0xc3, 0xc2)
 
 def op_CALL(p,opargs):
-    return op_jumpcall_type(p,opargs, 0xcd, 0xc4)
+    return jumpcall_type(p,opargs, 0xcd, 0xc4)
 
 def op_DJNZ(p,opargs):
     check_args(opargs,1)
