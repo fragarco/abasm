@@ -12,13 +12,13 @@ set ASM=python3 ../../src/abasm.py
 set DSK=python3 ../../src/dsk.py
 set CDT=python3 ../../src/cdt.py
 
-set LOADADDR=0x1200
+set LOADADDR=0x8000
 set SOURCE=main
-set TARGET=chars
+set TARGET=game
 
 set RUNASM=%ASM% --start=%LOADADDR% %SOURCE%.asm 
-set RUNDSK=%DSK% %TARGET%.dsk --new --put-bin %SOURCE%.bin --load-addr %LOADADDR% --map-file %SOURCE%.map --start-addr MAIN
-set RUNCDT=%CDT% %TARGET%.cdt --new --name %TARGET% --put-bin %SOURCE%.bin --load-addr %LOADADDR% --map-file %SOURCE%.map --start-addr MAIN 
+set RUNDSK=%DSK% %TARGET%.dsk --new --put-bin %SOURCE%.bin --load-addr %LOADADDR% --start-addr %LOADADDR%
+set RUNCDT=%CDT% %TARGET%.cdt --new --name %TARGET% --put-bin %SOURCE%.bin --load-addr %LOADADDR% --start-addr %LOADADDR% 
 
 IF "%1"=="clear" (
     del %SOURCE%.bin

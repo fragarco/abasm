@@ -1,9 +1,10 @@
 ; Hello World example
 ; A modified version from http://www.chibiakumas.com/z80/helloworld.php
+; A good resource for tutorials regarding the assembly programming of the Z80
 
 ; Files can use the directive ORG to set the initial loading address. However,
 ; most of the time would be better to set that using the --start parameter in the
-; BASM call
+; ABASM call
 ;
 ; org &1200
 
@@ -16,7 +17,7 @@ main:
 loop:
     jp loop
 
-message: db "Hello world!", 255
+message: db "Hello world!",&FF
 
 new_line:
     ld a, 13
@@ -27,7 +28,7 @@ new_line:
     
 print_string:
     ld a, (hl)
-    cp 255
+    cp &FF
     ret z
     inc hl
     call print_char

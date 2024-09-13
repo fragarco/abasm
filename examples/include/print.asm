@@ -1,4 +1,4 @@
-print_char equ &BB5A
+FW_PRINT_CHAR equ &BB5A
 
 new_line:
     ld a, 13
@@ -9,8 +9,8 @@ new_line:
     
 print_string:
     ld a, (hl)
-    cp 255
+    cp &FF
     ret z
     inc hl
-    call print_char
+    call FW_PRINT_CHAR
     jr print_string

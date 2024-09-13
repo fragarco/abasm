@@ -640,7 +640,7 @@ def op_ORG(p, opargs):
 
 def op_DUMP(p, opargs):
     # Not currently implemented. Maxam used it to write symbol information
-    # BASM outputs the MAP file instead
+    # ABASM outputs the MAP file instead
     return 0
 
 def op_PRINT(p, opargs):

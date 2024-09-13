@@ -31,7 +31,7 @@ python dsk.py <dskfile> [opciones]
 - `--put-bin <file>`: Agrega un nuevo archivo binario al archivo DSK, generando y añadiendo un encabezado AMSDOS adicional.
 - `--put-raw <file>`: Agrega un nuevo archivo binario al archivo DSK sin crear un encabezado AMSDOS adicional.
 - `--put-ascii <file>`: Agrega un nuevo archivo ASCII al archivo DSK. El archivo no debe incluir encabezado AMSDOS.
-- `--map-file <file>`: Importa un archivo generado por el ensamblador BASM con un listado de símbolos y su dirección de memoria asociada.
+- `--map-file <file>`: Importa un archivo generado por el ensamblador ABASM con un listado de símbolos y su dirección de memoria asociada.
 - `--load-addr <address>`: Dirección inicial para la carga del archivo (por defecto 0x4000), solo se usa en archivos binarios con encabezados AMSDOS generados.
 - `--start-addr <address|symbol>`: Dirección de llamada después de cargar el archivo (por defecto 0x4000). Si se importa un archivo MAP con símbolos se puede indicar uno de esos símbolos como punto de inicio. Solo tiene uso en archivos binarios con encabezados AMSDOS.
 - `--help`: Muestra la ayuda en la salida estándar.

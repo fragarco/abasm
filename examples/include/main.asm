@@ -1,11 +1,11 @@
-; Incliding another ASM file example
+; Including another ASM file example
 ; This code builds upon the Hello World example
-; using the directive read to import code from 
+; using the directive READ to import code from 
 ; another ASM file.
 
 ; Files can use the directive ORG to set the initial loading address. However,
 ; most of the time would be better to set that using the --start parameter in the
-; BASM call
+; ABASM call
 ;
 ; org &1200
 
@@ -16,7 +16,7 @@ main:
 loop:
     jp loop
 
-message: db "Hello World!", 255
+message: db "Hello World!", &FF
 
 read "print.asm"
 

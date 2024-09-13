@@ -20,7 +20,7 @@ Esta herramienta no sobreescribe ficheros existentes con el mismo nombre dentro 
 - `--put-bin <file>`: Agrega un nuevo archivo binario/básico al archivo CDT.
 - `--put-ascii <file>`: Agrega un nuevo archivo ASCII al archivo CDT.
 - `--put-raw <file>`: Agrega el archivo directamente dentro de un bloque de datos sin ningún encabezado.
-- `--map-file <file>`: Importa un archivo generado por el ensamblador BASM con un listado de símbolos y su dirección de memoria asociada.
+- `--map-file <file>`: Importa un archivo generado por el ensamblador ABASM con un listado de símbolos y su dirección de memoria asociada.
 - `--load-addr <address>`: Dirección inicial para cargar el archivo.
 - `--start-addr <address|symbol>`: Dirección de llamada después de cargar el archivo (por defecto 0x4000). Si se importa un archivo MAP con símbolos se puede indicar uno de dichos símbolos como punto de inicio. Solo tiene uso en archivos binarios con encabezados AMSDOS.
 - `--name <name>`: Nombre que se mostrará al cargar el archivo binario/ASCII.

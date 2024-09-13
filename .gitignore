@@ -161,7 +161,7 @@ cython_debug/
 #  option (not recommended) you can uncomment the following to ignore the entire idea folder.
 #.idea/
 
-# BASM generated files when assembling the examples
+# ABASM generated files when assembling the examples
 *.dsk
 *.cdt
 *.bin

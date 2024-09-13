@@ -4,11 +4,11 @@
 
 ; Files can use the directive ORG to set the initial loading address. However,
 ; most of the time would be better to set that using the --start parameter in the
-; BASM call
+; ABASM call
 ;
 ; org &1200
 
-; Check incbin directive
+; Check INCBIN directive
 ; the following sprite for MODE 1 is saved as binary format
 ; in the file sprite.bin
 
@@ -47,7 +47,7 @@ main:
     ld de, &0010
     ld hl, &00A0
 
-    call &BC1D ;SCR DOT POSITION
+    call &BC1D ;SCR_DOT_POSITION
 
     ld de, test_sprite
     ld b, 8
