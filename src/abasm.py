@@ -30,6 +30,14 @@ IFSTATE_ASSEMBLE = 1 # assemble this code, but stop at ELSE or ELSEIF
 IFSTATE_DISCART  = 2 # do not assemble this code, but might start at ELSE or ELSEIF
 IFSTATE_FIND_END = 3 # do not assemble any code until ENDIF
 
+class AsmMacro:
+    def __init__(self, name, argv):
+        self.name = name
+        self.argv = []
+        for arg in argv:
+            self.argv.append(arg.strip())
+        self.code = []
+
 class AsmContext:
     def __init__(self):
         self.reset()
@@ -48,7 +56,8 @@ class AsmContext:
         self.currentfile = "",
         self.currentline = ""
         self.lstcode = ""
-        self.op_funcs = globals()
+        self.macros = {}
+        self.active_macro = None
 
     def parse_logic_expr(self, expr):
         values = re.findall(r'\w+', expr)
@@ -198,11 +207,19 @@ class AsmContext:
             elif self.get_symbol(label) != self.origin:
                 abort("label address differs from previous stored value")
 
-    def get_opfunc(self, fname):
-        opfunc = None
-        if fname in self.op_funcs.keys() and callable(self.op_funcs[fname]):
-            opfunc = self.op_funcs[fname] 
-        return opfunc
+    def process_macro(self, p, macro, args):
+        argv = args.replace(' ', '').split(',')
+        code = self.macros[macro].code
+        params = self.macros[macro].argv
+        for line in code:
+            for i,arg in enumerate(argv):
+                line = line.replace(params[i], arg)
+            print("AAA", line)
+            incbytes = self.assemble_instruction(p, line)
+            self.origin = self.origin + incbytes
+            if self.origin > 65536:
+                abort("memory full")
+        return 0
 
     def store(self, p, bytes):
         if p == 2:
@@ -235,14 +252,22 @@ class AsmContext:
             self.listingfile = open(os.path.splitext(self.outputfile)[0] + '.lst', "wt")
         self.listingfile.write(line + "\n")
 
-    def assemble_instruction(self, p, line):
+    def parse_instruction(self, line):
         # Lines must start by characters or underscord or '.'
         match = re.match(r'^(\.\w+|\w+)(.*)', line.strip())
         if not match:
-            abort("in '" + line + "'. Valid instructions must start with a letter, an underscord or '.'")
+            abort("in '" + line + "'. Valid literals must start with a letter, an underscord or '.'")
 
-        inst = match.group(1).upper()
+        inst = match.group(1).upper().strip()
         args = match.group(2).strip()
+        return inst, args
+
+    def assemble_instruction(self, p, line):
+        inst, args = self.parse_instruction(line)
+
+        if self.active_macro is not None and inst != "ENDM":
+            self.active_macro.code.append(line)
+            return 0
 
         if (self.ifstate < IFSTATE_DISCART) or inst in ("IF", "ELSE", "ELSEIF", "ENDIF"):
             try:
@@ -256,10 +281,15 @@ class AsmContext:
                     params = line.upper().split(' EQU ')
                     op_EQU(p, ','.join(params))
                 else:
-                    self.process_label(p, inst.rstrip())
-                    extra_statements = line.split(' ', 1)
-                    if len(extra_statements) > 1:
-                        return self.assemble_instruction(p, extra_statements[1])
+                    if inst in self.macros:
+                        return self.process_macro(p, inst, args)
+                    else:
+                        self.process_label(p, inst)
+                        # MAXAM support the structure <label> <opcode> <operands>
+                        # without using the colon at the end of the label
+                        extra_statements = line.split(' ', 1)
+                        if len(extra_statements) > 1:
+                            return self.assemble_instruction(p, extra_statements[1])
                 return 0
             except SystemExit as e:
                 sys.exit(e)
@@ -274,7 +304,7 @@ class AsmContext:
             fd.close()
             return content
         except Exception as e:
-            print("[basm]", str(e))
+            print("[abasm]", str(e))
             abort("Couldn't open file '" + inputfile + "' for reading")
 
     @staticmethod
@@ -348,17 +378,22 @@ class AsmContext:
             linenumber += 1
 
     def assemble(self, inputfile, outputfile, startaddr):
-        print("[basm] generating", outputfile)
+        print("[abasm] generating", outputfile)
         for p in [1, 2]:
             self.origin = startaddr
             self.include_stack = []
             self.assembler_pass(p, inputfile)
 
         if len(self.ifstack) > 0:
-            print("[basm] Error: mismatched IF and ENDIF statements, too many IF")
+            print("[abasm] Error: mismatched IF and ENDIF statements, too many IF")
             for item in self.ifstack:
                 print(item[0])
             sys.exit(1)
+
+        if self.active_macro is not None:
+            print("[abasm] Error: missing ENDM directive for macro", self.active_macro.name)
+            sys.exit(1)
+
         self.save_memory(outputfile)
 
 
@@ -368,11 +403,11 @@ g_context = AsmContext()
 # Error and warning reporting
 
 def warning(message):
-    print("[basm]", os.path.basename(g_context.currentfile) + ':', 'warning:', message)
+    print("[abasm]", os.path.basename(g_context.currentfile) + ':', 'warning:', message)
     print('\t', g_context.currentline.strip())
 
 def abort(message):
-    print("[basm]", os.path.basename(g_context.currentfile) + ':', 'error:', message)
+    print("[abasm]", os.path.basename(g_context.currentfile) + ':', 'error:', message)
     print('\t', g_context.currentline.strip())
     sys.exit(1)
 
@@ -655,7 +690,7 @@ def op_PRINT(p, opargs):
                     text.append(str(a))
                 else:
                     text.append("?")
-        print("[basm]", os.path.basename(g_context.currentfile) + ":", "PRINT ", ",".join(text))
+        print("[abasm]", os.path.basename(g_context.currentfile) + ":", "PRINT ", ",".join(text))
     return 0
 
 def op_EQU(p, opargs):
@@ -1369,6 +1404,20 @@ def op_ENDIF(p, opargs):
     g_context.ifstate = state
     return 0
 
+def op_MACRO(p, opargs):
+    name, args = g_context.parse_instruction(opargs)
+    if len(args) > 0:
+        argv = args.split(',')
+
+    macro = AsmMacro(name, argv)
+    g_context.macros[name] = macro
+    g_context.active_macro = macro
+    return 0
+
+def op_ENDM(p, opargs):
+    g_context.active_macro = None
+    return 0
+
 ###########################################################################
 
 def assemble(inputfile, outputfile = None, predefsymbols = [], startaddr = 0x4000):
@@ -1415,7 +1464,7 @@ def process_args():
 def main():
     args = process_args()
     assemble(args.inputfile, args.output, args.define, args.start)
-    print("[basm] All OK")
+    print("[abasm] All OK")
     sys.exit(0)
 
 if __name__ == "__main__":
