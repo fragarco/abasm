@@ -16,8 +16,8 @@ macro cpctm_screenPtr REG16, VMEM, X, Y
    ld REG16, VMEM + 80 * (Y / 8) + 2048 * (Y & 7) + X 
 endm
 
-;cpctm_screenPtr hl,0xC000,20,10
-ld hl, &C000 + 80 * (10 / 8) + 2048 * (10 & 7) + 20
-ld (hl), &FF
-
+main:
+   cpctm_screenPtr hl,0xC000,20,10
+   ld (hl), &FF
+   ld (hl), "A"+"B"+"c"
 endloop: jp endloop

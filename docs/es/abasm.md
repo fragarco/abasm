@@ -373,14 +373,18 @@ Cuando una instrucción o directiva requiere un número como parámetro, se pued
 - **$** representa la dirección de memoria de la instrucción actual.
 - **@** es intercambiable con el símbolo **$**.
 - El prefijo **&** indica números en formato hexadecimal (por ejemplo, &FF).
+- El prefijo **#** indica números en formato hexadecimal (por ejemplo, #FF).
 - El prefijo **0x** también indica números en formato hexadecimal (por ejemplo, 0xFF).
 - El prefijo **%** indica números en formato binario (por ejemplo, %11111111).
 - El prefijo **0b** también indica números en formato binario (por ejemplo, 0b11111111).
-- Las comillas dobles **"** delimitan caracteres o cadenas de texto.
-- Las comillas simples **'** son equivalentes a las dobles para delimitar caracteres o cadenas de texto.
-- **MOD** representa el operador módulo.
+- Las comillas dobles **"** delimitan caracteres o cadenas de texto (1).
+- Las comillas simples **'** son equivalentes a las dobles para delimitar cadenas de texto.
+- **MOD** es el operador módulo: op1 MOD op2.
+- **AND** es el operador bit a bit AND: op1 AND op2.
+- **OR** es el operador bit a bit OR: op1 OR op2. También se puede usar el operador | de Python.
+- **XOR** es el operador bit a bit XOR: op1 XOR op2. También se puede usar el operador ^ de Python.
 
-Un único carácter entre comillas puede usarse para representar el valor ASCII (un byte) de ese carácter en expresiones numéricas. Sin embargo, ni las comillas dobles ni las simples pueden formar parte de la cadena de texto.
+(1) Un único carácter entre comillas dobles puede usarse para representar el valor ASCII (un byte) de ese carácter en expresiones numéricas. Ni las comillas dobles ni las simples pueden aparecer dentro de una cadena de texto.
 
 
 
