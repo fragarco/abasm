@@ -139,7 +139,7 @@ An important aspect of all four elements is that ABASM is case-insensitive. Ther
 
 ```
 
-Another important aspect is that ABASM ignores the '.' symbol at the beginning of any label, directive, or instruction. Once again, the goal is to support as many assembler dialects as possible. For example, .MAIN and MAIN would be the same label, while the directive ORG 0x4000 can also be written as .ORG 0x4000.
+Another important aspect is that ABASM ignores the '.' symbol at the beginning of any label. Once again, the goal is to support as many assembler dialects as possible. As a result, .MAIN and MAIN would be the same label.
 
 ## Comments
 
@@ -315,6 +315,21 @@ This directive inserts the contents of the file specified in double quotes. The 
 INCBIN "./assets/mysprite.bin"
 ```
 
+### MACRO
+
+- MACRO symbol [param1, param2, ...] ENDM
+
+This directive allows you to assign a name or symbol to a block of code, which extends until the next occurrence of ENDM. The macro can take a list of parameters, which will be replaced by the corresponding values provided in the  *calls* to the macro. Once defined, a macro can be used throughout the rest of the code just like a regular instruction.
+
+```
+macro get_screenPtr REG, X, Y 
+   ld REG, &C000 + 80 * (Y / 8) + 2048 * (Y & 7) + X 
+endm
+
+main:
+   get_screenPtr hl, 20, 10
+``` 
+
 ### LET
 
 - LET symbol=value
@@ -372,8 +387,15 @@ When an instruction or directive requires a number as a parameter, you can use a
 - **0x** prefix indicates hexadecimal numbers (e.g., 0xFF).
 - **%** prefix indicates binary numbers (e.g., %11111111).
 - **0b** prefix indicates binary numbers (e.g., 0b11111111).
-- **"** double quotes delimit characters or strings.
-- **'** single quotes are equivalent to double quotes for delimiting characters or strings.
+- **"** double quotes delimit characters or strings (1).
+- **'** single quotes are equivalent to double quotes for delimiting strings.
 - **MOD** represents the modulo operator.
+- **AND** represents de bitwise AND operator: op1 AND op2. The Python operator & can be used too.
+- **OR** represents de bitwise OR operator: op1 AND op2. The Python operator | can be used too.
+- **XOR** represents de bitwise XOR operator: op1 AND op2. The Python operator ^ can be used too.
+- **<<** represents the shift left operator.
+- **>>** represents the shift right operator.
+  
+(1) Un único carácter entre comillas dobles puede usarse para representar el valor ASCII de ese carácter en expresiones numéricas. Ni las comillas dobles ni las simples pueden aparecer dentro de una cadena de texto.
 
-A single character enclosed in quotes can represent the ASCII value (one byte) of that character in numerical expressions. However, double and single quotes cannot appear as part of the text string.
+(1) A single character enclosed in double quotes will be converted to its ASCII value in numerical expressions. Double and single quotes can be used to enclose strings but neither can appear in the string body.

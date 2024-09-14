@@ -143,7 +143,7 @@ Un aspecto importante y común a los cuatro elementos es que ABASM no discrimina
 
 ```
 
-Otro aspecto importante es que ABASM ignora el símbolo '.' al principio de cualquier etiqueta, directiva o instrucción. Una vez más, el objetivo es soportar la mayor cantidad posible de dialectos de ensamblador. De esta forma, .MAIN y MAIN serían la misma etiqueta, mientras que la directiva ORG 0x4000 también puede escribirse como .ORG 0x4000.
+Otro aspecto importante es que ABASM ignora el símbolo '.' al principio de las etiquetas. Una vez más, el objetivo es soportar la mayor cantidad posible de dialectos de ensamblador. De esta forma, .MAIN y MAIN serían la misma etiqueta.
 
 ## Comentarios
 
@@ -319,6 +319,21 @@ Esta directiva inserta el contenido del fichero especificado entre comillas dobl
 INCBIN "./assets/mysprite.bin"
 ```
 
+### MACRO
+
+- MACRO símbolo [param1, param2, ...] ENDM
+
+Esta directiva permite asignar un nombre o símbolo a un bloque de código que se extiende hasta la siguiente ocurrencia de ENDM. La macro puede incluir una lista de parámetros que serán sustituidos por los valores proporcionados en futuras *llamadas* a la macro. Una vez definida, una macro puede utilizarse en el resto del código como si fuera una instrucción convencional.
+
+```
+macro get_screenPtr REG, X, Y 
+   ld REG, &C000 + 80 * (Y / 8) + 2048 * (Y & 7) + X 
+endm
+
+main:
+   get_screenPtr hl, 20, 10
+``` 
+
 ### LET
 
 - LET símbolo=valor
@@ -380,11 +395,13 @@ Cuando una instrucción o directiva requiere un número como parámetro, se pued
 - Las comillas dobles **"** delimitan caracteres o cadenas de texto (1).
 - Las comillas simples **'** son equivalentes a las dobles para delimitar cadenas de texto.
 - **MOD** es el operador módulo: op1 MOD op2.
-- **AND** es el operador bit a bit AND: op1 AND op2.
+- **AND** es el operador bit a bit AND: op1 AND op2. También se puede usar el operador & de Python.
 - **OR** es el operador bit a bit OR: op1 OR op2. También se puede usar el operador | de Python.
 - **XOR** es el operador bit a bit XOR: op1 XOR op2. También se puede usar el operador ^ de Python.
-
-(1) Un único carácter entre comillas dobles puede usarse para representar el valor ASCII (un byte) de ese carácter en expresiones numéricas. Ni las comillas dobles ni las simples pueden aparecer dentro de una cadena de texto.
+- **<<** es el operador *desplazamiento* a la izquierda.
+- **>>** es el operador *desplazamiento* a la derecha.
+  
+(1) Un único carácter entre comillas dobles puede usarse para representar el valor ASCII de ese carácter en expresiones numéricas. Ni las comillas dobles ni las simples pueden aparecer dentro de una cadena de texto.
 
 
 

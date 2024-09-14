@@ -19,5 +19,6 @@ endm
 main:
    cpctm_screenPtr hl,0xC000,20,10
    ld (hl), &FF
-   ld (hl), "A"+"B"+"c"
-endloop: jp endloop
+
+endloop:
+   jp endloop
