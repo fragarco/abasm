@@ -621,7 +621,7 @@ def store_add_type(p, opargs, rinstr, ninstr, rrinstr, step_per_register=1, step
             abort("can't use index registers in this instruction")
 
         if len(args) != 2 or rr1 != 2 or rr2 == -1:
-            abort("invalid argument")
+            abort("invalid operands")
         instr = pre
         instr.extend(rrinstr)
         instr[-1] += step_per_pair * rr2
@@ -1033,6 +1033,14 @@ def op_SRL(p, opargs):
     return store_store_cbshifts_type(p, opargs, 0x38)
 
 def op_SUB(p, opargs):
+    # Z80 Aseembly language programming book lists SUB without register A
+    # because always operates with the accumulator BUT WinAPE assembler seems
+    # to use the aliases SUB A,r SUB A,n SUB A,(HL) SUB A,(IX + d) SUB A,(IY + d)
+    # lets support that in case we get two parameters and issue a warning
+    args = opargs.strip().split(',')
+    if len(args) > 1:
+        warning('invalid <SUB expr,expr> opcode. Assuming alias SUB A,expr')
+        opargs = args[1]
     return store_register_arg_type(p, opargs, 0x90, [0xd6])
 
 def op_AND(p, opargs):
