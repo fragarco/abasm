@@ -426,6 +426,4 @@ When an instruction or directive requires a number as a parameter, you can use a
 - **<<** represents the shift left operator.
 - **>>** represents the shift right operator.
   
-(1) Un único carácter entre comillas dobles puede usarse para representar el valor ASCII de ese carácter en expresiones numéricas. Ni las comillas dobles ni las simples pueden aparecer dentro de una cadena de texto.
-
 (1) A single character enclosed in double quotes will be converted to its ASCII value in numerical expressions. Double and single quotes can be used to enclose strings but neither can appear in the string body.

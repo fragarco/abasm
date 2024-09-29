@@ -19,6 +19,8 @@ You should have received a copy of the GNU General Public License
 along with this program; if not, write to the Free Software
 Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 """
+__author__='Javier "Dwayne Hicks" Garcia'
+__version__='0.9dev'
 
 import sys, os
 import re
@@ -389,6 +391,7 @@ class AsmContext:
             linenumber += 1
 
     def assemble(self, inputfile, outputfile, startaddr):
+        print("[abasm] assembler version", __version__)
         print("[abasm] generating", outputfile)
         for p in [1, 2]:
             self.origin = startaddr
@@ -687,6 +690,13 @@ def op_ORG(p, opargs):
 def op_DUMP(p, opargs):
     # Not currently implemented. Maxam used it to write symbol information
     # ABASM outputs the MAP file instead
+    warning ("directive DUMP found but ignored, Abasm uses MAP files instead")
+    return 0
+
+def op_BRK(p, opargs):
+    # Not currently implemented. WinAPE uses it to set a breakpoint using RST &30
+    # as MAXAM did back in the day
+    warning ("directive BRK (breakpoint) found but ignored")
     return 0
 
 def op_PRINT(p, opargs):
@@ -1182,8 +1192,8 @@ def op_EX(p, opargs):
     else:
         pre1, rr1 = double(args[0], allow_af_instead_of_sp=1, allow_index=0)
         pre2, rr2 = double(args[1], allow_af_instead_of_sp=1, allow_af_alt=1, allow_index=0)
-        if rr1 == 1 and rr2 == 2:
-            # EX DE,HL
+        if (rr1 == 1 and rr2 == 2) or (rr1 == 2 and rr2 == 1):
+            # EX DE,HL is the opcode but WinAPE allows EX HL,DE so we allow it too
             instr = pre1
             instr.extend(pre2)
             instr.append(0xeb)
@@ -1462,13 +1472,13 @@ def aux_int(param):
 def process_args():
     parser = argparse.ArgumentParser(
         prog = 'basm.py',
-        description = 'A Z80 assembler focused on the Amstrad CPC. Based on pyz80 but using a dialect compatible with Maxam/WinAPE.'
+        description = f'A Z80 assembler focused on the Amstrad CPC. Based on pyz80 but using a dialect compatible with Maxam/WinAPE and RVM.'
     )
     parser.add_argument('inputfile', help = 'Input file.')
     parser.add_argument('-d', '--define', default = [], action = 'append', help = 'Defines a pair SYMBOL=VALUE.')
     parser.add_argument('-o', '--output', help = 'Target file in binary format. If not specified, first input file name will be used.')
     parser.add_argument('--start', type = aux_int, default = 0x4000, help = 'Starting address. Can be overwritten by ORG directive (default 0x4000).')
-
+    parser.add_argument('-v', '--version', action='version', version=f' Abasm Assembler Version {__version__}', help = "Shows program's version and exits")
     args = parser.parse_args()
     return args
 
