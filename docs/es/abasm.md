@@ -60,6 +60,7 @@ Este comando ensamblará el archivo `program.asm` y generará un fichero binario
 - `-d` o `--define`: Permite definir pares `SÍMBOLO=VALOR`. Dichos símbolos pueden utilizarse en el código como constantes o etiquetas. Esta opción se puede emplear múltiples veces para definir varios símbolos.
 - `--start`: Define la dirección de memoria que se tomará como punto de inicio para la carga del programa. Por defecto, esta dirección es `0x4000`, aunque también puede establecerse directamente dentro del código usando la directiva `ORG`.
 - `-o` o `--output`: Especifica el nombre del archivo binario de salida. Si no se utiliza esta opción, se empleará el nombre del archivo de entrada cambiando su extensión por `.bin`.
+- `-o` o `--version`: Muestra el número de versión de Abasm.
 
 ## Ejemplos de uso
 
@@ -392,13 +393,13 @@ READ "./lib/keyboard.asm"
 
 - ORG <dirección de memoria>
 
-Especifica la dirección de memoria que debe considerarse como la actual a partir de ese momento para cualquier cálculo necesario, como establecer el valor de una etiqueta. Lo habitual es que esta directiva aparezca como la primera instrucción del código fuente.
-
-Sin embargo, no hay nada que impida incluir más de una ocurrencia de esta directiva en el código fuente, aunque no es recomendable, ya que el fichero binario resultante no contendrá nada entre la posición anterior y la siguiente instrucción ensamblada tras la directiva. Además, las utilidades DSK o CDT no pueden posicionar partes del fichero resultante en diferentes áreas de la memoria. Por lo tanto, si un programa necesita tener partes cargadas en diferentes áreas de la memoria, es aconsejable generar un fichero binario independiente para cada área y empaquetarlos todos dentro del mismo DSK o CDT, junto con un cargador programado en BASIC (por ejemplo).
+Especifica la dirección de memoria que debe considerarse como la actual a partir de ese momento para cualquier cálculo necesario, como establecer el valor de una etiqueta. Lo habitual es que esta directiva aparezca como la primera instrucción del código fuente, aunque puede substituirse por la opción de Abasm `--start`.
 
 ```
 ORG 0x4000
 ```
+
+Nada impide incluir más de una ocurrencia de esta directiva en el código fuente, aunque hay que tener presente que cualquier zona de memoria "vacia" que quede entre la dirección de memoria inicial del programa y la dirección más alta será rellenada con 0, aumentando el tamaño del fichero `bin` resultante. Para evitarlo, si un programa necesita tener partes cargadas en diferentes áreas de la memoria, es aconsejable generar un fichero binario independiente para cada área y empaquetarlos todos dentro del mismo DSK o CDT, junto con un cargador programado en BASIC (por ejemplo).
 
 ### PRINT
 

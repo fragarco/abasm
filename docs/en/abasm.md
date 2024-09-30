@@ -59,6 +59,7 @@ This command will assemble the `program.asm` file and generate a binary file wit
 - `-d` or `--define`: Allows defining `SYMBOL=VALUE` pairs. These symbols can be used in the code as constants or labels. This option can be used multiple times to define several symbols.
 - `--start`: Defines the memory address that will be used as the starting point for loading the program. By default, this address is `0x4000`, but it can also be set directly in the code using the `ORG` directive.
 - `-o` or `--output`: Specifies the name of the output binary file. If this option is not used, the name of the input file will be used, with its extension changed to `.bin`.
+- `v` or `--output`: Shows program's version and exits.
 
 ## **Usage Examples
 
@@ -387,13 +388,13 @@ READ "./lib/keyboard.asm"
 
 - ORG <memory address>
 
-Specifies the memory address to be considered as the current address from that point forward for any necessary calculations, such as setting the value of a label. Typically, if this directive is used, it appears as the first instruction of the source code.
-
-However, there is nothing to prevent the source code from including more than one occurrence of this directive, although it is not recommended, as the resulting binary file will contain nothing between the previous position and the next instruction assembled after the directive. Neither DSK nor CDT utilities can position parts of the resulting file in different memory areas. Therefore, if a program needs to have parts loaded in different memory areas, it is advisable to generate a separate binary file for each area and package them all within the same DSK or CDT, along with a loader programmed in BASIC (for example).
+Specifies the memory address to be considered as the current address from that point forward for any necessary calculations, such as setting the value of a label. Typically, if this directive is used, it appears as the first instruction of the source code, although it's possible to replace it with the Abasm's command line parameter `--start`.
 
 ```
 ORG 0x4000
 ```
+
+There is nothing to prevent the source code from including more than one occurrence of this directive, although it is not recommended, as the resulting binary file will fill with 0s any remaining empty memory between the starting memory position for the program and the highest memory written address. This will increase the final `bin` file size. Therefore, if a program needs to have parts loaded in different memory areas, it is advisable to generate a separate binary file for each area and package them all within the same DSK or CDT, along with a loader programmed in BASIC (for example).
 
 ### PRINT
 
