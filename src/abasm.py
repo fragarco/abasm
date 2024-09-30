@@ -879,8 +879,20 @@ def op_FOR(p, opargs):
 
     if limit != 0:
         del g_context.symboltable['FOR']
-
     return bytes
+
+
+def op_WHILE(p, opargs):
+    do = g_context.parse_expression(opargs)
+    if do != 0:
+        print("AAA While DO")
+    else:
+        print("AAA don't DO")
+    return 0
+
+def op_WEND(p, opargs):
+    print("AAA WEND")
+    return 0
 
 def op_ASSERT(p,opargs):
     check_args(opargs,1)
