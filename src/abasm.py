@@ -66,6 +66,9 @@ class AsmContext:
         self.active_macro = None
     
     def parse_logic_expr(self, expr):
+        """
+        Resolves an expression that can be reduced to 0 = FALSE or !0 = TRUE.
+        """
         values = re.findall(r'\w+', expr)
         for i in range(0, len(values)):
             values[i] = g_context.parse_expression(values[i])
@@ -76,11 +79,17 @@ class AsmContext:
         if len(values) == 2:
             operation = "%d %s %d" % (values[0], logic[0], values[1])
             return eval(operation)
-        abort("evaluating logical expression")
+        abort("evaluating logical expression " + expr)
        
-    def parse_expression(self, arg, signed=0, byte=0, word=0):
-        # WARNING: Maxam is supposed to evaluate operators from left to right (no operator precedence)
-        # here we do not do that, so this is a departure from Maxam
+    def parse_expression(self, arg, signed=0, byte=0, word=0, allowundef=0):
+        """
+        Resolves a numeric expression that can be reduced to an integer value.
+        To allow using symbols in expressions that are defined later on the code, the
+        call can be made using allowundef=1 which will delay the final resolution to
+        the second pass.
+        WARNING: Maxam is supposed to evaluate operators from left to right (no operator
+        precedence) here we do not do that, so this is a departure from Maxam.
+        """
         if ',' in arg:
             abort("erroneous comma in expression " + arg)
 
@@ -133,10 +142,12 @@ class AsmContext:
                             # string literal used in some expressions
                             pass
                         else:
-                            sym = self.expand_symbol(testsymbol)
-                            errormsg = f"symbol {sym} is undefined"
-                            if sym.upper() in self.registernames:
-                                errormsg = f"unexpected register {sym}"
+                            errormsg = f"symbol {testsymbol} is undefined"
+                            if testsymbol.upper() in self.registernames:
+                                errormsg = f"unexpected register {testsymbol}"
+                            elif allowundef != 0:
+                                # Allow undefined symbols if undefsym=1
+                                return None
                             abort(errormsg)
 
                     elif testsymbol[0] == '0' and len(testsymbol) > 2 and testsymbol[1] == 'b':
@@ -177,29 +188,16 @@ class AsmContext:
                 narg %= 65536
         return narg
 
-    def expand_symbol(self, sym):
-        while 1:
-            match = re.search(r'\{([^\{\}]*)\}', sym)
-            if match:
-                value = self.parse_expression(match.group(1))
-                sym = sym.replace(match.group(0),str(value))
-            else:
-                break
-        return sym
-
     def set_symbol(self, sym, value, is_label=False, is_let=False):
-        if is_label:
+        sym = sym.upper()
+        if is_label and len(sym) and sym[0] == '.':
             # In maxam labels can start with '.' to allow labels similar to opcodes
-            if len(sym) and sym[0] == '.': sym = sym[1:].upper()
-        else:
-            symorig = self.expand_symbol(sym)
-            sym = symorig.upper()
+            sym = sym[1:]
         if is_let: self.lettable[sym] = value
         self.symboltable[sym] = value
 
     def get_symbol(self, sym):
-        symorig = self.expand_symbol(sym)
-        sym = symorig.upper()
+        sym = sym.upper()
         if sym[0] == '.':
             sym = sym[1:]
         
@@ -633,10 +631,13 @@ def store_add_type(p, opargs, rinstr, ninstr, rrinstr, step_per_register=1, step
 def store_bit_type(p, opargs, offset):
     check_args(opargs,2)
     arg1,arg2 = opargs.split(',',1)
-    b = g_context.parse_expression(arg1)
+    allowundef = 1 if p == 1 else 0
+    b = g_context.parse_expression(arg1, allowundef)
+    if b == None:
+        b = 0  # lets wait until the second pass for missing symbols
     if b > 7 or b < 0:
         abort("argument out of range")
-    pre,r,post = single(p, arg2,allow_half=0)
+    pre,r,post = single(p, arg2, allow_half=0)
     if r == -1:
         abort("Invalid argument")
     instr = pre
@@ -684,6 +685,7 @@ def store_jumpcall_type(p, opargs, offset, condoffset):
 
 def op_ORG(p, opargs):
     check_args(opargs, 1)
+    # Not undefined symbols are allowed here
     g_context.origin = g_context.parse_expression(opargs, word=1)
     return 0
 
@@ -706,8 +708,8 @@ def op_PRINT(p, opargs):
             if expr.strip().startswith('"'):
                 text.append(expr.strip().rstrip()[1:-1])
             else:
-                a = g_context.parse_expression(expr)
-                if a:
+                a = g_context.parse_expression(expr, allowundef=1)
+                if a != None:
                     text.append(str(a))
                 else:
                     text.append("?")
@@ -720,15 +722,15 @@ def op_EQU(p, opargs):
     symbol = symbol.strip()
     expr = expr.strip()
     if p == 1:
-        g_context.set_symbol(symbol, g_context.parse_expression(expr, signed = 1))
+        v = g_context.parse_expression(expr, signed=1, allowundef=1)
+        if v != None: g_context.set_symbol(symbol, v)
     else:
-        expr_result = g_context.parse_expression(expr, signed = 1)
+        expr_result = g_context.parse_expression(expr, signed=1)
         existing = g_context.get_symbol(symbol)
         if existing == '':
             g_context.set_symbol(symbol, expr_result)
         elif existing != expr_result:
-                abort("Symbol " +
-                      g_context.expand_symbol(symbol) +
+                abort("Symbol " + symbol +
                       ": expected " + str(existing) +
                       " but calculated " + str(expr_result) +
                       ", has this symbol been used twice?")
@@ -738,6 +740,8 @@ def op_ALIGN(p, opargs):
     args = opargs.replace(" ", "").split(",")
     if len(args) < 1:
         abort("ALIGN directive requieres at least one value")
+    # Not undefined symbols are allowed in expressions for this
+    # directive
     padding = 0 if len(args) == 1 else g_context.parse_expression(args[1])
     align = g_context.parse_expression(args[0])
     if align < 1:
@@ -797,7 +801,7 @@ def op_DEFB(p, opargs):
             if len(txtbytes) == 0: txtbytes = [0]
             bytes = bytes + txtbytes
         else:
-            byte = 0 if p == 1 else g_context.parse_expression(arg, byte = 1)
+            byte = 0 if p == 1 else g_context.parse_expression(arg, byte=1)
             bytes.append(byte)
     if p == 2: g_context.store(p, bytes)
     return len(bytes)
@@ -807,8 +811,10 @@ def op_LET(p, opargs):
     if len(args) != 2:
         abort("LET directive uses the format SYMBOL=VALUE")
     sym, val = args
-    val = g_context.parse_expression(val)
-    g_context.set_symbol(sym, val, is_let = True)
+    allowundef = 1 if p == 1 else 0
+    val = g_context.parse_expression(val, allowundef)
+    if val != None:
+        g_context.set_symbol(sym, val, is_let=True)
     return 0
 
 def op_READ(p, opargs):
@@ -866,7 +872,7 @@ def op_ASSERT(p,opargs):
     if (p==2):
         value = g_context.parse_expression(opargs)
         if value == 0:
-            abort("Assertion failed ("+opargs+")")
+            abort("Assertion failed (" + opargs + ")")
     return 0
 
 
@@ -1125,8 +1131,8 @@ def op_CALL(p,opargs):
 
 def op_DJNZ(p,opargs):
     check_args(opargs,1)
-    if (p==2):
-        target = g_context.parse_expression(opargs,word=1)
+    if p == 2:
+        target = g_context.parse_expression(opargs, word=1)
         displacement = target - (g_context.origin + 2)
         if displacement > 127 or displacement < -128:
             abort ("Displacement from "+str(g_context.origin)+" to "+str(target)+" is out of range")
@@ -1168,7 +1174,7 @@ def op_RET(p, opargs):
 
 def op_IM(p, opargs):
     check_args(opargs, 1)
-    if (p==2):
+    if p == 2:
         mode = g_context.parse_expression(opargs)
         if mode > 2 or mode < 0:
             abort ("argument out of range")
@@ -1217,7 +1223,7 @@ def op_IN(p, opargs):
     check_args(opargs, 2)
     args = opargs.split(',', 1)
     if p == 2:
-        pre, r, post = single(p, args[0], allow_index=0, allow_half=0)
+        _, r, _ = single(p, args[0], allow_index=0, allow_half=0)
         if r!=-1 and r!=6 and re.search(r"\A\s*\(\s*C\s*\)\s*\Z", args[1], re.IGNORECASE):
             g_context.store(p, [0xed, 0x40 + 8 * r])
         elif r == 7:
@@ -1289,12 +1295,12 @@ def op_LD(p,opargs):
         match = re.search(r"\A\s*\(\s*(.*)\s*\)\s*\Z", arg1)
         if match:
             # ld (nn), rr
-            if p==2:
+            if p == 2:
                 nn = g_context.parse_expression(match.group(1))
             else:
                 nn = 0
             instr = prefix
-            if rr2==2:
+            if rr2 == 2:
                 instr.extend([0x22, nn%256, nn//256])
             else:
                 instr.extend([0xed, 0x43 + 16*rr2, nn%256, nn//256])
@@ -1357,7 +1363,7 @@ def op_LD(p,opargs):
             if match:
                 if r1 != 7:
                     abort("Illegal indirection")
-                if p==2:
+                if p == 2:
                     nn = g_context.parse_expression(match.group(1), word=1)
                     g_context.store(p, [0x3a, nn%256, nn//256])
                 return 3
@@ -1365,7 +1371,7 @@ def op_LD(p,opargs):
             instr = prefix1
             instr.append(0x06 + 8*r1)
             instr.extend(postfix1)
-            if (p==2):
+            if p == 2:
                 n = g_context.parse_expression(arg2, byte=1)
             else:
                 n = 0
@@ -1383,7 +1389,7 @@ def op_LD(p,opargs):
             return 1
         match = re.search(r"\A\s*\(\s*(.*)\s*\)\s*\Z", arg1)
         if match:
-            if p==2:
+            if p == 2:
                 nn = g_context.parse_expression(match.group(1), word=1)
                 g_context.store(p, [0x32, nn%256, nn//256])
             return 3
@@ -1394,6 +1400,8 @@ def op_IF(p, opargs):
     check_args(opargs, 1)
     g_context.ifstack.append((g_context.currentfile, g_context.ifstate))
     if g_context.ifstate < IFSTATE_DISCART:
+        # No undefined symbols are allowed in IF expressions or we may
+        # calculate wrong other symbols
         cond = g_context.parse_logic_expr(opargs)
         if cond:
             g_context.ifstate = IFSTATE_ASSEMBLE
@@ -1455,16 +1463,12 @@ def assemble(inputfile, outputfile = None, predefsymbols = [], startaddr = 0x400
     
     g_context.reset()
     g_context.outputfile = outputfile
-
-    for value in predefsymbols:
-        sym = value.split('=', 1)
-        if len(sym) == 1:
-            sym.append("1")
+    for sym in predefsymbols:
         sym[0] = sym[0].upper()
         try:
             val = aux_int(sym[1])
         except:
-            print("Error: invalid format for command-line symbol definition in" + value)
+            print("Error: invalid format for command-line symbol definition in" + val)
             sys.exit(1)
         g_context.set_symbol(sym[0], aux_int(sym[1]))
 
@@ -1479,11 +1483,11 @@ def aux_int(param):
 
 def process_args():
     parser = argparse.ArgumentParser(
-        prog = 'basm.py',
+        prog = 'abasm.py',
         description = f'A Z80 assembler focused on the Amstrad CPC. Based on pyz80 but using a dialect compatible with Maxam/WinAPE and RVM.'
     )
     parser.add_argument('inputfile', help = 'Input file.')
-    parser.add_argument('-d', '--define', default = [], action = 'append', help = 'Defines a pair SYMBOL=VALUE.')
+    parser.add_argument('-d', '--define', nargs = 2, default = [], action = 'append', help = 'Defines a pair SYMBOL=VALUE.')
     parser.add_argument('-o', '--output', help = 'Target file in binary format. If not specified, first input file name will be used.')
     parser.add_argument('--start', type = aux_int, default = 0x4000, help = 'Starting address. Can be overwritten by ORG directive (default 0x4000).')
     parser.add_argument('-v', '--version', action='version', version=f' Abasm Assembler Version {__version__}', help = "Shows program's version and exits")
