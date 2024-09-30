@@ -56,7 +56,9 @@ class AsmContext:
         self.symboltable = {}
         self.lettable = {}
         self.symusetable = {}
-        self.memory = bytearray()
+        self.memory = bytearray(0x00 for i in range(0,0xFFFF))
+        self.memory_high = 0
+        self.memory_low = 0xFFFF
         self.ifstack = []
         self.ifstate = IFSTATE_DISABLED
         self.currentfile = "",
@@ -230,10 +232,16 @@ class AsmContext:
     def store(self, p, bytes):
         if p == 2:
             self.lstcode = ""
+            mempos = self.origin
             for b in bytes:
-                self.memory.append(b)
+                self.memory[mempos] = b
+                mempos = mempos + 1
                 self.lstcode = self.lstcode + "%02X " % (b)
-
+            if len(self.lstcode) > 17:
+                self.lstcode = self.lstcode[0:15] + ".."
+            self.memory_low = min(self.memory_low, self.origin)
+            self.memory_high = max(self.memory_high, mempos)
+    
     def save_mapfile(self, filename):
         mapfile = os.path.splitext(filename)[0] + '.map'
         with open(mapfile, 'w') as f:
@@ -246,11 +254,12 @@ class AsmContext:
             f.write('}\n')
 
     def save_memory(self, filename):
-        contentlen = len(self.memory)
+        program = self.memory[self.memory_low:self.memory_high]
+        contentlen = len(program)
         if contentlen > 0:
             # check that something has been assembled at all
             with open(filename, 'wb') as fd:
-                fd.write(self.memory)
+                fd.write(program)
         self.save_mapfile(filename)
 
     def write_listinfo(self, line):
@@ -376,12 +385,12 @@ class AsmContext:
                 if extracode:
                     statements = extracode + statements
                 if p == 2:
-                    lstout = "%06d  %04X  %-13s\t%s" % (linenumber, self.origin, self.lstcode, opcode)
+                    lstout = "%06d  %04X  %-16s\t%s" % (linenumber, self.origin, self.lstcode, opcode)
                     self.lstcode = ""
                     self.write_listinfo(lstout)
                 self.origin = self.origin + incbytes
                 if self.origin > 65536:
-                    abort("memory full")
+                    abort(f"memory full. Next address is {self.origin}")
 
             storedline = int(self.currentfile.rsplit(':', 1)[1])
             if self.currentfile.startswith(inputfile + ":") and storedline != linenumber:
@@ -687,6 +696,12 @@ def op_ORG(p, opargs):
     check_args(opargs, 1)
     # Not undefined symbols are allowed here
     g_context.origin = g_context.parse_expression(opargs, word=1)
+    return 0
+
+def op_SAVE(p, opargs):
+    # Not currently implemented. WinAPE uses it to write bin files with
+    # AMSDOS headers but Abasm relies in DSK tool or similar applications
+    warning ("directive SAVE found but ignored, use DSK tool instead")
     return 0
 
 def op_DUMP(p, opargs):

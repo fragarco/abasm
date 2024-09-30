@@ -2,9 +2,9 @@ FW_PRINT_CHAR equ &BB5A
 
 new_line:
     ld a, 13
-    call print_char
+    call FW_PRINT_CHAR
     ld a, 10
-    jp print_char
+    jp FW_PRINT_CHAR
     ret
     
 print_string:
