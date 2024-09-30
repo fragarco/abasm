@@ -742,7 +742,7 @@ def op_EQU(p, opargs):
     else:
         expr_result = g_context.parse_expression(expr, signed=1)
         existing = g_context.get_symbol(symbol)
-        if existing == '':
+        if existing == None:
             g_context.set_symbol(symbol, expr_result)
         elif existing != expr_result:
                 abort("Symbol " + symbol +
