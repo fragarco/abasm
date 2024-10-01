@@ -18,14 +18,17 @@
     - [DS, DEFS, RMEM](#ds-defs-rmem)
     - [DW, DEFW](#dw-defw)
     - [EQU](#equ)
-    - [FOR](#for)
     - [IF](#if)
     - [INCBIN](#incbin)
     - [MACRO](#macro)
     - [LET](#let)
     - [READ](#read)
+    - [REPEAT](#repeat)
     - [ORG](#org)
     - [PRINT](#print)
+    - [SAVE](#save)
+    - [STOP](#stop)
+    - [WHILE](#while)
   - [Expressions and Special Characters](#expressions-and-special-characters)
 
 # Introduction
@@ -308,16 +311,6 @@ LD  A,0xFF
 LD  (MEM_VIDEO),A
 ```
 
-### FOR
-
-- FOR range, instruction
-
-Repeats a single instruction (or directive) as many times as the value of *range*.
-
-```
-FOR 100, DB 0xFF
-```
-
 ### IF
 
 - IF condition [ELSEIF condition | ELSE] ENDIF
@@ -384,6 +377,23 @@ This directive inserts the contents of the file specified in double quotes and a
 READ "./lib/keyboard.asm"
 ```
 
+### REPEAT
+
+- REPEAT numeric expression `code block` REND
+
+Repeats a block of code as many times as the value specified by the numeric expression.
+
+```
+EQU ENTITIES, 10
+LET ENTITY_ID = 0
+REPEAT ENTITIES
+  DB 0x00       ; X pos
+  DB 0x00       ; Y pos
+  DB ENTITY_ID  ; Entity ID
+  LET ENTITY_ID = ENTITY_ID + 1
+REND
+```
+
 ### ORG
 
 - ORG <memory address>
@@ -406,6 +416,38 @@ Prints the result of the provided expression(s) to the standard output as soon a
 ORG 0x4000
 <code>
 PRINT @-0x4000
+```
+
+### SAVE
+
+- SAVE "filename", numeric expression, numeric expression
+
+This directive allows the generation of additional binary files containing the memory where the assembled code is being written. The memory has a maximum size of 64K, which is the limit of the Amstrad CPC 464. The first expression defines the starting address, while the second specifies the total number of bytes to be written to the file.
+
+```
+SAVE "myscreen.bin",&C000,&4000
+```
+
+### STOP
+
+- STOP
+
+Stops the assembly process issuing an error.
+
+### WHILE
+
+- WHILE logic expression `code block` WEND
+
+It allows a block of code to be assembled repeatedly as long as the specified condition is met. If the condition never becomes false, this directive can result in an infinite loop.
+
+```
+LET OBJECTS = 32
+WHILE OBJECTS>0
+  db 0
+  db 0
+  db 0
+  LET OBJECTS = OBJECTS-1
+WEND
 ```
 
 ## Expressions and Special Characters

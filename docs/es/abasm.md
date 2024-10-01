@@ -18,14 +18,17 @@
     - [DS, DEFS, RMEM](#ds-defs-rmem)
     - [DW, DEFW](#dw-defw)
     - [EQU](#equ)
-    - [FOR](#for)
     - [IF](#if)
     - [INCBIN](#incbin)
     - [MACRO](#macro)
     - [LET](#let)
     - [READ](#read)
+    - [REPEAT](#repeat)
     - [ORG](#org)
     - [PRINT](#print)
+    - [SAVE](#save)
+    - [STOP](#stop)
+    - [WHILE](#while)
   - [Expresiones y Caracteres Especiales](#expresiones-y-caracteres-especiales)
 
 
@@ -313,16 +316,6 @@ LD  A,0xFF
 LD  (MEM_VIDEO),A
 ```
 
-### FOR
-
-- FOR rango, instrucción
-
-Repite una sola instrucción (o directiva) tantas veces como el valor de *rango*.
-
-```
-FOR 100, DB 0xFF
-```
-
 ### IF
 
 - IF condición [ELSEIF condición | ELSE] ENDIF
@@ -389,6 +382,23 @@ Esta directiva inserta el contenido del fichero especificado entre comillas dobl
 READ "./lib/keyboard.asm"
 ```
 
+### REPEAT
+
+- REPEAT expresión numérica `bloque de código` REND
+
+Repite un bloque de código tantas veces como el valor indicado por la expresión numérica.
+
+```
+EQU ENTITIES, 10
+LET ENTITY_ID = 0
+REPEAT ENTITIES
+  DB 0x00       ; X pos
+  DB 0x00       ; Y pos
+  DB ENTITY_ID  ; Entity ID
+  LET ENTITY_ID = ENTITY_ID + 1
+REND
+```
+
 ### ORG
 
 - ORG <dirección de memoria>
@@ -411,6 +421,37 @@ Imprime el resultado de la(s) expresión(es) proporcionada(s) en la salida está
 ORG 0x4000
 <código>
 PRINT @-0x4000
+```
+### SAVE
+
+- SAVE "fichero", expresión numérica, expresion numérica
+
+Esta directiva permite generar archivos binarios adicionales con el contenido de la memoria en la que se está escribiendo el código ensamblado. La memoria tiene un tamaño máximo de 64K, que corresponde al límite del Amstrad CPC 464. La primera expresión define la dirección de inicio, mientras que la segunda especifica la cantidad total de bytes que se escribirán en el archivo.
+
+```
+SAVE "myscreen.bin",&C000,&4000
+```
+
+### STOP
+
+- STOP
+
+Detiene inmediatamente el proceso de ensamblado mostrando un error.
+
+### WHILE
+
+- WHILE expresión lógica `bloque de código` WEND
+
+Permite ensamblar repetidamente un bloque de código mientras se cumpla la condición especificada. Si la condición nunca llega a ser falsa, esta directiva puede generar un bucle infinito.
+
+```
+LET OBJECTS = 32
+WHILE OBJECTS>0
+  db 0
+  db 0
+  db 0
+  LET OBJECTS = OBJECTS-1
+WEND
 ```
 
 ## Expresiones y Caracteres Especiales

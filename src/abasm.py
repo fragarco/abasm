@@ -32,6 +32,16 @@ IFSTATE_ASSEMBLE = 1 # assemble this code, but stop at ELSE or ELSEIF
 IFSTATE_DISCART  = 2 # do not assemble this code, but might start at ELSE or ELSEIF
 IFSTATE_FIND_END = 3 # do not assemble any code until ENDIF
 
+WSTATE_DISABLED = 0  # assemble all encounted code
+WSTATE_ASSEMBLE = 1  # assemble code inside WHILE body
+WSTATE_FIND_END = 2  # do not assemble code inside WHILE body
+WSTATE_LOOP     = 3  # go back to WHILE condition
+
+RSTATE_DISABLED = 0  # assemble all encounted code
+RSTATE_ASSEMBLE = 1  # assemble code inside REPEAT body
+RSTATE_FIND_END = 2  # do not assemble code inside REPEAT body
+RSTATE_LOOP     = 3  # go back to REPEAT condition
+
 class AsmMacro:
     def __init__(self, name, argv):
         self.name = name
@@ -61,8 +71,13 @@ class AsmContext:
         self.memory_low = 0xFFFF
         self.ifstack = []
         self.ifstate = IFSTATE_DISABLED
-        self.currentfile = "",
+        self.whileline = None
+        self.whilestate= WSTATE_DISABLED
+        self.repeatloop = None
+        self.repeatstate = RSTATE_DISABLED
+        self.currentfile = ""
         self.currentline = ""
+        self.linenumber = 0
         self.lstcode = ""
         self.macros = {}
         self.active_macro = None
@@ -235,32 +250,43 @@ class AsmContext:
             mempos = self.origin
             for b in bytes:
                 self.memory[mempos] = b
-                mempos = mempos + 1
                 self.lstcode = self.lstcode + "%02X " % (b)
+                mempos = mempos + 1
+            self.memory_low = min(self.memory_low, self.origin)
+            self.memory_high = max(self.memory_high, mempos-1)
             if len(self.lstcode) > 17:
                 self.lstcode = self.lstcode[0:15] + ".."
-            self.memory_low = min(self.memory_low, self.origin)
-            self.memory_high = max(self.memory_high, mempos)
-    
+
     def save_mapfile(self, filename):
         mapfile = os.path.splitext(filename)[0] + '.map'
-        with open(mapfile, 'w') as f:
-            f.write('# List of symbols in Python dictionary format\n')
-            f.write('# Symbol: [address, total number of appearances]\n')
-            f.write('{\n')
-            for sym, addr in sorted(self.symboltable.items()):
-                used = 0 if sym not in self.symusetable else self.symusetable[sym]
-                f.write('\t"%s": [0x%04X, %d],\n' % (sym, addr, used))
-            f.write('}\n')
+        try:
+            with open(mapfile, 'w') as f:
+                f.write('# List of symbols in Python dictionary format\n')
+                f.write('# Symbol: [address, total number of appearances]\n')
+                f.write('{\n')
+                for sym, addr in sorted(self.symboltable.items()):
+                    used = 0 if sym not in self.symusetable else self.symusetable[sym]
+                    f.write('\t"%s": [0x%04X, %d],\n' % (sym, addr, used))
+                f.write('}\n')
+        except Exception as e:
+            abort(f"Error trying to generate the file {filename}: " + str(e))
 
-    def save_memory(self, filename):
-        program = self.memory[self.memory_low:self.memory_high]
-        contentlen = len(program)
+    def save_binfile(self, filename):
+        size = self.memory_high - self.memory_low + 1
+        self.save_memory(filename, self.memory_low, size)
+        self.save_mapfile(filename)
+
+    def save_memory(self, filename, start, size):
+        memory = self.memory[start:start+size]
+        print("[abasm] saving memory area 0x%04X:0x%04X (%d bytes) in %s" %  (start, start+size, size, filename))
+        contentlen = len(memory)
         if contentlen > 0:
             # check that something has been assembled at all
-            with open(filename, 'wb') as fd:
-                fd.write(program)
-        self.save_mapfile(filename)
+            try:
+                with open(filename, 'wb') as fd:
+                    fd.write(memory)
+            except Exception as e:
+                abort(f"Error trying to generate the file {filename}: " + str(e))
 
     def write_listinfo(self, line):
         if self.listingfile == None:
@@ -284,7 +310,10 @@ class AsmContext:
             self.active_macro.code.append(line)
             return 0, []
 
-        if (self.ifstate < IFSTATE_DISCART) or inst in ("IF", "ELSE", "ELSEIF", "ENDIF"):
+        assemble = (self.ifstate < IFSTATE_DISCART) or inst in ("IF", "ELSE", "ELSEIF", "ENDIF")
+        assemble = assemble and ((self.whilestate < WSTATE_FIND_END) or inst in ("WHILE", "WEND"))
+        assemble = assemble and ((self.repeatstate < RSTATE_FIND_END) or inst in ("REPEAT", "REND"))
+        if assemble:
             try:
                 # get the pointer to the op_XXXX func
                 # not recognized opcodes or directives are labels in Maxam dialect BUT they
@@ -371,12 +400,12 @@ class AsmContext:
         # but copied to a global identifier in g_context for warning printouts
         self.currentfile = ""
         self.currentline = ""
-        linenumber = 0
+        self.linenumber = 0
         srccode = self.read_srcfile(inputfile)
 
-        while linenumber < len(srccode):
-            self.currentline = srccode[linenumber].replace("\t", "  ")
-            self.currentfile = inputfile + ":" + str(linenumber)   
+        while self.linenumber < len(srccode):
+            self.currentline = srccode[self.linenumber].replace("\t", "  ")
+            self.currentfile = inputfile + ":" + str(self.linenumber)   
             statements = self.get_statements(self.currentline)
             while len(statements) > 0:
                 opcode = statements.pop(0)
@@ -385,7 +414,7 @@ class AsmContext:
                 if extracode:
                     statements = extracode + statements
                 if p == 2:
-                    lstout = "%06d  %04X  %-16s\t%s" % (linenumber, self.origin, self.lstcode, opcode)
+                    lstout = "%06d  %04X  %-16s\t%s" % (self.linenumber, self.origin, self.lstcode, opcode)
                     self.lstcode = ""
                     self.write_listinfo(lstout)
                 self.origin = self.origin + incbytes
@@ -393,9 +422,14 @@ class AsmContext:
                     abort(f"memory full. Next address is {self.origin}")
 
             storedline = int(self.currentfile.rsplit(':', 1)[1])
-            if self.currentfile.startswith(inputfile + ":") and storedline != linenumber:
-                linenumber = storedline
-            linenumber += 1
+            if self.currentfile.startswith(inputfile + ":") and storedline != self.linenumber:
+                self.linenumber = storedline
+            if self.whilestate == WSTATE_LOOP:
+                self.linenumber = self.whileline
+            elif self.repeatstate == RSTATE_LOOP:
+                self.linenumber = self.repeatloop[0]
+            else:
+                self.linenumber += 1
 
     def assemble(self, inputfile, outputfile, startaddr):
         print("[abasm] assembler version", __version__)
@@ -411,11 +445,19 @@ class AsmContext:
                 print(item[0])
             sys.exit(1)
 
+        if self.whilestate != WSTATE_DISABLED:
+            print("[abasm] Error: mismatched WHILE and WEND statements")
+            sys.exit(1)
+
+        if self.repeatstate != RSTATE_DISABLED:
+            print("[abasm] Error: mismatched REPEAT and REND statements")
+            sys.exit(1)
+
         if self.active_macro is not None:
             print("[abasm] Error: missing ENDM directive for macro", self.active_macro.name)
             sys.exit(1)
 
-        self.save_memory(outputfile)
+        self.save_binfile(outputfile)
 
 
 g_context = AsmContext()
@@ -699,9 +741,14 @@ def op_ORG(p, opargs):
     return 0
 
 def op_SAVE(p, opargs):
-    # Not currently implemented. WinAPE uses it to write bin files with
-    # AMSDOS headers but Abasm relies in DSK tool or similar applications
-    warning ("directive SAVE found but ignored, use DSK tool instead")
+    if p == 2:
+        check_args(opargs, 3)
+        fname, expr1, expr2 = opargs.split(',')
+        fname = fname.replace('"', '')
+        fname = fname.replace("'", '')
+        start = g_context.parse_expression(expr1, word=1)
+        size = g_context.parse_expression(expr2, word=1)
+        g_context.save_memory(fname, start, size)
     return 0
 
 def op_DUMP(p, opargs):
@@ -834,6 +881,9 @@ def op_LET(p, opargs):
 
 def op_READ(p, opargs):
     # WinAPE directive to include other assembly source code
+    if g_context.whilestate != WSTATE_DISABLED or g_context.repeatstate != RSTATE_DISABLED:
+        abort("READ is not allowed inside WHILE or REPEAT loops")
+
     if len(g_context.include_stack) > 5:
         abort("too deep read/include tree")
 
@@ -869,39 +919,66 @@ def op_INCBIN(p, opargs):
     g_context.store(p, content)
     return len(content)
 
-def op_FOR(p, opargs):
-    args = opargs.split(',', 1)
-    limit = g_context.parse_expression(args[0])
-    bytes = 0
-    for iterate in range(limit):
-        g_context.symboltable['FOR'] = iterate
-        bytes += g_context.assemble_instruction(p, args[1].strip())
-
-    if limit != 0:
-        del g_context.symboltable['FOR']
-    return bytes
-
-
 def op_WHILE(p, opargs):
     do = g_context.parse_expression(opargs)
     if do != 0:
-        print("AAA While DO")
+        if g_context.whileline != None and g_context.whileline != g_context.linenumber:
+            abort("nesting is not supported in WHILE loops")
+        g_context.whileline = g_context.linenumber
+        g_context.whilestate = WSTATE_ASSEMBLE
     else:
-        print("AAA don't DO")
+        g_context.whileline = None
+        g_context.whilestate = WSTATE_FIND_END
     return 0
 
 def op_WEND(p, opargs):
-    print("AAA WEND")
+    if g_context.whilestate == WSTATE_DISABLED:
+        abort("unexpected WEND")
+    elif g_context.whilestate == WSTATE_ASSEMBLE:
+        g_context.whilestate = WSTATE_LOOP
+    else:
+        g_context.whilestate = WSTATE_DISABLED
     return 0
 
-def op_ASSERT(p,opargs):
+def op_REPEAT(p, opargs):
+    value = 0
+    if g_context.repeatloop != None:
+        line, value = g_context.repeatloop
+        if line != g_context.linenumber:
+            abort("nesting is not supported in REPEAT loops")
+    else:
+        value = g_context.parse_expression(opargs)
+
+    if value > 0:
+        g_context.repeatloop = (g_context.linenumber, value)
+        g_context.repeatstate = RSTATE_ASSEMBLE
+    else:
+        g_context.repeatloop = None
+        g_context.repeatstate = RSTATE_FIND_END
+    return 0
+
+def op_REND(p, opargs):
+    if g_context.repeatstate == RSTATE_DISABLED:
+        abort("unexpected REND")
+    elif g_context.repeatstate == RSTATE_ASSEMBLE:
+        line, value = g_context.repeatloop
+        value = value - 1
+        g_context.repeatloop = (line, value)
+        g_context.repeatstate = RSTATE_LOOP
+    else:
+        g_context.repeatstate = RSTATE_DISABLED
+    return 0
+
+def op_ASSERT(p, opargs):
     check_args(opargs,1)
-    if (p==2):
+    if p == 2:
         value = g_context.parse_expression(opargs)
         if value == 0:
             abort("Assertion failed (" + opargs + ")")
     return 0
 
+def op_STOP(p, opargs):
+    abort("directive STOP found")
 
 def op_NOP(p, opargs):
     return store_noargs_type(p, opargs, [0x00])
