@@ -54,8 +54,9 @@ class AsmContext:
     def __init__(self):
         self.reset()
         self.registernames = [
-            "A", "F", "B", "C", "D", "E", "H", "L",
-            "AF", "BC", "DE", "HL", "SP", "IX", "IY", "AF'"
+            "A", "F", "B", "C", "D", "E", "H", "L", "I", "R",
+            "IXL", "IXH", "IYL", "IYH", "AF", "BC", "DE", "HL",
+            "SP", "IX", "IY", "AF'"
         ]
 
     def reset(self):
