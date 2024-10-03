@@ -30,6 +30,7 @@
     - [STOP](#stop)
     - [WHILE](#while)
   - [Expresiones y Caracteres Especiales](#expresiones-y-caracteres-especiales)
+- [Historial de cambios](#historial-de-cambios)
 
 
 # Introducción
@@ -53,7 +54,7 @@ En cualquier caso, si lo que buscas es eficiencia en vez de portabilidad y facil
 Para ensamblar un archivo fuente de código en ensamblador (por ejemplo, `program.asm`), basta con ejecutar el siguiente comando:
 
 ```
-python3 abasm.py <program.asm> [opciones]
+python3 ABASM.py <program.asm> [opciones]
 ```
 
 Este comando ensamblará el archivo `program.asm` y generará un fichero binario con el mismo nombre, `program.bin`.
@@ -63,26 +64,26 @@ Este comando ensamblará el archivo `program.asm` y generará un fichero binario
 - `-d` o `--define`: Permite definir pares `SÍMBOLO=VALOR`. Dichos símbolos pueden utilizarse en el código como constantes o etiquetas. Esta opción se puede emplear múltiples veces para definir varios símbolos.
 - `--start`: Define la dirección de memoria que se tomará como punto de inicio para la carga del programa. Por defecto, esta dirección es `0x4000`, aunque también puede establecerse directamente dentro del código usando la directiva `ORG`.
 - `-o` o `--output`: Especifica el nombre del archivo binario de salida. Si no se utiliza esta opción, se empleará el nombre del archivo de entrada cambiando su extensión por `.bin`.
-- `-o` o `--version`: Muestra el número de versión de Abasm.
+- `-o` o `--version`: Muestra el número de versión de ABASM.
 
 ## Ejemplos de uso
 
 Definir una constante utilizada en el código:
 
 ```
-python3 abasm.py program.asm -d MY_CONSTANT=100
+python3 ABASM.py program.asm -d MY_CONSTANT=100
 ```
 
 Establecer el nombre exacto del archivo binario ensamblado:
 
 ```
-python3 abasm.py program.asm -o output.bin
+python3 ABASM.py program.asm -o output.bin
 ```
 
 Establecer la dirección de inicio en memoria que debe considerarse para el cálculo de los saltos y otras referencias relativas utilizadas en el código fuente, por ejemplo, a `0x2000`:
 
 ```
-python3 abasm.py program.asm --start 0x2000
+python3 ABASM.py program.asm --start 0x2000
 ```
 
 ¡Claro! Aquí tienes el texto original en español con las correcciones ortográficas y gramaticales realizadas para mejorar el estilo:
@@ -138,9 +139,9 @@ La primera columna indica el número secuencial de la instrucción en el archivo
 
 ## Archivo de símbolos
 
-ABASM también genera un listado de todos los símbolos encontrados y su valor asociado. La mayoría de ellos serán etiquetas utilizadas para marcar posiciones de salto o ubicaciones de memoria donde se han almacenado ciertos datos.
+ABASM también genera un listado de todos los símbolos globales encontrados y su valor asociado. La mayoría de ellos serán etiquetas utilizadas para marcar posiciones de salto o ubicaciones de memoria donde se han almacenado ciertos datos. Los símbolos locales son aquellos que comienzan con el caracter '.'.
 
-La extensión de este archivo es `.MAP` y su formato es el de un diccionario de Python. Esto permite emplear el archivo en otras utilidades (como los empaquetadores DSK y CDT) y utilizar los símbolos en lugar de sus valores. En la documentación sobre las utilidades DSK y CDT se puede encontrar un ejemplo de uso de este archivo.
+La extensión del fichero de símbolos es `.MAP` y su formato es el de un diccionario de Python. Esto permite emplear el archivo en otras utilidades (como los empaquetadores DSK y CDT) y utilizar los símbolos en lugar de sus valores. En la documentación sobre las utilidades DSK y CDT se puede encontrar un ejemplo de uso de este archivo.
 
 ```
 # Lista de símbolos en formato de diccionario de Python
@@ -153,7 +154,7 @@ La extensión de este archivo es `.MAP` y su formato es el de un diccionario de 
 
 # Sintaxis
 
-La sintaxis de ABASM está diseñada para asemejarse lo máximo posible a la del ensamblador MAXAM. Esta sintaxis es bastante compatible con la soportada por el simulador WinAPE. Además, ABASM admite algunas variaciones que también lo hacen compatible con la sintaxis utilizada por el simulador Retro Virtual Machine. El objetivo es permitir que los desarrolladores que usen ABASM cuenten con varias herramientas para la depuración y prueba de sus programas.
+La sintaxis de ABASM está diseñada para asemejarse lo máximo posible a la del ensamblador MAXAM. Esta sintaxis es bastante compatible con la soportada por el simulador WinAPE. Además, ABASM admite algunas variaciones que también lo hacen compatible con la sintaxis utilizada por el simulador Retro Virtual Machine. El objetivo es permitir que los desarrolladores cuenten con varias herramientas para la depuración y prueba de sus programas.
 
 A continuación se muestra un ejemplo sencillo de un programa escrito utilizando la sintaxis de ABASM. Este ejemplo muestra tres de los elementos básicos de cualquier programa escrito en ensamblador: etiquetas, instrucciones y comentarios. Un cuarto elemento serían las directivas del ensamblador, comandos dirigidos al propio ABASM en lugar de al procesador Z80. En este capítulo también repasaremos el listado completo de directivas soportadas.
 
@@ -164,21 +165,21 @@ Un aspecto importante y común a los cuatro elementos es que ABASM no discrimina
 ; Es una variación del primer ejemplo presentado en el
 ; manual de MAXAM
 
-.main             ; define una etiqueta 'main'
+main              ; define la etiqueta global 'main'
     ld a,32       ; primer código de letra ASCII en el acumulador
 
-.loop             ; define una etiqueta 'loop'
+.loop             ; define la etiqueta local 'loop'
     call &BB5A    ; LLAMA a txt_output, la rutina de salida del firmware
     inc  a        ; pasa al siguiente carácter
     cp   128      ; ¿hemos terminado con todos?
-    jr   c,loop   ; no - regresa para procesar el siguiente
+    jr   c,.loop  ; no - regresa para procesar el siguiente
 
 .end  
-    jp   end      ; bucle infinito usado como punto final del programa
+    jp   .end     ; bucle infinito usado como punto final del programa
 
 ```
 
-Otro aspecto importante es que ABASM ignora el símbolo '.' al principio de las etiquetas. Una vez más, el objetivo es soportar la mayor cantidad posible de dialectos de ensamblador. De esta forma, .MAIN y MAIN serían la misma etiqueta.
+Otro aspecto importante de ABASM es que permite usar el símbolo '.' al principio de las etiquetas para definir las que son locales y solo accesibles desde el fichero en el que son declaradas.
 
 ## Comentarios
 
@@ -207,7 +208,7 @@ Las etiquetas en el código ensamblador son nombres simbólicos utilizados para 
 
 - Como puntos de entrada a bloques de código: Ayudan a hacer el código más legible y fácil de mantener al proporcionar nombres descriptivos a secciones importantes del programa.
 
-Todas las etiquetas son globales en ABASM, lo que significa que deben ser únicas sin importar cuántos archivos dividan el código fuente.
+Todas las etiquetas son **globales** en ABASM salvo que empiecen con el caracter '.', lo que significa que deben ser únicas sin importar en cuántos archivos se divida el código fuente. Si se desea repetir etiquetas en diferentes ficheros y que estas no sean visibles desde el resto (o no generen conflictos), deben comenzar por el caracter '.', lo que las marca como etiquetas **locales**. Esto también evitará que dichas etiquetas a aparezcan en el archivo de símbolos.
 
 ## Instrucciones
 
@@ -219,13 +220,26 @@ Un opcode (abreviatura de "operation code" o código de operación) es la parte 
 ld a,32
 ```
 
-El *opcode* sería 'ld a', mientras que el operando sería '32'. El significado del opcode es 'cargar en el registro A', mientras que el valor a cargar sería directamente el número 32.
+El *opcode* (el nemotécnico asociado más bien) sería 'ld a', mientras que el operando sería '32'. El significado del opcode es 'cargar en el registro A', mientras que el valor a cargar sería directamente el número 32.
 
-La explicación de todos los opcodes soportados por el procesador Z80 queda fuera del alcance de este manual. Sin embargo, el lector interesado puede consultar cualquiera de los siguientes recursos:
+ABASM soporta todas las instrucciones estándar del Z80. Con la intención de mejorar la compatibilidad con la sintaxis de WinAPE, algunas instrucciones como AND, CP, OR y SUB aceptan incluir el registro A como parte del *opcode*. Sin embargo, se prefiere la forma abreviada sin el A explícito, y se emite un *warning* si se encuentra el formato extendido (por ejemplo, `CP A, &0A` es equivalente a `CP &0A` pero generará un *warning* durante el ensamblado).
 
-- [Tabla resumen de los opcodes soportados por el Z80](https://clrhome.org/table)
-- [Z80 Heaven](http://z80-heaven.wikidot.com/)
-- [Manual oficial del Z80](https://www.zilog.com/docs/z80/um0080.pdf)
+A nivel de operandos, ABASM es totalmente compatible con los registros estándar de 8 bits del Z80: A, B, C, D, E, H y L, así como con los registros especiales de 8 bits I y R. También es compatible con todos los registros estándar de 16 bits del Z80: AF, BC, DE, HL y SP, junto con los registros de índice IX e IY. Además, ABASM ofrece soporte para el uso no documentado de las porciones de 8 bits de los registros IX e IY, permitiendo el uso de IXL, IXH, IYL e IYH. El registro alternativo AF' también se puede utilizar en las instrucciones adecuadas, como con la instrucción `EX AF, AF'`.
+
+Por último, ABASM soporta las condiciones habituales NZ, Z, NC, C, PO, PE, P y M en las instrucciones diseñadas para tal fin, como, por ejemplo, las intrucciones de salto condicional.
+
+Para consultar detalles específicos sobre cada instrucción del Z80 se pueden visitar las siguientes fuentes (en inglés):
+
+- [@ClrHome Tabla de Instrucciones del Z80](https://clrhome.org/table/): Una tabla bien organizada que proporciona un resumen conciso de todas las instrucciones del Z80.
+- [Documentación oficial de Zilog para el procesador Z80](https://www.zilog.com/docs/z80/um0080.pdf): Especialmente útiles son las dos últimas secciones tituladas *Z80 CPU Instructions* y *Z80 Instruction Set*.
+- [Z80 Heaven](http://z80-heaven.wikidot.com/): Una web de referencia con información detallada de cada instrucción.
+- [Tiempos del Z80 en Amstrad CPC - Hoja de trucos](https://www.cpcwiki.eu/imgs/b/b4/Z80_CPC_Timings_cheat_sheet.20230709.pdf): Este documento es invaluable para comprender el costo real en tiempo de todas las instrucciones del Z80. Aunque muchas fuentes enumeran los tiempos de las instrucciones en ciclos o estados T, el Amstrad CPC tiene su propia temporización debido a que el Gate Array pausa el procesador Z80 para acceder a la memoria de video. Por lo tanto, es más preciso medir el tiempo de cualquier instrucción en el Amstrad CPC en función del costo de la instrucción NOP.
+
+En español, se pueden consultar los siguientes enlaces:
+
+- [Resumen sobre el procesador Z80](https://ia801404.us.archive.org/7/items/z80-cpu-manual/ES%20-%20Z80%20CPU%20Manual.pdf): Un documento de 19 páginas con un buen resumen del procesador Z80 y su juego de instrucciones.
+- [Juego de instrucciones del microprocesador Z80](https://www.infor.uva.es/~bastida/OC/Tablas%20Z80%20SPARC%20y%20ASCII.pdf): Otro buen documento centrado en las instrucciones soportadas por el procesador Z80.
+- [Dominando el ensamblador Z80 (DEZ80) de la Universidad de Alicante](https://www.cpcwiki.eu/index.php/DEZ80): Serie de librosCurso de programación en ensamblador para el Amstrad CPC impartido por el profesor Francisco Gallego y en formato de vídeos.
 
 ## Directivas del Ensamblador
 
@@ -403,7 +417,7 @@ REND
 
 - ORG <dirección de memoria>
 
-Especifica la dirección de memoria que debe considerarse como la actual a partir de ese momento para cualquier cálculo necesario, como establecer el valor de una etiqueta. Lo habitual es que esta directiva aparezca como la primera instrucción del código fuente, aunque puede substituirse por la opción de Abasm `--start`.
+Especifica la dirección de memoria que debe considerarse como la actual a partir de ese momento para cualquier cálculo necesario, como establecer el valor de una etiqueta. Lo habitual es que esta directiva aparezca como la primera instrucción del código fuente, aunque puede substituirse por la opción de ABASM `--start`.
 
 ```
 ORG 0x4000
@@ -476,8 +490,7 @@ Cuando una instrucción o directiva requiere un número como parámetro, se pued
   
 (1) Un único carácter entre comillas dobles puede usarse para representar el valor ASCII de ese carácter en expresiones numéricas. Ni las comillas dobles ni las simples pueden aparecer dentro de una cadena de texto.
 
+# Historial de cambios
 
-
-
-
-
+- Versión 1.0 - 04/10/2024
+  * Primera versión liberada.

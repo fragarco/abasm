@@ -30,6 +30,7 @@
     - [STOP](#stop)
     - [WHILE](#while)
   - [Expressions and Special Characters](#expressions-and-special-characters)
+- [Changelog](#changelog)
 
 # Introduction
 
@@ -159,21 +160,21 @@ An important aspect of all four elements is that ABASM is case-insensitive. Ther
 ; It's a variation of the first example presented in the
 ; MAXAM manual
 
-.main             ; defines a label 'main'
+main              ; defines the global label 'main'
     ld a,32       ; first ASCII letter code in accumulator
 
-.loop             ; defines a label 'loop'
+.loop             ; defines the local label 'loop'
     call &BB5A    ; CALL txt_output, the firmware output routine
     inc  a        ; move to next character
     cp   128      ; have we done them all?
-    jr   c,loop   ; no - go back for another one
+    jr   c,.loop  ; no - go back for another one
 
 .end  
-    jp   end      ; infinite loop used as the program's end point
+    jp   .end     ; infinite loop used as the program's end point
 
 ```
 
-Another important aspect is that ABASM ignores the '.' symbol at the beginning of any label. Once again, the goal is to support as many assembler dialects as possible. As a result, .MAIN and MAIN would be the same label.
+Another important aspect is that ABASM reserves the character '.' at the beginning of any label to designate local labels, which will only be accesible from within the source file where they got declared.
 
 ## Comments
 
@@ -202,7 +203,7 @@ Labels in assembly code are symbolic names used to mark a specific position in t
 
 - As entry points to code blocks: Labels help make the code more readable and maintainable by providing descriptive names to important sections of the program.
 
-All labels are global in ABASM, meaning they must be unique regardless of how many files the source code is divided into.
+All labels are **global** by default in ABASM, meaning they must be unique regardless of how many files the source code is divided into. To define **local** labels, only accesible within the file where they are declared, the label must start with the character '.'. This will prevent the label from appearing in the Symbol File too.
 
 ## Instructions
 
@@ -214,13 +215,21 @@ An opcode (short for operation code) is the part of an instruction that specifie
 ld a,32
 ```
 
-The *opcode* would be 'ld a', while the operand would be '32'. The meaning of the opcode is 'load into register A', and the value to load is the number 32.
+The *opcode* (or its nemotecnic more precisely) would be 'ld a', while the operand would be '32'. The meaning of the opcode is 'load into register A', and the value to load is the number 32.
 
-Explaining all the opcodes supported by the Z80 processor is beyond the scope of this manual. However, interested readers can consult any of the following resources:
+ABASM supports all standard Z80 instructions. To enhance compatibility with WinAPE syntax, instructions like AND, CP, OR, and SUB accept adding the A register as part of the *opcode*. However, the shorter form without the explicit A is preferred, and a warning will be issued if the extended format is encountered (e.g., `CP A, &0A` is equivalent to `CP &0A` but will issue a warning if found).
 
-- [Summary table of opcodes supported by the Z80](https://clrhome.org/table)
-- [Z80 Heaven](http://z80-heaven.wikidot.com/)
-- [Official Z80 manual](https://www.zilog.com/docs/z80/um0080.pdf)
+Regarding operands, ABASM fully supports all standard Z80 8-bit registers: A, B, C, D, E, H, and L, as well as the special 8-bit registers I and R. It also supports all standard Z80 16-bit registers: AF, BC, DE, HL, and SP, along with the index registers IX and IY. Additionally, ABASM provides support for the undocumented use of the 8-bit portions of the IX and IY registers, allowing for IXL, IXH, IYL, and IYH. The alternate AF' register is also supported for use in appropriate instructions, such as in the `EX AF, AF'` command.
+
+Lastly, ABASM supports all standard Z80 condition flags: NZ, Z, NC, C, PO, PE, P, and M.
+
+To learn more about each instruction, the following list of helpful reference sources can be consulted:
+
+- [@ClrHome Z80 Table of Instructions](https://clrhome.org/table/): A well-organized table that provides a concise summary of all Z80 instructions.
+- [Zilog's Official Documentation for the Z80 Processor](https://www.zilog.com/docs/z80/um0080.pdf): Especially useful are the last two sections titled *Z80 CPU Instructions* and *Z80 Instruction Set*.
+- [Z80 Heaven](http://z80-heaven.wikidot.com/): A web with a detailed information for each instruction.
+- [Z80 Timings on Amstrad CPC - Cheat Sheet](https://www.cpcwiki.eu/imgs/b/b4/Z80_CPC_Timings_cheat_sheet.20230709.pdf): This document is invaluable for understanding the real timing cost of all Z80 instructions. While many resources list instruction timing in cycles or T-states, the Amstrad CPC has its own timing due to the Gate Array pausing the Z80 to access video memory. Therefore, it's more accurate to measure timing on the Amstrad CPC based on the cost of the NOP instruction.
+
 
 ## Assembler Directives
 
@@ -398,7 +407,7 @@ REND
 
 - ORG <memory address>
 
-Specifies the memory address to be considered as the current address from that point forward for any necessary calculations, such as setting the value of a label. Typically, if this directive is used, it appears as the first instruction of the source code, although it's possible to replace it with the Abasm's command line parameter `--start`.
+Specifies the memory address to be considered as the current address from that point forward for any necessary calculations, such as setting the value of a label. Typically, if this directive is used, it appears as the first instruction of the source code, although it's possible to replace it with the ABASM's command line parameter `--start`.
 
 ```
 ORG 0x4000
@@ -470,3 +479,11 @@ When an instruction or directive requires a number as a parameter, you can use a
 - **>>** represents the shift right operator.
   
 (1) A single character enclosed in double quotes will be converted to its ASCII value in numerical expressions. Double and single quotes can be used to enclose strings but neither can appear in the string body.
+
+# Changelog
+
+- Version 1.0 - 04/10/2024
+  * First released version
+
+
+

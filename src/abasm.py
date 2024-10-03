@@ -138,17 +138,12 @@ class AsmContext:
         # it's a symbol which needs to be replaced
         testsymbol=''
         argcopy = ''
-        incurly = 0
         inquotes = False
 
         for c in arg + " ":
-            if c.isalnum() or c in '"_.{}' or incurly or inquotes:
+            if c.isalnum() or c in '"_.' or inquotes:
                 testsymbol += c
-                if c == '{':
-                    incurly += 1
-                elif c == '}':
-                    incurly -= 1
-                elif c == '"':
+                if c == '"':
                     inquotes = not inquotes
             else:
                 if testsymbol != '':
@@ -192,8 +187,8 @@ class AsmContext:
 
         try:
             narg = int(eval(argcopy))
-        except:
-            abort(f"syntax error in expression")
+        except Exception:
+            abort("syntax error in expression")
 
         if not signed:
             if byte:
@@ -210,17 +205,20 @@ class AsmContext:
         sym = sym.upper()
         if is_label and len(sym) and sym[0] == '.':
             # In maxam labels can start with '.' to allow labels similar to opcodes
-            sym = sym[1:]
+            # for Abasm this mean a local symbol that we don't want to export in our
+            # map file or to other ASM files that may include this one
+            sym = sym + '!' + self.currentfile.split(':')[0]
         if is_let: self.lettable[sym] = value
         self.symboltable[sym] = value
 
     def get_symbol(self, sym):
         sym = sym.upper()
         if sym[0] == '.':
-            sym = sym[1:]
+            # local symbol
+            sym = sym + '!' + self.currentfile.split(':')[0]
         
         if sym in self.symboltable:
-            self.symusetable[sym] = g_context.symusetable.get(sym,0)+1
+            self.symusetable[sym] = g_context.symusetable.get(sym,0) + 1
             return self.symboltable[sym]
         return None
 
@@ -266,8 +264,10 @@ class AsmContext:
                 f.write('# Symbol: [address, total number of appearances]\n')
                 f.write('{\n')
                 for sym, addr in sorted(self.symboltable.items()):
-                    used = 0 if sym not in self.symusetable else self.symusetable[sym]
-                    f.write('\t"%s": [0x%04X, %d],\n' % (sym, addr, used))
+                    if sym[0] != '.':
+                        # Only write global symbols 
+                        used = 0 if sym not in self.symusetable else self.symusetable[sym]
+                        f.write('\t"%s": [0x%04X, %d],\n' % (sym, addr, used))
                 f.write('}\n')
         except Exception as e:
             abort(f"Error trying to generate the file {filename}: " + str(e))
@@ -1131,11 +1131,6 @@ def op_SLA(p, opargs):
 
 def op_SRA(p, opargs):
     return store_store_cbshifts_type(p, opargs, 0x28)
-
-def op_SLL(p, opargs):
-    if p == 1:
-        warning("SLL doesn't do what you probably expect on z80b! Use SL1 if you know what you're doing.")
-    return store_store_cbshifts_type(p, opargs, 0x30)
 
 def op_SL1(p, opargs):
     return store_store_cbshifts_type(p, opargs, 0x30)
