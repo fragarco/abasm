@@ -264,7 +264,7 @@ class AsmContext:
         try:
             with open(mapfile, 'w') as f:
                 f.write('# List of symbols in Python dictionary format\n')
-                f.write('# Symbol: [address, total number of reads, module name]\n')
+                f.write('# Symbol: [address, total number of reads, file name]\n')
                 f.write('{\n')
                 for sym, (addr, modulename) in sorted(self.symboltable.items()):
                     if sym[0] != '.':
@@ -399,8 +399,14 @@ class AsmContext:
             index = index + 1
         return statements
 
-    def assembler_pass(self, p, inputfile):
+    def set_module(self, inputfile):
         self.modulename = os.path.basename(inputfile).upper()
+        if self.modulename in self.modules:
+            abort(f"file {self.modulename} was already assembled")
+        self.modules.append(self.modulename)
+
+    def assembler_pass(self, p, inputfile):
+        self.set_module(inputfile)
         self.currentfile = ""
         self.currentline = ""
         self.linenumber = 0
@@ -976,24 +982,6 @@ def op_LIMIT(p, opargs):
     check_args(opargs,1)
     if p == 2:
         g_context.limit = g_context.parse_expression(opargs)
-    return 0
-
-def op_TITLE(p, opargs):
-    check_args(opargs, 1)
-    # MAXAM directive without any impact in ABASM right now
-    # apart from giving some extra information
-    if p == 2:
-        title = opargs.replace('"', '')
-        print(f"[abasm] title: {title}")
-    return 0
-
-def op_MODULE(p, opargs):
-    check_args(opargs, 1)
-    modulename = opargs.strip().replace('"', '').upper()
-    if p == 1 and modulename in g_context.modules:
-        abort(f"module {modulename} was already declared")
-    g_context.modulename = modulename
-    g_context.modules.append(modulename)
     return 0
 
 def op_ASSERT(p, opargs):

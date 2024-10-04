@@ -21,7 +21,6 @@
     - [IF](#if)
     - [INCBIN](#incbin)
     - [MACRO](#macro)
-    - [MODULE](#module)
     - [LET](#let)
     - [LIMIT](#limit)
     - [READ](#read)
@@ -30,7 +29,6 @@
     - [PRINT](#print)
     - [SAVE](#save)
     - [STOP](#stop)
-    - [TITLE](#title)
     - [WHILE](#while)
   - [Expresiones y Caracteres Especiales](#expresiones-y-caracteres-especiales)
 - [Historial de cambios](#historial-de-cambios)
@@ -148,7 +146,7 @@ La extensión del fichero de símbolos es `.MAP` y su formato es el de un diccio
 
 ```
 # Lista de símbolos en formato de diccionario de Python
-# Símbolo: [dirección, número total de consultas (usos), nombre del módulo]
+# Símbolo: [dirección, número total de consultas (usos), nombre del archivo]
 {
 	"ENDLOOP": [0x4005, 2, "MAIN.ASM"],
 	"MAIN": [0x4000, 1, "MAIN.ASM"],
@@ -211,7 +209,7 @@ Las etiquetas en el código ensamblador son nombres simbólicos utilizados para 
 
 - Como puntos de entrada a bloques de código: Ayudan a hacer el código más legible y fácil de mantener al proporcionar nombres descriptivos a secciones importantes del programa.
 
-Todas las etiquetas son **globales** en ABASM salvo que empiecen con el caracter '.', lo que significa que deben ser únicas sin importar en cuántos archivos se divida el código fuente. Si se desea repetir etiquetas en diferentes ficheros y que estas no sean visibles desde el resto (o no generen conflictos), deben comenzar por el caracter '.', lo que las marca como etiquetas **locales** archivo o módulo (ver directiva MODULE). Esto también evitará que dichas etiquetas aparezcan en el archivo de símbolos.
+Todas las etiquetas son **globales** en ABASM salvo que empiecen con el caracter '.'. Las etiquetas globales deben ser únicas sin importar en cuántos archivos se divida el código fuente. Si se desea limitar la visibilidad de una etiqueta para que solo alcance al archivo donde se declara, deben comenzar por el caracter '.', lo que la define como etiqueta **local**. Las etiquetas locales no aparecerán en el archivo de símbolos. Hay que tener en cuenta que ni WinAPE ni Retro Virtual Machine soportan el concepto de etiquetas locales, así que su uso puede producir incompatibilidades con la sintaxis que soportan ambos simuladores.
 
 ## Instrucciones
 
@@ -376,18 +374,6 @@ main:
    get_screenPtr hl, 20, 10
 ``` 
 
-### MODULE
-
-- MODULE nombre
-
-Establece un nombre de módulo para todo el archivo o hasta encontrar otra ocurrencia de esta directiva. Por defecto, el nombre utilizado es el nombre del fichero ensamblado con su extensión. La definición de módulos es importante porque delimita el alcance las etiquetas locales y se utiliza también para detectar ficheros ensablados más de una vez si están referenciados desde multiples archivos fuente.
-
-```
-MODULE utils
-
-my_util_routine:
-```
-
 ### LET
 
 - LET símbolo=valor
@@ -479,12 +465,6 @@ SAVE "myscreen.bin",&C000,&4000
 
 Detiene inmediatamente el proceso de ensamblado mostrando un error.
 
-### TITLE
-
-- TITLE texto
-
-En MAXAM, esta directiva servia para establecer el encabezado en las impresiones de código. En ABASM, no tiene utilidad, más allá de imprimir por la salida el texto indicado, de forma parecida a lo que hace la directiva PRINT.
- 
 ### WHILE
 
 - WHILE expresión lógica `bloque de código` WEND
@@ -526,7 +506,7 @@ Cuando una instrucción o directiva requiere un número como parámetro, se pued
 # Historial de cambios
 
 - Versión 1.1 - ??/??/????
-  * Soporte para las directivas TITLE, MODULE y LIMIT.
+  * Soporte para la directiva LIMIT.
 
 - Versión 1.0 - 03/10/2024
   * Primera versión liberada.
