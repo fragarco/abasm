@@ -20,7 +20,7 @@ along with this program; if not, write to the Free Software
 Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 """
 __author__='Javier "Dwayne Hicks" Garcia'
-__version__='1.0'
+__version__='1.1'
 
 import sys, os
 import re
@@ -63,6 +63,9 @@ class AsmContext:
         self.outputfile = ""
         self.listingfile = None
         self.origin = 0x4000
+        self.limit  = 65536
+        self.modulename = ""
+        self.modules = []
         self.include_stack = []
         self.symboltable = {}
         self.lettable = {}
@@ -207,19 +210,19 @@ class AsmContext:
             # In maxam labels can start with '.' to allow labels similar to opcodes
             # for Abasm this mean a local symbol that we don't want to export in our
             # map file or to other ASM files that may include this one
-            sym = sym + '!' + self.currentfile.split(':')[0]
+            sym = sym + '!' + self.modulename
         if is_let: self.lettable[sym] = value
-        self.symboltable[sym] = value
+        self.symboltable[sym] = (value, self.modulename)
 
     def get_symbol(self, sym):
         sym = sym.upper()
         if sym[0] == '.':
             # local symbol
-            sym = sym + '!' + self.currentfile.split(':')[0]
+            sym = sym + '!' + self.modulename
         
         if sym in self.symboltable:
-            self.symusetable[sym] = g_context.symusetable.get(sym,0) + 1
-            return self.symboltable[sym]
+            self.symusetable[sym] = g_context.symusetable.get(sym, 0) + 1
+            return self.symboltable[sym][0]
         return None
 
     def process_label(self, p, label):
@@ -261,13 +264,13 @@ class AsmContext:
         try:
             with open(mapfile, 'w') as f:
                 f.write('# List of symbols in Python dictionary format\n')
-                f.write('# Symbol: [address, total number of appearances]\n')
+                f.write('# Symbol: [address, total number of reads, module name]\n')
                 f.write('{\n')
-                for sym, addr in sorted(self.symboltable.items()):
+                for sym, (addr, modulename) in sorted(self.symboltable.items()):
                     if sym[0] != '.':
                         # Only write global symbols 
                         used = 0 if sym not in self.symusetable else self.symusetable[sym]
-                        f.write('\t"%s": [0x%04X, %d],\n' % (sym, addr, used))
+                        f.write('\t"%s": [0x%04X, %d, "%s"],\n' % (sym, addr, used, modulename))
                 f.write('}\n')
         except Exception as e:
             abort(f"Error trying to generate the file {filename}: " + str(e))
@@ -397,8 +400,7 @@ class AsmContext:
         return statements
 
     def assembler_pass(self, p, inputfile):
-        # file references are local, so assembler_pass can be called recursively (op_READ)
-        # but copied to a global identifier in g_context for warning printouts
+        self.modulename = os.path.basename(inputfile).upper()
         self.currentfile = ""
         self.currentline = ""
         self.linenumber = 0
@@ -415,16 +417,13 @@ class AsmContext:
                 if extracode:
                     statements = extracode + statements
                 if p == 2:
-                    lstout = "%06d  %04X  %-16s\t%s" % (self.linenumber, self.origin, self.lstcode, opcode)
+                    fname = os.path.basename(inputfile)[0:13]
+                    lstout = "%-13s %06d  %04X  %-16s\t%s" % (fname, self.linenumber, self.origin, self.lstcode, opcode)
                     self.lstcode = ""
                     self.write_listinfo(lstout)
                 self.origin = self.origin + incbytes
-                if self.origin > 65536:
-                    abort(f"memory full. Next address is {self.origin}")
-
-            storedline = int(self.currentfile.rsplit(':', 1)[1])
-            if self.currentfile.startswith(inputfile + ":") and storedline != self.linenumber:
-                self.linenumber = storedline
+                if self.origin > self.limit:
+                    abort(f"memory full. Current limit is set to {self.limit}")
             if self.whilestate == WSTATE_LOOP:
                 self.linenumber = self.whileline
             elif self.repeatstate == RSTATE_LOOP:
@@ -885,18 +884,21 @@ def op_READ(p, opargs):
     if g_context.whilestate != WSTATE_DISABLED or g_context.repeatstate != RSTATE_DISABLED:
         abort("READ is not allowed inside WHILE or REPEAT loops")
 
+    if g_context.active_macro != None:
+        abort("READ is no allowed inside a MACRO code")
+
     if len(g_context.include_stack) > 5:
-        abort("too deep read/include tree")
+        abort("too deep READ tree")
 
     path = re.search(r'(?<=["\'])(.*?)(?=["\'])', opargs)
     if path == None:
         abort("wrong path specified in the READ directive")
-    g_context.include_stack.append(g_context.currentfile)
+    g_context.include_stack.append((g_context.currentfile, g_context.linenumber))
     filename = os.path.join(os.path.dirname(g_context.currentfile), path.group(0))
     if not os.path.exists(filename):
         abort("couldn't access to the file " + filename)
     g_context.assembler_pass(p, filename)
-    g_context.currentfile = g_context.include_stack.pop()
+    g_context.currentfile, g_context.linenumber = g_context.include_stack.pop()
     return 0
 
 def op_INCBIN(p, opargs):
@@ -914,8 +916,8 @@ def op_INCBIN(p, opargs):
         with open(filename, 'rb') as fd:
             content = fd.read()
         nbytes = len(content) - offset if len(args) < 3 else g_context.parse_expression(args[2].strip())
-    except:
-        abort("cannot read the content of the binary file")
+    except Exception as e:
+        abort("cannot read the content of the binary file: " + str(e))
     content = content[offset: offset + nbytes]
     g_context.store(p, content)
     return len(content)
@@ -968,6 +970,30 @@ def op_REND(p, opargs):
         g_context.repeatstate = RSTATE_LOOP
     else:
         g_context.repeatstate = RSTATE_DISABLED
+    return 0
+
+def op_LIMIT(p, opargs):
+    check_args(opargs,1)
+    if p == 2:
+        g_context.limit = g_context.parse_expression(opargs)
+    return 0
+
+def op_TITLE(p, opargs):
+    check_args(opargs, 1)
+    # MAXAM directive without any impact in ABASM right now
+    # apart from giving some extra information
+    if p == 2:
+        title = opargs.replace('"', '')
+        print(f"[abasm] title: {title}")
+    return 0
+
+def op_MODULE(p, opargs):
+    check_args(opargs, 1)
+    modulename = opargs.strip().replace('"', '').upper()
+    if p == 1 and modulename in g_context.modules:
+        abort(f"module {modulename} was already declared")
+    g_context.modulename = modulename
+    g_context.modules.append(modulename)
     return 0
 
 def op_ASSERT(p, opargs):

@@ -21,6 +21,8 @@
     - [IF](#if)
     - [INCBIN](#incbin)
     - [MACRO](#macro)
+    - [MODULE](#module)
+    - [LIMIT](#limit)
     - [LET](#let)
     - [READ](#read)
     - [REPEAT](#repeat)
@@ -28,6 +30,7 @@
     - [PRINT](#print)
     - [SAVE](#save)
     - [STOP](#stop)
+    - [TITLE](#title)
     - [WHILE](#while)
   - [Expressions and Special Characters](#expressions-and-special-characters)
 - [Changelog](#changelog)
@@ -122,15 +125,15 @@ For the programmer’s reference, the assembly process also generates a file con
 Continuing with the previous example, the generated `.LST` file would contain the following:
 
 ```
-000001  4000               	org  0x4000
-000002  4000               	main
-000003  4000  3E FF        	ld   a, 0xFF
-000004  4002  32 00 C0     	ld  (0xC000), a
-000005  4005               	endloop
-000006  4005  C3 05 40     	jp endloop
+main.asm      000001  4000               	org  0x4000
+main.asm      000002  4000               	main
+main.asm      000003  4000  3E FF        	ld   a, 0xFF
+main.asm      000004  4002  32 00 C0     	ld  (0xC000), a
+main.asm      000005  4005               	endloop
+main.asm      000006  4005  C3 05 40     	jp endloop
 ```
 
-The first column indicates the sequential line number in the source code. The second column shows the memory location where the generated code should be placed (if any, since some directives and labels do not generate binary code). The third column displays the binary code produced by assembling the instruction, and the last column shows the original instruction.
+The first column indicates the source module or archive. The second column shows the sequential line number in the source code. The third column indicates the memory location where the generated code was placed (if any, since some directives and labels do not generate binary code). The fourth column displays the binary code produced by assembling the instruction, and the last column shows the original instruction.
 
 ## Symbol File
 
@@ -140,10 +143,10 @@ The extension of this file is `.MAP`, and it is formatted as a Python dictionary
 
 ```
 # List of symbols in Python dictionary format
-# Symbol: [address, total number of appearances]
+# Symbol: [address, total number of reads (uses), module name]
 {
-	"ENDLOOP": [0x4005, 2],
-	"MAIN": [0x4000, 1],
+	"ENDLOOP": [0x4005, 2, "MAIN.ASM"],
+	"MAIN": [0x4000, 1, "MAIN.ASM"],
 }
 ```
 
@@ -174,7 +177,7 @@ main              ; defines the global label 'main'
 
 ```
 
-Another important aspect is that ABASM reserves the character '.' at the beginning of any label to designate local labels, which will only be accesible from within the source file where they got declared.
+Another important aspect is that ABASM reserves the character '.' at the beginning of any label to designate local labels, which will only be accesible from within the source file or module where they got declared.
 
 ## Comments
 
@@ -203,7 +206,7 @@ Labels in assembly code are symbolic names used to mark a specific position in t
 
 - As entry points to code blocks: Labels help make the code more readable and maintainable by providing descriptive names to important sections of the program.
 
-All labels are **global** by default in ABASM, meaning they must be unique regardless of how many files the source code is divided into. To define **local** labels, only accesible within the file where they are declared, the label must start with the character '.'. This will prevent the label from appearing in the Symbol File too.
+All labels are **global** by default in ABASM, meaning they must be unique regardless of how many files the source code is divided into. To define **local** labels, only accesible within the file or module where they are declared (check the MODULE directive), they must start with the character '.'. This will prevent the label from appearing in the Symbol File too.
 
 ## Instructions
 
@@ -363,6 +366,30 @@ main:
    get_screenPtr hl, 20, 10
 ``` 
 
+### MODULE
+
+- MODULE name
+
+Sets a given name for the whole file or until a new occurrence of MODULE is found. If this directive is not used, the name of the file will be taken as the module name. Local labels are only accesible from within the module where they are declared. Finally, module names allow ABASM to detect when a module or file has been included more than once, issuing the appropiate error in that case.
+
+```
+MODULE utils
+
+my_util_routine:
+```
+
+### LIMIT
+
+- LIMIT memory_address
+
+Sets the maximum memory address that the assembled program can reach. The provided value can be either a number or a numerical expression. By default, this value is set to 65,536 (64K).
+
+```
+LIMIT &C000   ; no code can be written inside the video memory which starts at &C000
+ORG &C000
+LD A, &FF     ; this line will cause an error
+```
+
 ### LET
 
 - LET symbol=value
@@ -405,7 +432,7 @@ REND
 
 ### ORG
 
-- ORG <memory address>
+- ORG memory_address
 
 Specifies the memory address to be considered as the current address from that point forward for any necessary calculations, such as setting the value of a label. Typically, if this directive is used, it appears as the first instruction of the source code, although it's possible to replace it with the ABASM's command line parameter `--start`.
 
@@ -442,6 +469,12 @@ SAVE "myscreen.bin",&C000,&4000
 - STOP
 
 Stops the assembly process issuing an error.
+
+### TITLE
+
+- TITLE text
+
+MAXAM used this directive to add a title to the source code printed in paper. In ABASM, it prints in the standar output the text, more or less doing the same than the PRINT directive.
 
 ### WHILE
 
@@ -482,7 +515,10 @@ When an instruction or directive requires a number as a parameter, you can use a
 
 # Changelog
 
-- Version 1.0 - 04/10/2024
+- Version 1.1 - ??/??/????
+  * Support for directives TITLE, MODULE and LIMIT
+
+- Version 1.0 - 03/10/2024
   * First released version
 
 

@@ -21,13 +21,16 @@
     - [IF](#if)
     - [INCBIN](#incbin)
     - [MACRO](#macro)
+    - [MODULE](#module)
     - [LET](#let)
+    - [LIMIT](#limit)
     - [READ](#read)
     - [REPEAT](#repeat)
     - [ORG](#org)
     - [PRINT](#print)
     - [SAVE](#save)
     - [STOP](#stop)
+    - [TITLE](#title)
     - [WHILE](#while)
   - [Expresiones y Caracteres Especiales](#expresiones-y-caracteres-especiales)
 - [Historial de cambios](#historial-de-cambios)
@@ -127,15 +130,15 @@ Como referencia para el programador, el proceso de ensamblado también genera un
 Siguiendo con el ejemplo proporcionado anteriormente, el archivo `.LST` generado tendría el siguiente contenido:
 
 ```
-000001  4000               	org  0x4000
-000002  4000               	main
-000003  4000  3E FF        	ld   a, 0xFF
-000004  4002  32 00 C0     	ld  (0xC000), a
-000005  4005               	endloop
-000006  4005  C3 05 40     	jp endloop
+main.asm      000001  4000               	org  0x4000
+main.asm      000002  4000               	main
+main.asm      000003  4000  3E FF        	ld   a, 0xFF
+main.asm      000004  4002  32 00 C0     	ld  (0xC000), a
+main.asm      000005  4005               	endloop
+main.asm      000006  4005  C3 05 40     	jp endloop
 ```
 
-La primera columna indica el número secuencial de la instrucción en el archivo de código fuente. La segunda columna indica qué posición de memoria debe ocupar el código generado (si se ha generado alguno, ya que algunas directivas y etiquetas no generan código binario). La tercera columna muestra el código binario resultante de ensamblar la instrucción, y la última columna la instrucción original.
+El nombre del archivo origen aparece en la primera columna, mientras que la segunda indica el número secuencial de la instrucción en dicho archivo. La tercera columna indica qué posición de memoria ocupar el código generado (si se ha generado alguno, ya que algunas directivas y etiquetas no generan código binario). La cuarta columna muestra el código binario resultante de ensamblar la instrucción y la última columna la instrucción original.
 
 ## Archivo de símbolos
 
@@ -145,10 +148,10 @@ La extensión del fichero de símbolos es `.MAP` y su formato es el de un diccio
 
 ```
 # Lista de símbolos en formato de diccionario de Python
-# Símbolo: [dirección, número total de apariciones]
+# Símbolo: [dirección, número total de consultas (usos), nombre del módulo]
 {
-	"ENDLOOP": [0x4005, 2],
-	"MAIN": [0x4000, 1],
+	"ENDLOOP": [0x4005, 2, "MAIN.ASM"],
+	"MAIN": [0x4000, 1, "MAIN.ASM"],
 }
 ```
 
@@ -179,7 +182,7 @@ main              ; define la etiqueta global 'main'
 
 ```
 
-Otro aspecto importante de ABASM es que permite usar el símbolo '.' al principio de las etiquetas para definir las que son locales y solo accesibles desde el fichero en el que son declaradas.
+Otro aspecto importante de ABASM es que permite usar el símbolo '.' al principio de las etiquetas para definir las que son locales y solo accesibles desde el archivo o módulo en el que son declaradas.
 
 ## Comentarios
 
@@ -208,7 +211,7 @@ Las etiquetas en el código ensamblador son nombres simbólicos utilizados para 
 
 - Como puntos de entrada a bloques de código: Ayudan a hacer el código más legible y fácil de mantener al proporcionar nombres descriptivos a secciones importantes del programa.
 
-Todas las etiquetas son **globales** en ABASM salvo que empiecen con el caracter '.', lo que significa que deben ser únicas sin importar en cuántos archivos se divida el código fuente. Si se desea repetir etiquetas en diferentes ficheros y que estas no sean visibles desde el resto (o no generen conflictos), deben comenzar por el caracter '.', lo que las marca como etiquetas **locales**. Esto también evitará que dichas etiquetas a aparezcan en el archivo de símbolos.
+Todas las etiquetas son **globales** en ABASM salvo que empiecen con el caracter '.', lo que significa que deben ser únicas sin importar en cuántos archivos se divida el código fuente. Si se desea repetir etiquetas en diferentes ficheros y que estas no sean visibles desde el resto (o no generen conflictos), deben comenzar por el caracter '.', lo que las marca como etiquetas **locales** archivo o módulo (ver directiva MODULE). Esto también evitará que dichas etiquetas aparezcan en el archivo de símbolos.
 
 ## Instrucciones
 
@@ -373,6 +376,18 @@ main:
    get_screenPtr hl, 20, 10
 ``` 
 
+### MODULE
+
+- MODULE nombre
+
+Establece un nombre de módulo para todo el archivo o hasta encontrar otra ocurrencia de esta directiva. Por defecto, el nombre utilizado es el nombre del fichero ensamblado con su extensión. La definición de módulos es importante porque delimita el alcance las etiquetas locales y se utiliza también para detectar ficheros ensablados más de una vez si están referenciados desde multiples archivos fuente.
+
+```
+MODULE utils
+
+my_util_routine:
+```
+
 ### LET
 
 - LET símbolo=valor
@@ -384,6 +399,18 @@ LET PADDING=0x00
 <código>
 LET PADDING=0xFF
 <más código>
+```
+
+### LIMIT
+
+- LIMIT dirección_de_memoria
+
+Establece la dirección máxima de memoria que puede alcanzar el programa ensamblado. El valor suministrado puede ser un número o una expresión numérica. Por defecto, este valor es 65536 (64K).
+
+```
+LIMIT &C000   ; protegemos la memoria de video que empieza en &C000
+ORG &C000
+LD A,&FF      ; esta linea causará un error
 ```
 
 ### READ
@@ -415,7 +442,7 @@ REND
 
 ### ORG
 
-- ORG <dirección de memoria>
+- ORG dirección_de_memoria
 
 Especifica la dirección de memoria que debe considerarse como la actual a partir de ese momento para cualquier cálculo necesario, como establecer el valor de una etiqueta. Lo habitual es que esta directiva aparezca como la primera instrucción del código fuente, aunque puede substituirse por la opción de ABASM `--start`.
 
@@ -452,6 +479,12 @@ SAVE "myscreen.bin",&C000,&4000
 
 Detiene inmediatamente el proceso de ensamblado mostrando un error.
 
+### TITLE
+
+- TITLE texto
+
+En MAXAM, esta directiva servia para establecer el encabezado en las impresiones de código. En ABASM, no tiene utilidad, más allá de imprimir por la salida el texto indicado, de forma parecida a lo que hace la directiva PRINT.
+ 
 ### WHILE
 
 - WHILE expresión lógica `bloque de código` WEND
@@ -492,5 +525,8 @@ Cuando una instrucción o directiva requiere un número como parámetro, se pued
 
 # Historial de cambios
 
-- Versión 1.0 - 04/10/2024
+- Versión 1.1 - ??/??/????
+  * Soporte para las directivas TITLE, MODULE y LIMIT.
+
+- Versión 1.0 - 03/10/2024
   * Primera versión liberada.
