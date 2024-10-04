@@ -403,7 +403,8 @@ class AsmContext:
         self.modulename = os.path.basename(inputfile).upper()
         if self.modulename in self.modules:
             abort(f"file {self.modulename} was already assembled")
-        self.modules.append(self.modulename)
+        else:
+            self.modules.append(self.modulename)
 
     def assembler_pass(self, p, inputfile):
         self.set_module(inputfile)
@@ -443,6 +444,7 @@ class AsmContext:
         for p in [1, 2]:
             self.origin = startaddr
             self.include_stack = []
+            self.modules = []
             self.assembler_pass(p, inputfile)
 
         if len(self.ifstack) > 0:
