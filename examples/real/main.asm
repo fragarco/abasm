@@ -1,59 +1,64 @@
-org &4000   ; sin esto falla la carga desde la consola de RVM
+; This is an exercise to explore how Amstrad BASIC managed
+; float numbers. The intetion here is to print a float number
+; using the firmware routine that prepares the number for its
+; representation (REAL_prepare_for_decimal)
 
-; Notas sobre REAL_prepare_for_decimal
-;
-; HL = direccion del numero en coma flotante
-; primero llama a REAL_SIGN lo que pasa HL a IX 
-; devuelve la comparacion en A:
-;    A=1,NZ,NC  si num > 0
-;    A=0,Z,NC   si num == 0
-;    A=&FF,NZ,C si num < 0
+org &4000
 
-; mediante sbc a,a  pasa el flag de CARRY al registro A
-; asi sabe la rutina si el exp es <0 o >0 (pues lo hace tras restar 0x80)
-; tras eso, D = C y E = exp - 0x80, basicamente mete el
-; exponente en un word y usa C para propagar el signo, con lo que el
-; exponente sin bias queda guadado en DE y en HL de cara a multiplicar.
-; Al acabar de multiplicar para calcular el exponente en base 10,
-; resta -9 que es el numero total de espacios para decimales
-; y lo almacena en D. C termina valiendo el numero de bytes que usa
-; el numero (4 para el caso de reales)
 
 main:
-    ld      hl,numero
-    call    &BD76       ; REAL_prepare_for_decimal
+    ld      hl,_float_acum
+    call    &BD76       ; REAL_prepare_for_decimal in 6128 machines
 
-; En este punto IX = LSB
-; HL = MSB
-; B = signo de la mantisa: 1 si positivo, 0 si cero, FF si negativo
-; D = signo del exponente
-; C = 4 (bytes significativos de la mantisa, los reales suelen ocupar 4 bytes)
-; E = posicion del exponente/coma decimal o 0 si num = 0.
+    ; According to https://www.cpcwiki.eu/index.php/Programming:CPC_OS_floating_point_routines
+    ; FLO_PREPARE: Prepares the display of a FLO value
+    ;   Input      (HL)=float value (5 bytes in form mantissa (4) + exponent (1))
+    ;   Output     (HL)=LW normed mantissa
+    ;               B = sign of mantissa
+    ;               D = sign of exponent
+    ;               E = exponent/comma position
+    ;               C = number of significant mantissa bytes (NOT digits!)
+    ;    Unchanged  HL
+
+    ; According to my notes:
+    ; IX = normed mantissa LSB
+    ; HL = normed mantissa MSB
+    ; B  = mantissa sign: 1 possitive, 0 zero, FF negative
+    ; D  = exponent sign
+    ; C = 4 (mantissa total bytes)
+    ; E = exponent/decimal position, 0 if zero.
 
     push    de
-    pop     iy
+
     ld      l,(ix+0)
     ld      H,(ix+1)
     ld      e,(ix+2)
     ld      d,(ix+3)
-    ld      b,&09
 
+    ; DEHL holds the normed mantissa
+    ; lets calculate the 9 digits diving by 10
 calculate_digits:
+    ld      b,9
+    ld      ix,_float_conv_buffer+8
+_calculate_digits_loop:
     push    bc
     call    div_DEHL_by10
     pop     bc
-    push    af
-    djnz    calculate_digits
+    add     "0"
+    ld      (ix+0),a
+    dec     ix
+    djnz    _calculate_digits_loop
     
-    push    iy
     pop     de
 
-    ; En este punto tenemos en DE si es positivo y el numero de digitos totales
-    ; En la pila tenemos los digitios de izquerda a derecha
+    ; In this point:
+    ; D tells is if the number is possitive
+    ; E tells us the position of the decimal point minus 9
+    ; IX points to the last converted digit
 
-    ld     hl,text  ; ponemos la direccion del buffer de texto
-    ld     a,d      ; en A cargamos el signo: 01 + FF -
-    call   float_stack2mem
+    ld     a,d      ; A tell us now the sign: 01 + FF -
+    ld     hl,text  ; address of our target text buffer
+    call   float_accum2str
 
     ld     hl,text
     call   print_string
@@ -100,18 +105,12 @@ end: jp end
     djnz    $-7
     ret
 
-; En A tenemos el signo (&FF o &01)
-; En HL tenemos el inicio del buffer de texto
-put_sign_char:
-    sub    1    ; A = 0 si es positivo
-    ret    z
-    ld     (hl),"-"
-    inc    hl
-    ret
-
-; En A tenemos la posicion de la coma decimal
-; En HL el comiendo del buffer de texto
-; Devolvemos en B los caracteres escritos
+; Inputs
+;   A holds the decimal point position
+;   HL text buffer
+; Output
+;   B number of written digits
+;   HL next position in the text buffer
 put_leading_0s:
     ld     b,0
     cp     1         ; solo 0 o <0 necesita ceros
@@ -130,42 +129,35 @@ _put_leading_0s_loop:
     inc    b
     jr     _put_leading_0s_loop
 
-float_stack2mem:
-    call   put_sign_char
-
+; Inputs
+;   HL target text buffer
+;   A  sign (&01 possitive, &FF negative)
+;   E  decimal point position
+float_accum2str:
+    sub    1    ; A = 0 if possitive
+    jr     z,_float_leading_0s
+    ld     (hl),"-"
+    inc    hl
+_float_leading_0s:
     ld     a,e
-    add    9        ; aqui tenemos la posicion de la coma decimal
+    add    9        ; restore decimal position
     call   put_leading_0s
 
-    ; En HL tenemos el buffer de texto
-    ; En B tenemos los digitos ya escritos
-    pop    ix    ; retorno de la rutina
-_float_pop_numbers:
-    ld     a,9   ; hay que sacar los 9 digitos del stack
-    sub    b     ; quitamos los digitos ya escritos
-    ld     b,a
-    ld     c,9   ; maximo numero de digitos
-_float_pop_numbers_loop:
-    pop    de
-    ld     a,b
-    or     a
-    jr     nz,_float_pop_number_store
-_float_pop_numbers_checkend:
-    dec    c
-    jr     nz, _float_pop_numbers_loop
-    push   ix    ; restauramos valor de retorno
+    ; HL points to the text buffer next position
+    ; In B we have the digits already written
+_float_copy_numbers:
+    ld     a,9 
+    sub    b     
+    ld     c,a
+    ld     b,0
+    ld     de,_float_conv_buffer
+    ex     hl,de
+    ldi
     ret     
-_float_pop_number_store:
-    ld     a,d
-    add    "0"
-    ld     (hl),a
-    inc    hl
-    dec    b
-    jr     _float_pop_numbers_checkend
 
 read "print.asm"
 
-numero:
+_float_acum:
 ;    db  &9A, &99, &99, &19, &7F    ;0.3
 ;    db  &CC, &CC, &CC, &4C, &7D    ;0.1
     db  &C7, &9D, &D2, &01, &7D    ;0.06339
@@ -187,7 +179,9 @@ numero:
 ;    db  &12, &77, &CC, &2B, &66    ;0.00000001
 ;    db  &A0, &A2, &79, &6B, &9B    ;123456789
 ;    db  &A4, &05, &2C, &13, &9F    ;1234567890
-separator:
-    db  &FF, &FF, &FF, &FF, &FF
+
+_float_conv_buffer
+    defs 10
+
 text:
     defs 256
