@@ -152,7 +152,7 @@ _float_copy_numbers:
     ld     b,0
     ld     de,_float_conv_buffer
     ex     hl,de
-    ldi
+    ldir
     ret     
 
 read "print.asm"
