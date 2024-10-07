@@ -27,18 +27,24 @@ main:
     ; D  = exponent sign
     ; C = 4 (mantissa total bytes)
     ; E = exponent/decimal position, 0 if zero.
+    ld      a,e
+    cp      0
+    jr      nz, calculate_digits
+    
+    ; The number is 0
+    ld      hl,text
+    ld      (hl), "0"
+    inc     hl
+    ld      (hl), &00
+    jp      print_result
 
-    push    de
-
-    ld      l,(ix+0)
-    ld      H,(ix+1)
-    ld      e,(ix+2)
-    ld      d,(ix+3)
-
-    ; DEHL holds the normed mantissa
-    ; lets calculate the 9 digits diving by 10
 calculate_digits:
-    ld      b,9
+    push    de
+    ld      l,(ix+0) ; DEHL holds the normed mantissa
+    ld      H,(ix+1) 
+    ld      e,(ix+2) 
+    ld      d,(ix+3)
+    ld      b,9      ; lets calculate the 9 digits diving by 10
     ld      ix,_float_conv_buffer+8
 _calculate_digits_loop:
     push    bc
@@ -60,6 +66,7 @@ _calculate_digits_loop:
     ld     hl,text  ; address of our target text buffer
     call   float_accum2str
 
+print_result:
     ld     hl,text
     call   print_string
     call   new_line
@@ -113,7 +120,7 @@ end: jp end
 ;   HL next position in the text buffer
 put_leading_0s:
     ld     b,0
-    cp     1         ; solo 0 o <0 necesita ceros
+    cp     1         ; only if A <=0 we need leading 0s
     ret    p
     ld     (hl),"0"
     inc    hl
@@ -148,12 +155,28 @@ _float_leading_0s:
 _float_copy_numbers:
     ld     a,9 
     sub    b     
-    ld     c,a
-    ld     b,0
+    ld     b,a      ; B = max number of digits that we can still print
+    ld     c,e      ; C = original decimal point 
     ld     de,_float_conv_buffer
-    ex     hl,de
-    ldir
-    ret     
+_float_copy_numbers_loop:
+    ld     a,(de)
+    ld     (hl),a
+    inc    hl
+    inc    de
+    djnz   _float_copy_numbers_loop
+
+_float_remove_trailing_0s:
+    ld     a,c
+    cp     &F8      ; F8 or higher means integer number so
+    ret    nc       ; no traling 0s
+    dec    hl       ; HL points to last digit
+_float_remove_trailing_loop:
+    ld     a,(hl)
+    cp     "0"
+    ret    nz
+    ld     (hl), &00
+    dec    hl
+    jr     _float_remove_trailing_loop 
 
 read "print.asm"
 
