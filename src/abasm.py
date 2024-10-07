@@ -1202,45 +1202,45 @@ def op_CP(p, opargs):
     return store_register_arg_type(p, opargs, 0xb8, [0xfe])
 
 def op_INC(p, opargs):
-    return store_registerorpair_arg_type(p,opargs, 0x04, 0x03)
+    return store_registerorpair_arg_type(p, opargs, 0x04, 0x03)
 
 def op_DEC(p, opargs):
-    return store_registerorpair_arg_type(p,opargs, 0x05, 0x0b)
+    return store_registerorpair_arg_type(p, opargs, 0x05, 0x0b)
 
 def op_ADD(p,opargs):
-    return store_add_type(p,opargs,[0x80], [0xc6],[0x09])
+    return store_add_type(p,opargs, [0x80], [0xc6], [0x09])
 
 def op_ADC(p,opargs):
-    return store_add_type(p,opargs,[0x88], [0xce],[0xed,0x4a])
+    return store_add_type(p,opargs, [0x88], [0xce], [0xed, 0x4a])
 
 def op_SBC(p,opargs):
-    return store_add_type(p,opargs,[0x98], [0xde],[0xed,0x42])
+    return store_add_type(p, opargs,[0x98], [0xde], [0xed, 0x42])
 
 def op_BIT(p,opargs):
-    return store_bit_type(p,opargs, 0x40)
+    return store_bit_type(p, opargs, 0x40)
 
 def op_RES(p,opargs):
-    return store_bit_type(p,opargs, 0x80)
+    return store_bit_type(p, opargs, 0x80)
 
 def op_SET(p,opargs):
-    return store_bit_type(p,opargs, 0xc0)
+    return store_bit_type(p, opargs, 0xc0)
 
 def op_POP(p, opargs):
-    return store_pushpop_type(p,opargs, 0xc1)
+    return store_pushpop_type(p, opargs, 0xc1)
 
 def op_PUSH(p, opargs):
-    return store_pushpop_type(p,opargs, 0xc5)
+    return store_pushpop_type(p, opargs, 0xc5)
  
 def op_JP(p,opargs):
     if (len(opargs.split(',',1)) == 1):
-        prefix, r, postfix = single(p, opargs, allow_offset=0,allow_half=0)
-        if r==6:
+        prefix, r, _ = single(p, opargs, allow_offset=0,allow_half=0)
+        if r == 6:
             instr = prefix
             instr.append(0xe9)
-            if (p==2):
+            if p == 2:
                 g_context.store(p, instr)
             return len(instr)
-    return store_jumpcall_type(p,opargs, 0xc3, 0xc2)
+    return store_jumpcall_type(p, opargs, 0xc3, 0xc2)
 
 def op_CALL(p,opargs):
     return store_jumpcall_type(p,opargs, 0xcd, 0xc4)
@@ -1251,8 +1251,8 @@ def op_DJNZ(p,opargs):
         target = g_context.parse_expression(opargs, word=1)
         displacement = target - (g_context.origin + 2)
         if displacement > 127 or displacement < -128:
-            abort ("Displacement from "+str(g_context.origin)+" to "+str(target)+" is out of range")
-        g_context.store(p, [0x10,(displacement+256)%256])
+            abort ("Displacement from " + str(g_context.origin) + " to " + str(target) + " is out of range")
+        g_context.store(p, [0x10, (displacement + 256) % 256])
     return 2
 
 def op_JR(p, opargs):

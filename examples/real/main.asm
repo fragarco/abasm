@@ -147,29 +147,36 @@ float_accum2str:
     inc    hl
 _float_leading_0s:
     ld     a,e
+    push   af       ; store in SP the original decimal position
     add    9        ; restore decimal position
+    ld     c,a      ; keep in C the decimal position + 9
     call   put_leading_0s
 
     ; HL points to the text buffer next position
     ; In B we have the digits already written
+    ; In C we have the decimal position
 _float_copy_numbers:
+    ld     de,_float_conv_buffer
     ld     a,9 
     sub    b     
     ld     b,a      ; B = max number of digits that we can still print
-    ld     c,e      ; C = original decimal point 
-    ld     de,_float_conv_buffer
 _float_copy_numbers_loop:
     ld     a,(de)
     ld     (hl),a
     inc    hl
     inc    de
+    dec    c
+    jr     nz, _float_copy_numbers_loop01
+    ld     (hl),"."    ; add . in the correct position
+    inc    hl          ; if number is >0
+_float_copy_numbers_loop01:
     djnz   _float_copy_numbers_loop
 
 _float_remove_trailing_0s:
-    ld     a,c
+    pop    af
     cp     &F8      ; F8 or higher means integer number so
     ret    nc       ; no traling 0s
-    dec    hl       ; HL points to last digit
+    dec    hl       ; DE points to last digit
 _float_remove_trailing_loop:
     ld     a,(hl)
     cp     "0"
@@ -202,6 +209,7 @@ _float_acum:
 ;    db  &12, &77, &CC, &2B, &66    ;0.00000001
 ;    db  &A0, &A2, &79, &6B, &9B    ;123456789
 ;    db  &A4, &05, &2C, &13, &9F    ;1234567890
+    db  &DD, &24, &52, &1A, &8B    ;1234.567
 
 _float_conv_buffer
     defs 10
