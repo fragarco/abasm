@@ -7,8 +7,8 @@ org &4000
 
 
 main:
-    ld      hl,_float_acum+15
-    ld      b,1  ; numbers to convert and print
+    ld      hl,_float_acum
+    ld      b,22  ; numbers to convert and print
 main_loop:
     push    bc
     push    hl
@@ -84,33 +84,28 @@ _calculate_digits_loop:
     
     pop     de
 
-    ; In this point:
-    ; D tells is if the number is possitive
-    ; E tells us the position of the decimal point minus 9
+    ; At this point:
+    ; D tells if the number is possitive
+    ; E is the position of the decimal point minus 9
     ; IX points to the last converted digit
-    ld     a,d      ; A tell us now the sign: 01 + FF -
     ld     hl,text  ; address of our target text buffer
-
-    ; Lets write negative sign if required
-    ;   HL target text buffer
-    ;   A  sign (&01 possitive, &FF negative)
-    ;   E  decimal point position
-    sub    1    ; A = 0 if possitive
+    ld     a,d      ; A is now the sign: 01 + FF -
+    sub    1        ; A = 0 if possitive
     jr     z,_float_leading_0s
-    ld     (hl),"-"
+    ld     (hl),"-" ; Lets write the negative sign
     inc    hl
 
 _float_leading_0s:
     ld     a,e
-    push   af       ; store in SP the original decimal position
+    push   af       ; store in the stack the original decimal position
     add    9        ; restore decimal position
     ld     c,a      ; keep in C the decimal position + 9
     ; At this point
-    ;   A holds the decimal point position
-    ;   HL text buffer
-    ld     b,0
+    ; A and C hold the decimal point position
+    ; HL text buffer
+    ld     b,0       ; total number of written digits
     cp     1         ; only if A <=0 we need leading 0s
-    ret    p
+    jp     p,_float_copy_numbers
     ld     (hl),"0"
     inc    hl
     ld     (hl),"."
