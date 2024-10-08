@@ -8,6 +8,20 @@ org &4000
 
 main:
     ld      hl,_float_acum
+    call    float_conv_bin2str
+
+print_result:
+    ld     hl,text
+    call   print_string
+    call   new_line
+
+end: jp end
+
+; Inputs
+;   HL pointer to the float acumulator where the float number is
+;  Outputs
+;   leaves the converted string in the 'text' buffer
+float_conv_bin2str:
     call    &BD76       ; REAL_prepare_for_decimal in 6128 machines
 
     ; According to https://www.cpcwiki.eu/index.php/Programming:CPC_OS_floating_point_routines
@@ -36,7 +50,7 @@ main:
     ld      (hl), "0"
     inc     hl
     ld      (hl), &00
-    jp      print_result
+    ret
 
 calculate_digits:
     push    de
@@ -64,53 +78,7 @@ _calculate_digits_loop:
 
     ld     a,d      ; A tell us now the sign: 01 + FF -
     ld     hl,text  ; address of our target text buffer
-    call   float_accum2str
-
-print_result:
-    ld     hl,text
-    call   print_string
-    call   new_line
-
-end: jp end
-
- div_DEHL_by10:
-   ;Inputs:
-   ;     DEHL
-   ;Outputs:
-   ;     DEHL is the quotient
-   ;     A is the remainder
-   ;     BC is 10
-   
-    ld      bc,&0D0A
-    xor     a
-    ex      de,hl
-    add     hl,hl
-    rla
-    add     hl,hl
-    rla
-    add     hl,hl
-    rla
-   
-    add     hl,hl
-    rla
-    
-    cp      c
-    jr      c,$+4
-    sub     c
-    inc     l
-    djnz    $-7
-   
-    ex      de,hl
-    ld      b,16
-   
-    add     hl,hl
-    rla
-    cp      c
-    jr      c,$+4
-    sub     c
-    inc     l
-    djnz    $-7
-    ret
+    jp   float_accum2str
 
 ; Inputs
 ;   A holds the decimal point position
@@ -185,6 +153,46 @@ _float_remove_trailing_loop:
     dec    hl
     jr     _float_remove_trailing_loop 
 
+
+ div_DEHL_by10:
+   ;Inputs:
+   ;     DEHL
+   ;Outputs:
+   ;     DEHL is the quotient
+   ;     A is the remainder
+   ;     BC is 10
+   
+    ld      bc,&0D0A
+    xor     a
+    ex      de,hl
+    add     hl,hl
+    rla
+    add     hl,hl
+    rla
+    add     hl,hl
+    rla
+   
+    add     hl,hl
+    rla
+    
+    cp      c
+    jr      c,$+4
+    sub     c
+    inc     l
+    djnz    $-7
+   
+    ex      de,hl
+    ld      b,16
+   
+    add     hl,hl
+    rla
+    cp      c
+    jr      c,$+4
+    sub     c
+    inc     l
+    djnz    $-7
+    ret
+
 read "print.asm"
 
 _float_acum:
@@ -209,7 +217,7 @@ _float_acum:
 ;    db  &12, &77, &CC, &2B, &66    ;0.00000001
 ;    db  &A0, &A2, &79, &6B, &9B    ;123456789
 ;    db  &A4, &05, &2C, &13, &9F    ;1234567890
-    db  &DD, &24, &52, &1A, &8B    ;1234.567
+;    db  &DD, &24, &52, &1A, &8B    ;1234.567
 
 _float_conv_buffer
     defs 10
