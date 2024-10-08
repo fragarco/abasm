@@ -7,13 +7,26 @@ org &4000
 
 
 main:
-    ld      hl,_float_acum
+    ld      hl,_float_acum+15
+    ld      b,1  ; numbers to convert and print
+main_loop:
+    push    bc
+    push    hl
     call    float_conv_bin2str
 
 print_result:
     ld     hl,text
     call   print_string
     call   new_line
+
+    pop    hl
+    inc    hl
+    inc    hl
+    inc    hl
+    inc    hl
+    inc    hl 
+    pop    bc
+    djnz   main_loop
 
 end: jp end
 
@@ -43,7 +56,7 @@ float_conv_bin2str:
     ; E = exponent/decimal position, 0 if zero.
     ld      a,e
     cp      0
-    jr      nz, calculate_digits
+    jr      nz, _calculate_digits
     
     ; The number is 0
     ld      hl,text
@@ -52,7 +65,7 @@ float_conv_bin2str:
     ld      (hl), &00
     ret
 
-calculate_digits:
+_calculate_digits:
     push    de
     ld      l,(ix+0) ; DEHL holds the normed mantissa
     ld      H,(ix+1) 
@@ -75,18 +88,26 @@ _calculate_digits_loop:
     ; D tells is if the number is possitive
     ; E tells us the position of the decimal point minus 9
     ; IX points to the last converted digit
-
     ld     a,d      ; A tell us now the sign: 01 + FF -
     ld     hl,text  ; address of our target text buffer
-    jp   float_accum2str
 
-; Inputs
-;   A holds the decimal point position
-;   HL text buffer
-; Output
-;   B number of written digits
-;   HL next position in the text buffer
-put_leading_0s:
+    ; Lets write negative sign if required
+    ;   HL target text buffer
+    ;   A  sign (&01 possitive, &FF negative)
+    ;   E  decimal point position
+    sub    1    ; A = 0 if possitive
+    jr     z,_float_leading_0s
+    ld     (hl),"-"
+    inc    hl
+
+_float_leading_0s:
+    ld     a,e
+    push   af       ; store in SP the original decimal position
+    add    9        ; restore decimal position
+    ld     c,a      ; keep in C the decimal position + 9
+    ; At this point
+    ;   A holds the decimal point position
+    ;   HL text buffer
     ld     b,0
     cp     1         ; only if A <=0 we need leading 0s
     ret    p
@@ -97,28 +118,12 @@ put_leading_0s:
     inc    b
 _put_leading_0s_loop:
     or     a
-    ret    z
+    jr     z,_float_copy_numbers
     ld     (hl),"0"
     inc    hl
     inc    a
     inc    b
     jr     _put_leading_0s_loop
-
-; Inputs
-;   HL target text buffer
-;   A  sign (&01 possitive, &FF negative)
-;   E  decimal point position
-float_accum2str:
-    sub    1    ; A = 0 if possitive
-    jr     z,_float_leading_0s
-    ld     (hl),"-"
-    inc    hl
-_float_leading_0s:
-    ld     a,e
-    push   af       ; store in SP the original decimal position
-    add    9        ; restore decimal position
-    ld     c,a      ; keep in C the decimal position + 9
-    call   put_leading_0s
 
     ; HL points to the text buffer next position
     ; In B we have the digits already written
@@ -151,8 +156,7 @@ _float_remove_trailing_loop:
     ret    nz
     ld     (hl), &00
     dec    hl
-    jr     _float_remove_trailing_loop 
-
+    jr     _float_remove_trailing_loop
 
  div_DEHL_by10:
    ;Inputs:
@@ -196,28 +200,28 @@ _float_remove_trailing_loop:
 read "print.asm"
 
 _float_acum:
-;    db  &9A, &99, &99, &19, &7F    ;0.3
-;    db  &CC, &CC, &CC, &4C, &7D    ;0.1
+    db  &9A, &99, &99, &19, &7F    ;0.3
+    db  &CC, &CC, &CC, &4C, &7D    ;0.1
     db  &C7, &9D, &D2, &01, &7D    ;0.06339
-;    db  &00, &00, &60, &09, &8B    ;1099
-;    db  &00, &00, &00, &76, &87    ;123
-;    db  &00, &00, &00, &20, &83    ;5
-;    db  &9A, &99, &99, &99, &7F    ;-0.3
-;    db  &C7, &9D, &D2, &81, &7D    ;-0.06339
-;    db  &00, &00, &60, &89, &8B    ;-1099
-;    db  &00, &00, &00, &F6, &87    ;-123
-;    db  &D8, &62, &B7, &4F, &79    ;0.006339
-;    db  &00, &00, &00, &28, &00    ;0.0
-;    db  &00, &00, &00, &00, &00    ;0
-;    db  &00, &28, &6B, &6E, &9E    ;1000000000
-;    db  &00, &F9, &02, &15, &A2    ;10000000000
-;    db  &80, &10, &B7, &41, &A2    ;12999999999
-;    db  &06, &BD, &37, &06, &6D    ;0.000001
-;    db  &D6, &94, &BF, &56, &69    ;0.0000001
-;    db  &12, &77, &CC, &2B, &66    ;0.00000001
-;    db  &A0, &A2, &79, &6B, &9B    ;123456789
-;    db  &A4, &05, &2C, &13, &9F    ;1234567890
-;    db  &DD, &24, &52, &1A, &8B    ;1234.567
+    db  &00, &00, &60, &09, &8B    ;1099
+    db  &00, &00, &00, &76, &87    ;123
+    db  &00, &00, &00, &20, &83    ;5
+    db  &9A, &99, &99, &99, &7F    ;-0.3
+    db  &C7, &9D, &D2, &81, &7D    ;-0.06339
+    db  &00, &00, &60, &89, &8B    ;-1099
+    db  &00, &00, &00, &F6, &87    ;-123
+    db  &D8, &62, &B7, &4F, &79    ;0.006339
+    db  &00, &00, &00, &28, &00    ;0.0
+    db  &00, &00, &00, &00, &00    ;0
+    db  &00, &28, &6B, &6E, &9E    ;1000000000
+    db  &00, &F9, &02, &15, &A2    ;10000000000
+    db  &80, &10, &B7, &41, &A2    ;12999999999
+    db  &06, &BD, &37, &06, &6D    ;0.000001
+    db  &D6, &94, &BF, &56, &69    ;0.0000001
+    db  &12, &77, &CC, &2B, &66    ;0.00000001
+    db  &A0, &A2, &79, &6B, &9B    ;123456789
+    db  &A4, &05, &2C, &13, &9F    ;1234567890
+    db  &DD, &24, &52, &1A, &8B    ;1234.567
 
 _float_conv_buffer
     defs 10
