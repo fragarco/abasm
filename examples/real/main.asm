@@ -134,12 +134,14 @@ _float_copy_numbers_loop:
     ld     (hl),a
     inc    hl
     inc    de
+    dec    b
+    jr     z,_float_remove_trailing_0s
     dec    c
-    jr     nz, _float_copy_numbers_loop01
+    jr     nz,_float_copy_numbers_loop
     ld     (hl),"."    ; add . in the correct position
     inc    hl          ; if number is >0
-_float_copy_numbers_loop01:
-    djnz   _float_copy_numbers_loop
+    jr     _float_copy_numbers_loop
+
     ; At this point
     ; C contains again original decimal point position (biased -9)
     ; HL points to the end of text buffer
