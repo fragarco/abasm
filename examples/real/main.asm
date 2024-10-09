@@ -5,11 +5,12 @@
 
 org &4000
 
-num_start equ 0    ; Range of 0 to 21
+num_start equ 0     ; Range of 0 to 21
+num_end   equ 22    ; Range of num_start to 22
 
 main:
     ld      hl,_float_acum + (num_start * 5)
-    ld      b, 22 - num_start  ; numbers to convert and print
+    ld      b, num_end - num_start  ; how many numbers to convert and print
 main_loop:
     push    bc
     push    hl
@@ -55,7 +56,7 @@ float_conv_bin2str:
     ; D  = exponent sign
     ; C = 4 (mantissa total bytes)
     ; E = exponent/decimal position, 0 if zero.
-    ld      a,e
+    ld      a,b
     cp      0
     jr      nz, _calculate_digits
     
