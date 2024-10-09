@@ -5,10 +5,11 @@
 
 org &4000
 
+num_start equ 0    ; Range of 0 to 21
 
 main:
-    ld      hl,_float_acum
-    ld      b,22  ; numbers to convert and print
+    ld      hl,_float_acum + (num_start * 5)
+    ld      b, 22 - num_start  ; numbers to convert and print
 main_loop:
     push    bc
     push    hl
@@ -97,7 +98,6 @@ _calculate_digits_loop:
 
 _float_leading_0s:
     ld     a,e
-    push   af       ; store in the stack the original decimal position
     add    9        ; restore decimal position
     ld     c,a      ; keep in C the decimal position + 9
     ; At this point
@@ -139,16 +139,21 @@ _float_copy_numbers_loop:
     inc    hl          ; if number is >0
 _float_copy_numbers_loop01:
     djnz   _float_copy_numbers_loop
-
+    ; At this point
+    ; C contains again original decimal point position (biased -9)
+    ; HL points to the end of text buffer
 _float_remove_trailing_0s:
-    pop    af
-    cp     &F8      ; F8 or higher means integer number so
-    ret    nc       ; no traling 0s
-    dec    hl       ; DE points to last digit
+    bit    7,c      ; if A is negative we remove trailing 0s
+    ret    z        ; no traling 0s
+    dec    hl       ; point to the last digit
 _float_remove_trailing_loop:
     ld     a,(hl)
     cp     "0"
-    ret    nz
+    jr     z,_float_remove_trailing_char
+    cp     "."
+    jr     z,_float_remove_trailing_char
+    ret    
+_float_remove_trailing_char:
     ld     (hl), &00
     dec    hl
     jr     _float_remove_trailing_loop
@@ -195,28 +200,28 @@ _float_remove_trailing_loop:
 read "print.asm"
 
 _float_acum:
-    db  &9A, &99, &99, &19, &7F    ;0.3
+    db  &00, &00, &00, &28, &00    ;0.0
     db  &CC, &CC, &CC, &4C, &7D    ;0.1
+    db  &9A, &99, &99, &19, &7F    ;0.3
     db  &C7, &9D, &D2, &01, &7D    ;0.06339
-    db  &00, &00, &60, &09, &8B    ;1099
-    db  &00, &00, &00, &76, &87    ;123
-    db  &00, &00, &00, &20, &83    ;5
+    db  &D8, &62, &B7, &4F, &79    ;0.006339
     db  &9A, &99, &99, &99, &7F    ;-0.3
     db  &C7, &9D, &D2, &81, &7D    ;-0.06339
-    db  &00, &00, &60, &89, &8B    ;-1099
-    db  &00, &00, &00, &F6, &87    ;-123
-    db  &D8, &62, &B7, &4F, &79    ;0.006339
-    db  &00, &00, &00, &28, &00    ;0.0
-    db  &00, &00, &00, &00, &00    ;0
-    db  &00, &28, &6B, &6E, &9E    ;1000000000
-    db  &00, &F9, &02, &15, &A2    ;10000000000
-    db  &80, &10, &B7, &41, &A2    ;12999999999
     db  &06, &BD, &37, &06, &6D    ;0.000001
     db  &D6, &94, &BF, &56, &69    ;0.0000001
     db  &12, &77, &CC, &2B, &66    ;0.00000001
+    db  &00, &00, &00, &00, &00    ;0
+    db  &00, &00, &00, &20, &83    ;5
+    db  &00, &00, &00, &76, &87    ;123
+    db  &00, &00, &60, &09, &8B    ;1099
+    db  &DD, &24, &52, &1A, &8B    ;1234.567
+    db  &00, &00, &00, &F6, &87    ;-123
+    db  &00, &00, &60, &89, &8B    ;-1099
     db  &A0, &A2, &79, &6B, &9B    ;123456789
     db  &A4, &05, &2C, &13, &9F    ;1234567890
-    db  &DD, &24, &52, &1A, &8B    ;1234.567
+    db  &00, &28, &6B, &6E, &9E    ;1000000000
+    db  &00, &F9, &02, &15, &A2    ;10000000000
+    db  &80, &10, &B7, &41, &A2    ;12999999999
 
 _float_conv_buffer
     defs 10
