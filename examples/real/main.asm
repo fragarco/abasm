@@ -6,7 +6,7 @@
 org &4000
 
 num_start equ 0     ; Range of 0 to 21
-num_end   equ 22    ; Range of num_start to 22
+num_end   equ 23    ; Range of num_start to 22
 
 main:
     ld      hl,_float_acum + (num_start * 5)
@@ -111,7 +111,6 @@ _float_leading_0s:
     inc    hl
     ld     (hl),"."
     inc    hl
-    inc    b
 _put_leading_0s_loop:
     or     a
     jr     z,_float_copy_numbers
@@ -213,7 +212,8 @@ _float_acum:
     db  &06, &BD, &37, &06, &6D    ;0.000001
     db  &D6, &94, &BF, &56, &69    ;0.0000001
     db  &12, &77, &CC, &2B, &66    ;0.00000001
-    db  &00, &00, &00, &00, &00    ;0
+    db  &14, &52, &06, &1E, &81    ;1.23456789
+    db  &BA, &E9, &D6, &7C, &7D    ;0.123456789
     db  &00, &00, &00, &20, &83    ;5
     db  &00, &00, &00, &76, &87    ;123
     db  &00, &00, &60, &09, &8B    ;1099
@@ -225,7 +225,7 @@ _float_acum:
     db  &00, &28, &6B, &6E, &9E    ;1000000000
     db  &00, &F9, &02, &15, &A2    ;10000000000
     db  &80, &10, &B7, &41, &A2    ;12999999999
-
+    
 _float_conv_buffer
     defs 10
 
