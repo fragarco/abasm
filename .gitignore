@@ -167,3 +167,7 @@ cython_debug/
 *.bin
 *.lst
 *.map
+
+# ABASM DEV WIP directory
+tmp/
+extras/

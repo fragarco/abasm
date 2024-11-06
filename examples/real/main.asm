@@ -75,36 +75,50 @@ _calculate_digits:
     ld      d,(ix+3)
     ld      b,9      ; lets calculate the 9 digits diving by 10
     ld      ix,_float_conv_buffer+8
+    ld      c,9      ; lets store in C the significant digits (no trailing 0s)
 _calculate_digits_loop:
     push    bc
     call    div_DEHL_by10
     pop     bc
+    bit     7,c     ; are we still removing traling 0?
+    jr      nz,_calculate_digits_next
+    or      a       ; is this a 0?
+    jr      nz,_calculate_digits_nois0
+    dec     c
+    jr      _calculate_digits_next
+_calculate_digits_nois0:
+    set     7,c
+_calculate_digits_next:
     add     "0"
     ld      (ix+0),a
     dec     ix
     djnz    _calculate_digits_loop
-    
+    res     7,c    ; leave in C just the number of traling 0s
     pop     de
 
     ; At this point:
     ; D tells if the number is possitive
+    ; C has the significant number of digits (9 - trailing 0s)
     ; E is the position of the decimal point minus 9
     ; IX points to the last converted digit
     ld     hl,text  ; address of our target text buffer
     ld     a,d      ; A is now the sign: 01 + FF -
     sub    1        ; A = 0 if possitive
-    jr     z,_float_leading_0s
+    jr     z,_float_check_exp
     ld     (hl),"-" ; Lets write the negative sign
     inc    hl
 
-_float_leading_0s:
+_float_check_exp:
     ld     a,e
     add    9        ; restore decimal position
     ld     c,a      ; keep in C the decimal position + 9
+    ld     b,0      ; total number of written digits
+
     ; At this point
     ; A and C hold the decimal point position
+    ; B number of written digits (0 right now)
     ; HL text buffer
-    ld     b,0       ; total number of written digits
+_float_leading_0s
     cp     1         ; only if A <=0 we need leading 0s
     jp     p,_float_copy_numbers
     ld     (hl),"0"
