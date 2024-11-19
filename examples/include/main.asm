@@ -16,7 +16,9 @@ main:
 loop:
     jp loop
 
+read "print.asm"
+
 message: db "Hello World!", &FF
 
-read "print.asm"
+
 

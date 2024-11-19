@@ -5,8 +5,8 @@
 
 org &4000
 
-num_start equ 0     ; Range of 0 to 21
-num_end   equ 23    ; Range of num_start to 22
+num_start equ 00     ; Range of 0 to 24
+num_end   equ 25    ; Range of num_start to 25
 
 main:
     ld      hl,_float_acum + (num_start * 5)
@@ -69,31 +69,32 @@ float_conv_bin2str:
 
 _calculate_digits:
     push    de
-    ld      l,(ix+0) ; DEHL holds the normed mantissa
+    ld      l,(ix+0) ; Copy to DEHL the normed mantissa
     ld      H,(ix+1) 
     ld      e,(ix+2) 
     ld      d,(ix+3)
-    ld      b,9      ; lets calculate the 9 digits diving by 10
-    ld      ix,_float_conv_buffer+8
+    ld      b,9      ; lets calculate the actual digits diving by 10 9 times
     ld      c,9      ; lets store in C the significant digits (no trailing 0s)
+    ld      ix,_float_conv_buffer+8 ; digits are stored here from back to front
+
 _calculate_digits_loop:
     push    bc
     call    div_DEHL_by10
     pop     bc
-    bit     7,c     ; are we still removing traling 0?
+    bit     7,c     ; check MSb, are we still removing traling 0?
     jr      nz,_calculate_digits_next
     or      a       ; is this a 0?
-    jr      nz,_calculate_digits_nois0
+    jr      nz,_calculate_digits_not0
     dec     c
     jr      _calculate_digits_next
-_calculate_digits_nois0:
-    set     7,c
+_calculate_digits_not0:
+    set     7,c     ; set MSb to 1 so we don't look for more trailing 0s
 _calculate_digits_next:
     add     "0"
     ld      (ix+0),a
     dec     ix
     djnz    _calculate_digits_loop
-    res     7,c    ; leave in C just the number of traling 0s
+    res     7,c    ; leave in C just the number of significant digits
     pop     de
 
     ; At this point:
@@ -102,28 +103,58 @@ _calculate_digits_next:
     ; E is the position of the decimal point minus 9
     ; IX points to the last converted digit
     ld     hl,text  ; address of our target text buffer
-    ld     a,d      ; A is now the sign: 01 + FF -
+    ld     a,d      ; A is now the sign: 01 for + and FF for -
     sub    1        ; A = 0 if possitive
     jr     z,_float_check_exp
     ld     (hl),"-" ; Lets write the negative sign
     inc    hl
 
 _float_check_exp:
+    ld     b,0      ; total number of written digits
+    ld     ix,_float_conv_buffer+5 ; position for E notation
     ld     a,e
     add    9        ; restore decimal position
+    cp     &80      ; EXP > 0? is a big number else small one
+    jr     c,_float_check_exp_big
+    push   af
+    sub    c        ; check if decimal position plus digits is too much
+    cp     &F8
+    jr     c,_float_write_exp_small
+    pop    af
+    jr     _float_check_exp_end
+_float_write_exp_small:
+    pop    af
+    ld     (ix+0),"E"
+    ld     (ix+1),"-"
+    ld     (ix+2),"X"
+    ld     (ix+3),"X"
+    ld     a,1
+    ld     c,1
+    jr     _float_copy_numbers
+_float_check_exp_big:
+    cp     10        ; EXP > 10? then we need E notation
+    jr     c,_float_check_exp_end
+    ld     (ix+0),"E"
+    ld     (ix+1),"+"
+    ld     (ix+2),"X"
+    ld     (ix+3),"X"
+    ld     a,1      ; new decimal position
+    ld     c,1
+    jr     _float_copy_numbers
+_float_check_exp_end:
     ld     c,a      ; keep in C the decimal position + 9
-    ld     b,0      ; total number of written digits
+    
 
     ; At this point
     ; A and C hold the decimal point position
-    ; B number of written digits (0 right now)
+    ; B number of current written digits
     ; HL text buffer
-_float_leading_0s
-    cp     1         ; only if A <=0 we need leading 0s
+_float_write_numbers:
+    cp     1        ; only if A <=0 we need leading 0s
     jp     p,_float_copy_numbers
     ld     (hl),"0"
     inc    hl
-    ld     (hl),"."
+    ld     (hl),"." 
     inc    hl
 _put_leading_0s_loop:
     or     a
@@ -239,7 +270,9 @@ _float_acum:
     db  &00, &28, &6B, &6E, &9E    ;1000000000
     db  &00, &F9, &02, &15, &A2    ;10000000000
     db  &80, &10, &B7, &41, &A2    ;12999999999
-    
+    db  &CF, &FE, &E6, &5B, &5F    ;0.0000000001
+    db  &1D, &C6, &BF, &4F, &79    ;0.0063399999
+
 _float_conv_buffer
     defs 10
 
