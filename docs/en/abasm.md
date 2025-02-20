@@ -65,7 +65,8 @@ This command will assemble the `program.asm` file and generate a binary file wit
 - `--start`: Defines the memory address that will be used as the starting point for loading the program. By default, this address is `0x4000`, but it can also be set directly in the code using the `ORG` directive.
 - `-o` or `--output`: Specifies the name of the output binary file. If this option is not used, the name of the input file will be used, with its extension changed to `.bin`.
 - `v` or `--output`: Shows program's version and exits.
-
+- `--verbose`: Prints more information in the console as the assemble progresses.
+  
 ## **Usage Examples
 
 Define a constant used in the code:
@@ -204,7 +205,9 @@ Labels in assembly code are symbolic names used to mark a specific position in t
 
 - As entry points to code blocks: Labels help make the code more readable and maintainable by providing descriptive names to important sections of the program.
 
-All labels are **global** by default, meaning they must be unique regardless of how many files the source code is divided into. To define **local** labels, only accesible within the file where they are declared, they must start with the character '.'. This will prevent the label from appearing in the Symbol File too. However, neither WinAPE or Retro Virtual Machine emulators support the concept of local labels so the use of this feature could introduce incompativilities with the sintax supported by these emulators.
+All labels are **global** by default, meaning they must be unique regardless of how many files the source code is divided into. To define **module local labels**, only accesible within the file where they are declared, they must start with the character '.'. This will prevent the label from appearing in the Symbol File too. However, neither WinAPE or Retro Virtual Machine emulators support the concept of local labels so the use of this feature could introduce incompativilities with the sintax supported by these emulators.
+
+Finally, labels must start with the symbol '!' within a macro code because that signales them as **macro local labels** and avoids errors due to label redefinition if the macro is *called* more  than once.
 
 ## Instructions
 
@@ -353,16 +356,29 @@ INCBIN "./assets/mysprite.bin"
 
 - MACRO symbol [param1, param2, ...] ENDM
 
-This directive allows you to assign a name or symbol to a block of code, which extends until the next occurrence of ENDM. The macro can take a list of parameters, which will be replaced by the corresponding values provided in the  *calls* to the macro. Once defined, a macro can be used throughout the rest of the code just like a regular instruction.
+This directive allows you to assign a name or symbol to a block of code, which extends until the next occurrence of ENDM. The macro can take a list of parameters, which will be replaced by the corresponding values provided in the  *calls* to the macro. Once defined, a macro can be used throughout the rest of the code just like a regular instruction. Each parameter passed is substituted literally into the code inside the macro when it is encountered as a whole word. For that reason, start and finish each parameter name with the character '_' may be a good practice to avoid matches with text strings or register names.
 
 ```
-macro get_screenPtr REG, X, Y 
-   ld REG, &C000 + 80 * (Y / 8) + 2048 * (Y & 7) + X 
+macro get_screenPtr _REG_, _X_, _Y_ 
+   ld _REG_, &C000 + 80 * (_Y_ / 8) + 2048 * (_Y_ & 7) + _X_ 
 endm
 
 main:
    get_screenPtr hl, 20, 10
 ``` 
+
+Macro code can contain *calls* to other macros but it's not possible to define a new macro o use the directive **read**. If a macro contains a regular label (global or local to the module) and it is used more than once, the assembler will detect a symbol redefinition, which will cause an error. If a macro needs to use labels, they must be preceded by the symbol '!' which singnales them as **macro local labels**.
+
+```
+macro decnz_a
+  or a
+  jr z,!leave
+  dec a
+  !leave
+mend
+```
+
+WinApe uses the symbol '@' to mark **macro local labels** but that symbol is used by ABASM to represent the current instruction's memory address too. As a result, ABASM departs from WinApe in this point and uses the symbol '!' instead.
 
 ### LIMIT
 
@@ -497,6 +513,9 @@ When an instruction or directive requires a number as a parameter, you can use a
 
 - Version 1.1 - ??/??/????
   * Support for directive LIMIT
+  * Support for local labels in macro code
+  * New assembler flag --verbose added as an option
+  * Some minor fixes and improvements
 
 - Version 1.0 - 03/10/2024
   * First released version

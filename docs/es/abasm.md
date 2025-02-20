@@ -65,7 +65,8 @@ Este comando ensamblará el archivo `program.asm` y generará un fichero binario
 - `-d` o `--define`: Permite definir pares `SÍMBOLO=VALOR`. Dichos símbolos pueden utilizarse en el código como constantes o etiquetas. Esta opción se puede emplear múltiples veces para definir varios símbolos.
 - `--start`: Define la dirección de memoria que se tomará como punto de inicio para la carga del programa. Por defecto, esta dirección es `0x4000`, aunque también puede establecerse directamente dentro del código usando la directiva `ORG`.
 - `-o` o `--output`: Especifica el nombre del archivo binario de salida. Si no se utiliza esta opción, se empleará el nombre del archivo de entrada cambiando su extensión por `.bin`.
-- `-o` o `--version`: Muestra el número de versión de ABASM.
+- `-v` o `--version`: Muestra el número de versión de ABASM.
+- `--verbose`: Imprime mucha más información por consola durante el proceso de ensamblado. 
 
 ## Ejemplos de uso
 
@@ -210,6 +211,8 @@ Las etiquetas en el código ensamblador son nombres simbólicos utilizados para 
 - Como puntos de entrada a bloques de código: Ayudan a hacer el código más legible y fácil de mantener al proporcionar nombres descriptivos a secciones importantes del programa.
 
 Todas las etiquetas son **globales** en ABASM salvo que empiecen con el caracter '.'. Las etiquetas globales deben ser únicas sin importar en cuántos archivos se divida el código fuente. Si se desea limitar la visibilidad de una etiqueta para que solo alcance al archivo donde se declara, deben comenzar por el caracter '.', lo que la define como etiqueta **local**. Las etiquetas locales no aparecerán en el archivo de símbolos. Hay que tener en cuenta que ni WinAPE ni Retro Virtual Machine soportan el concepto de etiquetas locales, así que su uso puede producir incompatibilidades con la sintaxis que soportan ambos simuladores.
+
+Para finalizar, las etiquetas deben comenzar con el símbolo '!' dentro del código de una macro pues eso las define como **etiquetas locales a la macro** y evita errores por su aparición multiples veces si la macro se *llama* más de una vez.
 
 ## Instrucciones
 
@@ -363,16 +366,27 @@ INCBIN "./assets/mysprite.bin"
 
 - MACRO símbolo [param1, param2, ...] ENDM
 
-Esta directiva permite asignar un nombre o símbolo a un bloque de código que se extiende hasta la siguiente ocurrencia de ENDM. La macro puede incluir una lista de parámetros que serán sustituidos por los valores proporcionados en futuras *llamadas* a la macro. Una vez definida, una macro puede utilizarse en el resto del código como si fuera una instrucción convencional.
+Esta directiva permite asignar un nombre o símbolo a un bloque de código que se extiende hasta la siguiente ocurrencia de ENDM. La macro puede incluir una lista de parámetros que serán sustituidos por los valores proporcionados en futuras *llamadas* a la macro. Una vez definida, una macro puede utilizarse en el resto del código como si fuera una instrucción convencional. Los parámetros se buscan en el código de la macro y se sustituyen por los valores pasados en la *llamada*. Por ese motivo, puede ser una buena práctica comenzar y finalizar cada nombre de parámetro con el carácter '_'; evitando, de ese modo, coincidencias accidentales con otras cadenas de texto o con nombres de registros o directivas.
 
 ```
-macro get_screenPtr REG, X, Y 
-   ld REG, &C000 + 80 * (Y / 8) + 2048 * (Y & 7) + X 
+macro get_screenPtr _REG_, _X_, _Y_ 
+   ld _REG_, &C000 + 80 * (_Y_ / 8) + 2048 * (_Y_ & 7) + _X_ 
 endm
 
 main:
    get_screenPtr hl, 20, 10
 ``` 
+
+El código de una macro puede contener *llamadas* a otras macros, pero no es posible definir una nueva macro ni utilizar la directiva **READ**. Si una macro contiene una etiqueta normal (global o local al módulo) y se *llama* más de una vez, el ensamblador detectará una redefinición de la etiqueta, lo que provocará un error. Si una macro necesita emplear etiquetas en su código, estas deben ir precedidas del símbolo '!', lo que las identificará como **etiquetas locales a la macro**.
+
+```
+macro decnz_a
+  or a
+  jr z,!leave
+  dec a
+  !leave
+mend
+```
 
 ### LET
 
@@ -507,6 +521,9 @@ Cuando una instrucción o directiva requiere un número como parámetro, se pued
 
 - Versión 1.1 - ??/??/????
   * Soporte para la directiva LIMIT.
+  * Soporte de etiquetas locales dentro del código de las macros.
+  * Añadido el flag --verbose como opción al ensamblador.
+  * Otros pequeños arreglos y mejoras.
 
 - Versión 1.0 - 03/10/2024
   * Primera versión liberada.

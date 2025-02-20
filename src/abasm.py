@@ -53,6 +53,7 @@ class AsmMacro:
 class AsmContext:
     def __init__(self):
         self.reset()
+        self.verbose = False
         self.registernames = [
             "A", "F", "B", "C", "D", "E", "H", "L", "I", "R",
             "IXL", "IXH", "IYL", "IYH", "AF", "BC", "DE", "HL",
@@ -81,10 +82,15 @@ class AsmContext:
         self.repeatstate = RSTATE_DISABLED
         self.currentfile = ""
         self.currentline = ""
+        self.currentinst = ""
         self.linenumber = 0
         self.lstcode = ""
         self.macros = {}
-        self.active_macro = None
+        self.macros_stack = []
+        self.macros_applied = 0
+        self.defining_macro = None
+        self.applying_macro = None
+        self.list_instruction = True
     
     def parse_logic_expr(self, expr):
         """
@@ -144,7 +150,7 @@ class AsmContext:
         inquotes = False
 
         for c in arg + " ":
-            if c.isalnum() or c in '"_.' or inquotes:
+            if c.isalnum() or c in '"_.!' or inquotes:
                 testsymbol += c
                 if c == '"':
                     inquotes = not inquotes
@@ -204,46 +210,65 @@ class AsmContext:
                 narg %= 65536
         return narg
 
-    def set_symbol(self, sym, value, is_label=False, is_let=False):
-        sym = sym.upper()
+    def set_symbol(self, sym, value, is_label=False, is_let=False, type='label'):
+        orgsym = sym = sym.upper()
         if is_label and len(sym) and sym[0] == '.':
             # In maxam labels can start with '.' to allow labels similar to opcodes
             # for Abasm this mean a local symbol that we don't want to export in our
             # map file or to other ASM files that may include this one
             sym = sym + '!' + self.modulename
-        if is_let: self.lettable[sym] = value
+        elif is_label and len(sym) and sym[0] == '!':
+            # macro local labels must start with ! character
+            if self.applying_macro == None:
+                abort("local labels must be used only inside macro code")
+            sym = sym + str(self.macros_applied) + '!' + self.modulename
+        elif is_let:
+            self.lettable[sym] = value
         self.symboltable[sym] = (value, self.modulename)
+        if self.verbose:
+            print(f" adding {type} {orgsym} to the symbols table with values ({value}, {self.modulename})")
 
     def get_symbol(self, sym):
         sym = sym.upper()
         if sym[0] == '.':
-            # local symbol
+            # module local symbol
             sym = sym + '!' + self.modulename
-        
+        elif sym[0] == '!':
+            # macro local label
+            sym = sym + str(self.macros_applied) + '!' + self.modulename
         if sym in self.symboltable:
             self.symusetable[sym] = g_context.symusetable.get(sym, 0) + 1
             return self.symboltable[sym][0]
         return None
 
+    def check_symbol(self, sym, type):
+        try:
+            if sym in g_context.registernames or "op_" + sym in g_opcode_functions:
+                abort(f"{type} name {sym} matches a directive, opcode or registry name")
+        except Exception as e:
+            pass
+            
     def process_label(self, p, label):
         if len(label.split()) > 1:
             abort("whitespaces are not allowed in label names")
 
         if label != "":
             if p == 1:
-                self.set_symbol(label, self.origin, is_label = True)
+                self.check_symbol(label, type='label')
+                self.set_symbol(label, self.origin, is_label = True, type='label')
             elif self.get_symbol(label) != self.origin:
                 abort("label address differs from previous stored value")
 
-    def process_macro(self, p, macro, args):
+    def process_macro(self, macro, args):
         argv = args.replace(' ', '').split(',')
         code = self.macros[macro].code
         params = self.macros[macro].argv
-        macrocode = []
+        macrocode = [f"_MACRO_ENTER_ {macro}"]
         for line in code:
             for i,arg in enumerate(argv):
                 line = line.replace(params[i], arg)
             macrocode.append(line)
+        macrocode.append(f"_MACRO_LEAVE_ {macro}")
         return macrocode
 
     def store(self, p, bytes):
@@ -299,9 +324,9 @@ class AsmContext:
 
     def parse_instruction(self, line):
         # Lines must start by characters or underscord or '.'
-        match = re.match(r'^(\.\w+|\w+)(.*)', line.strip())
+        match = re.match(r'^(\.\w+|\!\w+|\w+)(.*)', line.strip())
         if not match:
-            abort("in '" + line + "'. Valid literals must start with a letter, an underscord or '.'")
+            abort("in '" + line + "'. Valid literals must start with a letter, an underscord, '.' or '!' symbols")
 
         inst = match.group(1).upper().strip()
         args = match.group(2).strip()
@@ -309,41 +334,41 @@ class AsmContext:
 
     def assemble_instruction(self, p, line):
         inst, args = self.parse_instruction(line)
-
-        if self.active_macro is not None and inst != "ENDM":
-            self.active_macro.code.append(line)
+        if self.defining_macro is not None and inst != "ENDM":
+            self.defining_macro.code.append(line)
             return 0, []
-
         assemble = (self.ifstate < IFSTATE_DISCART) or inst in ("IF", "ELSE", "ELSEIF", "ENDIF")
         assemble = assemble and ((self.whilestate < WSTATE_FIND_END) or inst in ("WHILE", "WEND"))
         assemble = assemble and ((self.repeatstate < RSTATE_FIND_END) or inst in ("REPEAT", "REND"))
         if assemble:
-            try:
+            if g_context.verbose and p == 2:
+                print(f" line {self.linenumber}: assembling '{inst}' with args: '{args}'", end=' ')
+            if "op_" + inst in g_opcode_functions:
                 # get the pointer to the op_XXXX func
                 # not recognized opcodes or directives are labels in Maxam dialect BUT they
                 # can go with opcodes separated by spaces in the same line 'loop jp loop'
+                if g_context.verbose and p == 2: print("as an opcode")
                 functioncall = eval("op_" + inst)
                 return functioncall(p, args), []
-            except NameError as e:
-                if " EQU " in line.upper():
-                    params = line.upper().split(' EQU ')
-                    op_EQU(p, ','.join(params))
-                else:
-                    if inst in self.macros:
-                        # Return the extra code generated by the macro
-                        return 0, self.process_macro(p, inst, args)
-                    else:
-                        self.process_label(p, inst)
-                        # MAXAM support the structure <label> <opcode> <operands>
-                        # without using the colon at the end of the label
-                        extra_statements = line.split(' ', 1)
-                        if len(extra_statements) > 1:
-                            return self.assemble_instruction(p, extra_statements[1])
-                return 0, []
-            except SystemExit as e:
-                sys.exit(e)
-        else:
-            return 0, []
+            elif " EQU " in line.upper():
+                params = line.upper().split(' EQU ')
+                op_EQU(p, ','.join(params))
+                if g_context.verbose and p == 2: print("as an EQU instruction")
+            elif inst in self.macros:
+                # Return the extra code generated by the macro
+                if g_context.verbose and p == 2: print("as a macro call")
+                self.list_instruction = False
+                return 0, self.process_macro(inst, args)
+            else:
+                # must be a label
+                if g_context.verbose and p == 2: print("as a label")
+                self.process_label(p, inst)
+                # MAXAM support the structure <label> <opcode> <operands>
+                # without using the colon at the end of the label
+                extra_statements = line.split(' ', 1)
+                if len(extra_statements) > 1:
+                    return self.assemble_instruction(p, extra_statements[1])
+        return 0, []
 
     def read_srcfile(self, inputfile):
         try:
@@ -418,14 +443,15 @@ class AsmContext:
             self.currentfile = inputfile + ":" + str(self.linenumber)   
             statements = self.get_statements(self.currentline)
             while len(statements) > 0:
-                opcode = statements.pop(0)
-                # macro substitution can generate extra statements   
-                incbytes, extracode = self.assemble_instruction(p, opcode)
+                self.currentinst = statements.pop(0)
+                # macro substitution can generate extra statements
+                self.list_instruction = True
+                incbytes, extracode = self.assemble_instruction(p, self.currentinst)
                 if extracode:
                     statements = extracode + statements
-                if p == 2:
+                if p == 2 and self.list_instruction:
                     fname = os.path.basename(inputfile)[0:13]
-                    lstout = "%-13s %06d  %04X  %-16s\t%s" % (fname, self.linenumber, self.origin, self.lstcode, opcode)
+                    lstout = "%-13s %06d  %04X  %-16s\t%s" % (fname, self.linenumber, self.origin, self.lstcode, self.currentinst)
                     self.lstcode = ""
                     self.write_listinfo(lstout)
                 self.origin = self.origin + incbytes
@@ -445,6 +471,8 @@ class AsmContext:
             self.origin = startaddr
             self.include_stack = []
             self.modules = []
+            self.macros_stack = []
+            self.macros_applied = 0
             self.assembler_pass(p, inputfile)
 
         if len(self.ifstack) > 0:
@@ -461,14 +489,15 @@ class AsmContext:
             print("[abasm] Error: mismatched REPEAT and REND statements")
             sys.exit(1)
 
-        if self.active_macro is not None:
-            print("[abasm] Error: missing ENDM directive for macro", self.active_macro.name)
+        if self.defining_macro is not None:
+            print("[abasm] Error: missing ENDM directive for macro", self.defining_macro.name)
             sys.exit(1)
 
         self.save_binfile(outputfile)
 
 
 g_context = AsmContext()
+g_opcode_functions = []
 
 ###########################################################################
 # Error and warning reporting
@@ -479,7 +508,12 @@ def warning(message):
 
 def abort(message):
     print("[abasm]", os.path.basename(g_context.currentfile) + ':', 'error:', message)
-    print('\t', g_context.currentline.strip())
+    line = g_context.currentline.strip()
+    inst = g_context.currentinst.strip()
+    if line != inst:
+        print(f"\t in '{inst}' from '{line}'")
+    else:
+        print(f"\t in '{line}'")
     sys.exit(1)
 
 
@@ -793,12 +827,12 @@ def op_EQU(p, opargs):
     expr = expr.strip()
     if p == 1:
         v = g_context.parse_expression(expr, signed=1, allowundef=1)
-        if v != None: g_context.set_symbol(symbol, v)
+        if v != None: g_context.set_symbol(symbol, v, type='alias')
     else:
         expr_result = g_context.parse_expression(expr, signed=1)
         existing = g_context.get_symbol(symbol)
         if existing == None:
-            g_context.set_symbol(symbol, expr_result)
+            g_context.set_symbol(symbol, expr_result, type='alias')
         elif existing != expr_result:
                 abort("Symbol " + symbol +
                       ": expected " + str(existing) +
@@ -884,7 +918,7 @@ def op_LET(p, opargs):
     allowundef = 1 if p == 1 else 0
     val = g_context.parse_expression(val, allowundef)
     if val != None:
-        g_context.set_symbol(sym, val, is_let=True)
+        g_context.set_symbol(sym, val, is_let=True, type='let')
     return 0
 
 def op_READ(p, opargs):
@@ -892,7 +926,7 @@ def op_READ(p, opargs):
     if g_context.whilestate != WSTATE_DISABLED or g_context.repeatstate != RSTATE_DISABLED:
         abort("READ is not allowed inside WHILE or REPEAT loops")
 
-    if g_context.active_macro != None:
+    if g_context.applying_macro != None:
         abort("READ is no allowed inside a MACRO code")
 
     if len(g_context.include_stack) > 5:
@@ -1558,17 +1592,36 @@ def op_ENDIF(p, opargs):
     return 0
 
 def op_MACRO(p, opargs):
+    # Macros can contain calls to other macros but can not nest macro definitions
+    if g_context.applying_macro != None:
+        abort("macro definitions cannot be nested")
     name, args = g_context.parse_instruction(opargs)
+    if g_context.verbose and p==1: print(f" adding macro {name} to the macros table")
+    g_context.check_symbol(name, 'macro')
     if len(args) > 0:
         argv = args.split(',')
 
     macro = AsmMacro(name, argv)
     g_context.macros[name] = macro
-    g_context.active_macro = macro
+    g_context.defining_macro = macro
     return 0
 
 def op_ENDM(p, opargs):
-    g_context.active_macro = None
+    g_context.defining_macro = None
+    return 0
+
+def op__MACRO_ENTER_(p, opargs):
+    if g_context.applying_macro != None:
+        g_context.macros_stack.append((g_context.applying_macro, g_context.macros_applied))
+    g_context.macros_applied = g_context.macros_applied + 1
+    g_context.applying_macro = opargs.strip()
+    return 0
+
+def op__MACRO_LEAVE_(p, opargs):
+    if len(g_context.macros_stack) > 0:
+        g_context.applying_macro, g_context.macros_applied = g_context.macros_stack.pop()
+    else:
+        g_context.applying_macro = None
     return 0
 
 ###########################################################################
@@ -1586,7 +1639,7 @@ def assemble(inputfile, outputfile = None, predefsymbols = [], startaddr = 0x400
         except:
             print("Error: invalid format for command-line symbol definition in" + val)
             sys.exit(1)
-        g_context.set_symbol(sym[0], aux_int(sym[1]))
+        g_context.set_symbol(sym[0], aux_int(sym[1]), type='predefined symbol')
 
     g_context.assemble(inputfile, outputfile, startaddr)
 
@@ -1607,14 +1660,23 @@ def process_args():
     parser.add_argument('-o', '--output', help = 'Target file in binary format. If not specified, first input file name will be used.')
     parser.add_argument('--start', type = aux_int, default = 0x4000, help = 'Starting address. Can be overwritten by ORG directive (default 0x4000).')
     parser.add_argument('-v', '--version', action='version', version=f' Abasm Assembler Version {__version__}', help = "Shows program's version and exits")
+    parser.add_argument('--verbose', action='store_true', help = 'Prints all source code lines as they are assembled')
     args = parser.parse_args()
     return args
 
 def main():
+    global g_context
     args = process_args()
+    g_context.verbose = args.verbose
     assemble(args.inputfile, args.output, args.define, args.start)
     print("[abasm] All OK")
     sys.exit(0)
 
 if __name__ == "__main__":
+    # get all functions of this module that start with op_
+    g_opcode_functions = []
+    module_syms = dir()
+    for msym in module_syms:
+        if 'op_' == msym[0:3]:
+            g_opcode_functions.append(msym)
     main()
