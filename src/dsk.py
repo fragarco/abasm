@@ -29,7 +29,7 @@ along with this program; if not, write to the Free Software
 Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 """
 __author__='Javier "Dwayne Hicks" Garcia'
-__version__='1.0'
+__version__='1.01'
 
 import sys
 import os
@@ -922,6 +922,7 @@ def process_args():
     parser.add_argument('--dump', action='store_true', help='Prints DSK file format information on the standard ouput.')
     parser.add_argument('--cat', action='store_true', help='Lists in the standard output the DSK file content.')
     parser.add_argument('--header', type=int, help='Prints AMSDOS header for indicated file entry starting at 0.')
+    parser.add_argument('--no-header', action='store_true', help='Used together with the --get option extracs files without AMSDOS header.')
     parser.add_argument('--get', type=int, help='Extracts file pointed by the indicated entry. Use --no-header to remove AMSDOS header.')
     parser.add_argument('--put-bin', type=str, help='Adds a new binary file to DSK file creating and appending an extra AMSDOS header.')
     parser.add_argument('--put-raw', type=str, help='Adds a new binary file to DSK file without creating an extra AMSDOS header.')
