@@ -13,7 +13,7 @@ set DSK=python3 ../../src/dsk.py
 set CDT=python3 ../../src/cdt.py
 
 set LOADADDR=0x1200
-set SOURCE=hello
+set SOURCE=main
 set TARGET=helloworld
 
 set RUNASM=%ASM% --start=%LOADADDR% %SOURCE%.asm 

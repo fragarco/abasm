@@ -205,7 +205,7 @@ Labels in assembly code are symbolic names used to mark a specific position in t
 
 - As entry points to code blocks: Labels help make the code more readable and maintainable by providing descriptive names to important sections of the program.
 
-All labels are **global** by default, meaning they must be unique regardless of how many files the source code is divided into. To define **module local labels**, only accesible within the file where they are declared, they must start with the character '.'. This will prevent the label from appearing in the Symbol File too. However, neither WinAPE or Retro Virtual Machine emulators support the concept of local labels so the use of this feature could introduce incompativilities with the sintax supported by these emulators.
+All labels are **global** by default, meaning they must be unique regardless of how many files the source code is divided into. To define **module local labels**, only accesible within the file where they are defined, they must start with the character '.' when declared. This will prevent the label from appearing in the Symbol File too. However, neither WinAPE or Retro Virtual Machine emulators support the concept of local labels so the use of this feature could introduce incompativilities with the sintax supported by these emulators. ABASM resolves a label looking in the module local definitions first, and if it is not found, checks in the global labels.
 
 Finally, labels must start with the symbol '!' within a macro code because that signales them as **macro local labels** and avoids errors due to label redefinition if the macro is *called* more  than once.
 

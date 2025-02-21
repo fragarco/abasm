@@ -47,7 +47,7 @@
 
 	ld b,24
 
-.drawobstacles
+drawobstacles
 	push bc
 	call rand
 	call scalenum
@@ -68,7 +68,7 @@
 
 	call printrocket
 
-.maingame
+maingame
 
 	call updaterocket
 
@@ -96,7 +96,7 @@
 	add hl,de
 	ld (ex),hl
 
-.checkleft
+checkleft
 	ld a,8
 	call &bb1e			; KM Test Key
 	jr z,skip
@@ -118,7 +118,7 @@
 	sbc hl,de
 	ld (ex),hl
 
-.skip	ld a,(dead)
+skip ld a,(dead)
 	and a
 	jr nz,maingame
 
@@ -159,7 +159,7 @@
 ; The print_spr routine works by using the transparent mode, redefined
 ; characters, pen colours & loops to produce a multicoloured 8x8 image.
 
-.printrocket
+printrocket
 	ld hl,(ypos)
 	ld (ypos1),hl
 	ld a,247
@@ -173,7 +173,7 @@
 ; These routines handle the scrolling, collision tests and
 ; printing of rocket and bolders.
 
-.updaterocket
+updaterocket
 	call scroll
 	call collision
 	call scroll
@@ -182,7 +182,7 @@
 ;	call updateobstacle
 ;	ret
 
-.updateobstacle
+updateobstacle
 	call rand
 	call scalenum
 	ld a,(result)
@@ -207,7 +207,7 @@
 ; cursor keys ex is updated by either subtracting 32 or adding 
 ; 32.
 
-.collision
+collision
 	ld hl,(ex)
 	ex de,hl
 	ld hl,(ey)
@@ -217,7 +217,7 @@
 	ld a,(dead)		;  
 	dec a			; You're Dead
 	ld (dead),a		;
-.endcoll
+endcoll
 	ret
 
 ; Gen Seed routine
@@ -234,7 +234,7 @@
 ; the Gen Seed routine is used to obtain a random value from the 
 ; refresh register (r). 
 
-.rand	ld a,(seed)
+rand	ld a,(seed)
 	ld b,a
 	add a,a
 	add a,a

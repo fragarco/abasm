@@ -230,12 +230,16 @@ class AsmContext:
 
     def get_symbol(self, sym):
         sym = sym.upper()
-        if sym[0] == '.':
-            # module local symbol
-            sym = sym + '!' + self.modulename
-        elif sym[0] == '!':
+        if sym[0] == '!':
             # macro local label
             sym = sym + str(self.macros_applied) + '!' + self.modulename
+        # is this a module local label?
+        orgsym = sym
+        if sym[0] != '.': sym = '.' + sym
+        sym = sym + '!' + self.modulename
+        if sym not in self.symboltable:
+            # it must be a global symbol
+            sym = orgsym
         if sym in self.symboltable:
             self.symusetable[sym] = g_context.symusetable.get(sym, 0) + 1
             return self.symboltable[sym][0]
@@ -307,7 +311,7 @@ class AsmContext:
 
     def save_memory(self, filename, start, size):
         memory = self.memory[start:start+size]
-        print("[abasm] saving memory area 0x%04X:0x%04X (%d bytes) in %s" %  (start, start+size, size, filename))
+        print("[abasm] output: %s [%04X:%04X - %d bytes]" % (filename, start, start+size, size))
         contentlen = len(memory)
         if contentlen > 0:
             # check that something has been assembled at all
@@ -465,8 +469,7 @@ class AsmContext:
                 self.linenumber += 1
 
     def assemble(self, inputfile, outputfile, startaddr):
-        print("[abasm] assembler version", __version__)
-        print("[abasm] generating", outputfile)
+        print("[abasm] input: ", inputfile)
         for p in [1, 2]:
             self.origin = startaddr
             self.include_stack = []
@@ -509,11 +512,7 @@ def warning(message):
 def abort(message):
     print("[abasm]", os.path.basename(g_context.currentfile) + ':', 'error:', message)
     line = g_context.currentline.strip()
-    inst = g_context.currentinst.strip()
-    if line != inst:
-        print(f"\t in '{inst}' from '{line}'")
-    else:
-        print(f"\t in '{line}'")
+    print(f"\t in '{line}'")
     sys.exit(1)
 
 
@@ -1669,7 +1668,6 @@ def main():
     args = process_args()
     g_context.verbose = args.verbose
     assemble(args.inputfile, args.output, args.define, args.start)
-    print("[abasm] All OK")
     sys.exit(0)
 
 if __name__ == "__main__":
