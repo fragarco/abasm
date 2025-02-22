@@ -869,11 +869,10 @@ def run_put_file(infile, dskfile, disk, content):
     disk.set_dirtable(dirtable)
     disk.add_content(sectors, content)
     disk.write(dskfile)
-    print("ok")
 
 def run_put_asciifile(args, disk):
     content = run_read_input_file(args.put_ascii)
-    print("[dsk] adding ASCII file", args.put_ascii, "...",end='')
+    print("[dsk] adding ASCII file", args.put_ascii)
     run_check(args, disk)
     # ASCII files always go without AMSDOS header. Additionaly, CPM 2.2 uses a 
     # special character to indicate end of file. Lets check if the file already
@@ -891,7 +890,7 @@ def run_put_binfile(args, disk, infile):
         if header.is_valid_header():
             print('[dsk] removing current AMSDOS header for', infile)
             content = content[128:]
-    print("[dsk] adding BIN file", infile, '...', end='')
+    print("[dsk] adding BIN file", infile)
     mapfile = {}
     header.build(infile, len(content))
     if args.map_file != None: mapfile = run_read_mapfile(args.map_file)
@@ -904,7 +903,7 @@ def run_put_binfile(args, disk, infile):
 def run_put_rawfile(args, disk, infile):
     content = run_read_input_file(infile)
     run_check(args, disk)
-    print("[dsk] adding RAW file", infile, '...',end='')
+    print("[dsk] adding RAW file", infile)
     run_put_file(infile, args.dskfile, disk, content)
 
 def aux_int(param):

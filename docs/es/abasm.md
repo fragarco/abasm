@@ -210,9 +210,18 @@ Las etiquetas en el código ensamblador son nombres simbólicos utilizados para 
 
 - Como puntos de entrada a bloques de código: Ayudan a hacer el código más legible y fácil de mantener al proporcionar nombres descriptivos a secciones importantes del programa.
 
-Todas las etiquetas son **globales** en ABASM salvo que empiecen con el caracter '.'. Las etiquetas globales deben ser únicas sin importar en cuántos archivos se divida el código fuente. Si se desea limitar la visibilidad de una etiqueta para que solo alcance al archivo donde se declara, deben comenzar por el caracter '.', lo que la define como etiqueta **local al módulo**. Las etiquetas locales no aparecerán en el archivo de símbolos. Hay que tener en cuenta que ni WinAPE ni Retro Virtual Machine soportan el concepto de etiquetas locales, así que su uso puede producir incompatibilidades con la sintaxis que soportan ambos simuladores. ABASM busca primero las etiquetas entre las definidas localmente para el módulo y, solo si no la se encuentra entre ellas, busca entre las etiquetas globales.
+Todas las etiquetas son **globales** por defecto, lo que significa que deben ser únicas sin importar en cuántos archivos esté dividido el código fuente. ABASM ignora el carácter inicial '.' en la definición de etiquetas para admitir el formato de declaración de etiquetas de WinApe.  
 
-Para finalizar, las etiquetas deben comenzar con el símbolo '!' dentro del código de una macro pues eso las define como **etiquetas locales a la macro** y evita errores por su aparición multiples veces si la macro se *llama* más de una vez.
+Para crear una etiqueta local (restringida a un módulo/archivo o dentro de una macro), debe comenzar con el símbolo '!'. Si la etiqueta se define fuera de una macro, se considera una **etiqueta local del módulo**, accesible solo dentro del archivo donde se declara. Esto también evita que la etiqueta aparezca en el archivo de símbolos.  
+
+Si la etiqueta se define dentro de una macro, se trata como una **etiqueta local de macro**. Las etiquetas locales de macro son esenciales para evitar errores causados por redefiniciones de etiquetas cuando la macro se invoca varias veces.  
+
+```
+!loop
+  <algo de código>
+  dec b
+  jr z,!loop
+```
 
 ## Instrucciones
 

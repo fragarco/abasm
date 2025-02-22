@@ -1,7 +1,7 @@
 ; This program prints all ASCII characters between code 32 and 128.
 ; It's a variation of the first example presented in the MAXAM manual
 
-.main                ; defines a label 'main' as a local file label
+.main                ; defines a global label
     ld a,32          ; first ASCII code in accumulator
 
 .loop                ; Defines a label 'loop'

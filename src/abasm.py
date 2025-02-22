@@ -212,16 +212,18 @@ class AsmContext:
 
     def set_symbol(self, sym, value, is_label=False, is_let=False, type='label'):
         orgsym = sym = sym.upper()
-        if is_label and len(sym) and sym[0] == '.':
-            # In maxam labels can start with '.' to allow labels similar to opcodes
-            # for Abasm this mean a local symbol that we don't want to export in our
-            # map file or to other ASM files that may include this one
-            sym = sym + '!' + self.modulename
-        elif is_label and len(sym) and sym[0] == '!':
-            # macro local labels must start with ! character
-            if self.applying_macro == None:
-                abort("local labels must be used only inside macro code")
-            sym = sym + str(self.macros_applied) + '!' + self.modulename
+        if is_label:
+            if sym[0] == "!":
+                if self.applying_macro == None:
+                    # module local label
+                    sym = sym + '!' + self.modulename
+                else:
+                    # macro local label
+                   sym = sym + str(self.macros_applied) + '!' + self.modulename
+            elif sym[0] == '.':
+                # In maxam labels can start with '.' to allow labels similar to opcodes
+                # so we need to remove that .
+                sym = sym[1:]
         elif is_let:
             self.lettable[sym] = value
         self.symboltable[sym] = (value, self.modulename)
@@ -231,15 +233,12 @@ class AsmContext:
     def get_symbol(self, sym):
         sym = sym.upper()
         if sym[0] == '!':
-            # macro local label
-            sym = sym + str(self.macros_applied) + '!' + self.modulename
-        # is this a module local label?
-        orgsym = sym
-        if sym[0] != '.': sym = '.' + sym
-        sym = sym + '!' + self.modulename
-        if sym not in self.symboltable:
-            # it must be a global symbol
-            sym = orgsym
+            if self.applying_macro == None:
+                #  module local label
+                sym = sym + '!' + self.modulename
+            else:
+                sym = sym + str(self.macros_applied) + '!' + self.modulename
+        if sym[0] == '.': sym = sym[1:]
         if sym in self.symboltable:
             self.symusetable[sym] = g_context.symusetable.get(sym, 0) + 1
             return self.symboltable[sym][0]
@@ -296,7 +295,7 @@ class AsmContext:
                 f.write('# Symbol: [address, total number of reads, file name]\n')
                 f.write('{\n')
                 for sym, (addr, modulename) in sorted(self.symboltable.items()):
-                    if sym[0] != '.':
+                    if sym[0] != '!':
                         # Only write global symbols 
                         used = 0 if sym not in self.symusetable else self.symusetable[sym]
                         f.write('\t"%s": [0x%04X, %d, "%s"],\n' % (sym, addr, used, modulename))
@@ -938,6 +937,7 @@ def op_READ(p, opargs):
     filename = os.path.join(os.path.dirname(g_context.currentfile), path.group(0))
     if not os.path.exists(filename):
         abort("couldn't access to the file " + filename)
+    if p == 1: print("[abasm] including", filename)
     g_context.assembler_pass(p, filename)
     g_context.currentfile, g_context.linenumber = g_context.include_stack.pop()
     return 0

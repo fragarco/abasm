@@ -205,9 +205,18 @@ Labels in assembly code are symbolic names used to mark a specific position in t
 
 - As entry points to code blocks: Labels help make the code more readable and maintainable by providing descriptive names to important sections of the program.
 
-All labels are **global** by default, meaning they must be unique regardless of how many files the source code is divided into. To define **module local labels**, only accesible within the file where they are defined, they must start with the character '.' when declared. This will prevent the label from appearing in the Symbol File too. However, neither WinAPE or Retro Virtual Machine emulators support the concept of local labels so the use of this feature could introduce incompativilities with the sintax supported by these emulators. ABASM resolves a label looking in the module local definitions first, and if it is not found, checks in the global labels.
+All labels are **global** by default, meaning they must be unique regardless of how many files the source code is divided into. ABASM ignores the leading '.' in label definitions to support the WinApe label declaration format.  
 
-Finally, labels must start with the symbol '!' within a macro code because that signales them as **macro local labels** and avoids errors due to label redefinition if the macro is *called* more  than once.
+To create a local label (restricted to a module/file or within a macro), the label must start with the symbol '!'. If the label is defined outside a macro, it is considered a **module-local label**, accessible only within the file where it is declared. This also prevents the label from appearing in the Symbol File.  
+
+If the label is defined inside a macro, it is treated as a **macro-local label**. Macro-local labels are essential to prevent errors caused by label redefinitions when the macro is invoked multiple times.
+
+```
+!loop
+  <some other code>
+  dec b
+  jr z,!loop
+```
 
 ## Instructions
 
@@ -367,7 +376,7 @@ main:
    get_screenPtr hl, 20, 10
 ``` 
 
-Macro code can contain *calls* to other macros but it's not possible to define a new macro o use the directive **read**. If a macro contains a regular label (global or local to the module) and it is used more than once, the assembler will detect a symbol redefinition, which will cause an error. If a macro needs to use labels, they must be preceded by the symbol '!' which singnales them as **macro local labels**.
+Macro code can contain *calls* to other macros but it's not possible to define a new macro or use the directive **read**. If a macro contains a regular label and the macro is *called* more than once, the assembler will detect a symbol redefinition, which will cause an error. For that reason, If a macro needs to use labels, they must be preceded by the symbol '!' which singnales them as **macro local labels**.
 
 ```
 macro decnz_a
@@ -378,7 +387,7 @@ macro decnz_a
 mend
 ```
 
-WinApe uses the symbol '@' to mark **macro local labels** but that symbol is used by ABASM to represent the current instruction's memory address too. As a result, ABASM departs from WinApe in this point and uses the symbol '!' instead.
+WinApe uses the symbol '@' to mark **macro local labels** but that symbol is used by ABASM to represent the current instruction's memory address too. As a result, ABASM departs from WinApe in this point.
 
 ### LIMIT
 
