@@ -25,7 +25,7 @@ __version__='1.1'
 import sys, os
 import re
 import argparse
-
+import inspect
 
 IFSTATE_DISABLED = 0 # assemble all encounted code
 IFSTATE_ASSEMBLE = 1 # assemble this code, but stop at ELSE or ELSEIF
@@ -74,6 +74,7 @@ class AsmContext:
         self.memory = bytearray(0x00 for i in range(0,0xFFFF))
         self.memory_high = 0
         self.memory_low = 0xFFFF
+        self.machine_code = bytearray()
         self.ifstack = []
         self.ifstate = IFSTATE_DISABLED
         self.whileline = None
@@ -137,6 +138,7 @@ class AsmContext:
         arg = arg.replace(' OR ', '|') # Maxam OR bitwise operator
         arg = arg.replace(' XOR ', '^') # Maxam XOR bitwise operator
         arg = arg.replace(' MOD ', '%') # Maxam syntax for modulus
+        arg = arg.replace('/', '//') # Maxam div is integer which in Python is done with //
 
         # fix capitalized hex or binary Python symbol
         # don't do these except at the start of a token
@@ -296,17 +298,12 @@ class AsmContext:
                 f.write('{\n')
                 for sym, (addr, modulename) in sorted(self.symboltable.items()):
                     if sym[0] != '!':
-                        # Only write global symbols 
+                        # Only write global symbols
                         used = 0 if sym not in self.symusetable else self.symusetable[sym]
                         f.write('\t"%s": [0x%04X, %d, "%s"],\n' % (sym, addr, used, modulename))
                 f.write('}\n')
         except Exception as e:
             abort(f"Error trying to generate the file {filename}: " + str(e))
-
-    def save_binfile(self, filename):
-        size = self.memory_high - self.memory_low + 1
-        self.save_memory(filename, self.memory_low, size)
-        self.save_mapfile(filename)
 
     def save_memory(self, filename, start, size):
         memory = self.memory[start:start+size]
@@ -324,6 +321,11 @@ class AsmContext:
         if self.listingfile == None:
             self.listingfile = open(os.path.splitext(self.outputfile)[0] + '.lst', "wt")
         self.listingfile.write(line + "\n")
+
+    def save_binfile(self, filename):
+        size = self.memory_high - self.memory_low + 1
+        self.save_memory(filename, self.memory_low, size)
+        self.save_mapfile(filename)
 
     def parse_instruction(self, line):
         # Lines must start by characters or underscord or '.'
@@ -343,16 +345,16 @@ class AsmContext:
         assemble = (self.ifstate < IFSTATE_DISCART) or inst in ("IF", "ELSE", "ELSEIF", "ENDIF")
         assemble = assemble and ((self.whilestate < WSTATE_FIND_END) or inst in ("WHILE", "WEND"))
         assemble = assemble and ((self.repeatstate < RSTATE_FIND_END) or inst in ("REPEAT", "REND"))
+        self.list_instruction = assemble
         if assemble:
             if g_context.verbose and p == 2:
                 print(f" line {self.linenumber}: assembling '{inst}' with args: '{args}'", end=' ')
             if "op_" + inst in g_opcode_functions:
-                # get the pointer to the op_XXXX func
+                # check if we have a pointer to the op_XXXX func
                 # not recognized opcodes or directives are labels in Maxam dialect BUT they
                 # can go with opcodes separated by spaces in the same line 'loop jp loop'
                 if g_context.verbose and p == 2: print("as an opcode")
-                functioncall = eval("op_" + inst)
-                return functioncall(p, args), []
+                return g_opcode_functions["op_" + inst](p, args), []
             elif " EQU " in line.upper():
                 params = line.upper().split(' EQU ')
                 op_EQU(p, ','.join(params))
@@ -477,6 +479,9 @@ class AsmContext:
             self.macros_applied = 0
             self.assembler_pass(p, inputfile)
 
+        if self.listingfile != None:
+            self.listingfile.close()
+
         if len(self.ifstack) > 0:
             print("[abasm] Error: mismatched IF and ENDIF statements, too many IF")
             for item in self.ifstack:
@@ -499,7 +504,7 @@ class AsmContext:
 
 
 g_context = AsmContext()
-g_opcode_functions = []
+g_opcode_functions = {}
 
 ###########################################################################
 # Error and warning reporting
@@ -509,10 +514,16 @@ def warning(message):
     print('\t', g_context.currentline.strip())
 
 def abort(message):
-    print("[abasm]", os.path.basename(g_context.currentfile) + ':', 'error:', message)
-    line = g_context.currentline.strip()
-    print(f"\t in '{line}'")
-    sys.exit(1)
+    line1 = f"{os.path.basename(g_context.currentfile)}: error: {message}"
+    line2 = f"in '{g_context.currentline.strip()}'"
+    if __name__ == "__main__":
+        print("[abasm]", line1)
+        print("\t", line2)
+        if g_context.listingfile != None:
+            g_context.listingfile.close()
+        sys.exit(1)
+    else:
+        raise RuntimeError(f"{line1} {line2}")
 
 
 ###########################################################################
@@ -973,6 +984,7 @@ def op_WHILE(p, opargs):
     else:
         g_context.whileline = None
         g_context.whilestate = WSTATE_FIND_END
+    g_context.list_instruction = False
     return 0
 
 def op_WEND(p, opargs):
@@ -982,6 +994,7 @@ def op_WEND(p, opargs):
         g_context.whilestate = WSTATE_LOOP
     else:
         g_context.whilestate = WSTATE_DISABLED
+    g_context.list_instruction = False
     return 0
 
 def op_REPEAT(p, opargs):
@@ -999,6 +1012,7 @@ def op_REPEAT(p, opargs):
     else:
         g_context.repeatloop = None
         g_context.repeatstate = RSTATE_FIND_END
+    g_context.list_instruction = False
     return 0
 
 def op_REND(p, opargs):
@@ -1011,6 +1025,7 @@ def op_REND(p, opargs):
         g_context.repeatstate = RSTATE_LOOP
     else:
         g_context.repeatstate = RSTATE_DISABLED
+    g_context.list_instruction = False
     return 0
 
 def op_LIMIT(p, opargs):
@@ -1625,6 +1640,16 @@ def op__MACRO_LEAVE_(p, opargs):
 
 ###########################################################################
 
+def create_opdict():
+    """ Get all functions of this module that start with op_ """
+    global g_opcode_functions
+    g_opcode_functions = {}
+    mod = inspect.getmodule(AsmContext)
+    module_syms = inspect.getmembers(mod)
+    for (sym, fun) in module_syms:
+        if 'op_' == sym[0:3]:
+            g_opcode_functions[sym] = fun
+
 def assemble(inputfile, outputfile = None, predefsymbols = [], startaddr = 0x4000):
     if (outputfile == None):
         outputfile = os.path.splitext(inputfile)[0] + ".bin"
@@ -1667,14 +1692,9 @@ def main():
     global g_context
     args = process_args()
     g_context.verbose = args.verbose
+    create_opdict()
     assemble(args.inputfile, args.output, args.define, args.start)
     sys.exit(0)
 
 if __name__ == "__main__":
-    # get all functions of this module that start with op_
-    g_opcode_functions = []
-    module_syms = dir()
-    for msym in module_syms:
-        if 'op_' == msym[0:3]:
-            g_opcode_functions.append(msym)
     main()
