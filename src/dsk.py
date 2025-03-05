@@ -856,7 +856,7 @@ def run_get_start(startaddr, mapfile):
         startaddr = startaddr.upper()
         if startaddr in mapfile:
             return mapfile[startaddr][0]
-        print("[dsk] invalid start address value")
+        print(f"[dsk] invalid start address value: {startaddr}")
         sys.exit(1)
 
 def run_put_file(infile, dskfile, disk, content):
