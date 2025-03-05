@@ -12,12 +12,28 @@
 ; org &1200
 
 ; REG16 = screenPtr
-macro cpctm_screenPtr REG16, VMEM, X, Y 
-   ld REG16, VMEM + 80 * (Y / 8) + 2048 * (Y & 7) + X 
+; In Python integer division is // so is here
+macro get_videoPtr _R16_, _XCUR_, _YLINE_
+   ld _R16_, &C000 + &50 * (_YLINE_ / 8) + &800 * (_YLINE_ MOD 8) + _XCUR_ * 2
 endm
 
 main:
-   cpctm_screenPtr hl,0xC000,20,10
+
+   ; MODE 1
+   ld a,l
+   call &BC11 ;SCR_SET_MODE
+   
+   ; BORDER 2
+   ld b,2      ; first color
+   ld c,2      ; second color
+   call &BC38  ;SCR_SET_BORDER")
+
+   ; Let's draw three red lines of 4 pixels
+   get_videoPtr hl,19,0
+   ld (hl), &FF
+   get_videoPtr hl,19,100
+   ld (hl), &FF
+   get_videoPtr hl,19,199
    ld (hl), &FF
 
 endloop:
