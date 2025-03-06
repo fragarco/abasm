@@ -528,7 +528,10 @@ Cuando una instrucción o directiva requiere un número como parámetro, se pued
 
 # Historial de cambios
 
-- Versión 1.1 - ??/??/????
+- Versión 1.2 - ??/??/????
+   * 
+
+- Versión 1.1 - 06/03/2025
   * Soporte para la directiva LIMIT.
   * Soporte de etiquetas locales dentro del código de las macros.
   * Añadido el flag --verbose como opción al ensamblador.
