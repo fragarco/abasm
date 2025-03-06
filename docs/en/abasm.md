@@ -527,6 +527,7 @@ When an instruction or directive requires a number as a parameter, you can use a
   * Support for directive LIMIT
   * Support for local labels in macro code
   * New assembler flag --verbose added as an option
+  * Adding Tests that can be run with python -m unittest
   * Some minor fixes and improvements
 
 - Version 1.0 - 03/10/2024

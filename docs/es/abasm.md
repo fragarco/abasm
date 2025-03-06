@@ -535,6 +535,7 @@ Cuando una instrucción o directiva requiere un número como parámetro, se pued
   * Soporte para la directiva LIMIT.
   * Soporte de etiquetas locales dentro del código de las macros.
   * Añadido el flag --verbose como opción al ensamblador.
+  * Añadidos tests ejecutables mediante python -m unittest
   * Otros pequeños arreglos y mejoras.
 
 - Versión 1.0 - 03/10/2024
