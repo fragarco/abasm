@@ -42,6 +42,58 @@ RSTATE_ASSEMBLE = 1  # assemble code inside REPEAT body
 RSTATE_FIND_END = 2  # do not assemble code inside REPEAT body
 RSTATE_LOOP     = 3  # go back to REPEAT condition
 
+NO_REG = -1
+REG_B = 0
+REG_C = 1
+REG_D = 2
+REG_E = 3
+REG_H = 4
+REG_L = 5
+REG_IND = 6 # Indirect use of registers (HL) (IX) (IY)
+REG_A = 7
+REG_I = 8
+REG_R = 9
+REG_IXH = 10
+REG_IXL = 11
+REG_IYH = 12
+REG_IYL = 13
+
+REG_SINGLES = {
+    'B': REG_B,
+    'C': REG_C,
+    'D': REG_D,
+    'E': REG_E,
+    'H': REG_H,
+    'L': REG_L,
+    'A': REG_A,
+    'I': REG_I,
+    'R': REG_R,
+    'IXH': REG_IXH,
+    'IXL': REG_IXL,
+    'IYH': REG_IYH,
+    'IYL': REG_IYL
+}
+
+REG_BC = 0
+REG_DE = 1
+REG_HL = 2
+REG_SP = 3
+REG_IX = 2
+REG_IY = 2
+REG_AF = 5
+REG_AFA = 4 # AF'
+
+REG_DOUBLES = {
+    "BC": ([], REG_BC),
+    "DE": ([], REG_DE),
+    "HL": ([], REG_HL),
+    "SP": ([], REG_SP),
+    "IX": ([0xdd], REG_IX),
+    "IY": ([0xfd], REG_IY),
+    "AF": ([], REG_AF),
+    "AF'": ([], REG_AFA)
+}
+
 class AsmMacro:
     def __init__(self, name, argv):
         self.name = name
@@ -306,16 +358,15 @@ class AsmContext:
             abort(f"Error trying to generate the file {filename}: " + str(e))
 
     def save_memory(self, filename, start, size):
-        memory = self.memory[start:start+size]
-        print("[abasm] output: %s [%04X:%04X - %d bytes]" % (filename, start, start+size, size))
-        contentlen = len(memory)
-        if contentlen > 0:
-            # check that something has been assembled at all
-            try:
-                with open(filename, 'wb') as fd:
-                    fd.write(memory)
-            except Exception as e:
-                abort(f"Error trying to generate the file {filename}: " + str(e))
+        memory = bytearray()
+        if size > 0:
+            memory = self.memory[start:start+size]
+        print("[abasm] output: %s [%04X:%04X (%d bytes)]" % (filename, start, start+size, size))
+        try:
+            with open(filename, 'wb') as fd:
+                fd.write(memory)
+        except Exception as e:
+            abort(f"Error trying to generate the file {filename}: " + str(e))
 
     def write_listinfo(self, line):
         if self.listingfile == None:
@@ -323,9 +374,14 @@ class AsmContext:
         self.listingfile.write(line + "\n")
 
     def save_binfile(self, filename):
-        size = self.memory_high - self.memory_low + 1
-        self.save_memory(filename, self.memory_low, size)
-        self.save_mapfile(filename)
+        size = 0
+        if self.memory_low < self.memory_high:
+            # something has been assembled
+            size = self.memory_high - self.memory_low + 1
+            self.save_memory(filename, self.memory_low, size)
+            self.save_mapfile(filename)
+        else:
+            abort("EOF and nothing was assembled")
 
     def parse_instruction(self, line):
         # Lines must start by characters or underscord or '.'
@@ -515,12 +571,13 @@ def warning(message):
 
 def abort(message):
     line1 = f"{os.path.basename(g_context.currentfile)}: error: {message}"
-    line2 = f"in '{g_context.currentline.strip()}'"
+    code = g_context.currentline.strip()
+    line2 = '' if code == '' else f"in '{code}'"
+    if g_context.listingfile != None:
+        g_context.listingfile.close()
     if __name__ == "__main__":
         print("[abasm]", line1)
-        print("\t", line2)
-        if g_context.listingfile != None:
-            g_context.listingfile.close()
+        if line2 != '': print("\t", line2)
         sys.exit(1)
     else:
         raise RuntimeError(f"{line1} {line2}")
@@ -530,65 +587,68 @@ def abort(message):
 # Refactored common code shared by several opcode implementations
 
 def double(arg, allow_af_instead_of_sp=0, allow_af_alt=0, allow_index=1):
-    """ decodes double registers bc, de, hl, sp, ix, iy, af, af' """
-    double_mapping = {'BC':([],0), 'DE':([],1), 'HL':([],2), 'SP':([],3), 'IX':([0xdd],2), 'IY':([0xfd],2), 'AF':([],5), "AF'":([],4) }
-    rr = double_mapping.get(arg.strip().upper(),([],-1))
-    if rr[1] == 3 and allow_af_instead_of_sp:
-        rr = ([],-1)
-    if rr[1] == 5:
+    """
+    Decodes double registers BC, DE, HL, SP, IX, IY, AF and special AF'
+    """
+    rr = REG_DOUBLES.get(arg.strip().upper(), ([], NO_REG))
+    if rr[1] == REG_SP and allow_af_instead_of_sp:
+        rr = ([], NO_REG)
+    if rr[1] == REG_AF:
         if allow_af_instead_of_sp:
-            rr = ([],3)
+            rr = ([], REG_SP)
         else:
-            rr = ([],-1)
-    if rr[1] == 4 and not allow_af_alt:
-        rr = ([],-1)
+            rr = ([], NO_REG)
+    if rr[1] == REG_AFA and not allow_af_alt:
+        rr = ([], NO_REG)
 
     if (rr[0] != []) and not allow_index:
-        rr = ([],-1)
-    return rr
+        rr = ([], NO_REG)
+    return (list(rr[0]), rr[1])
 
 def single(p, arg, allow_i=0, allow_r=0, allow_index=1, allow_offset=1, allow_half=1):
-    """ decodes single registers b, c, d, e, h, l, (hl), a, (ix {+c}), (iy {+c}) """
-    single_mapping = {'B':0, 'C':1, 'D':2, 'E':3, 'H':4, 'L':5, 'A':7, 'I':8, 'R':9, 'IXH':10, 'IXL':11, 'IYH':12, 'IYL':13 }
-    m = single_mapping.get(arg.strip().upper(), -1)
+    """
+    Decodes single registers B, C, D, E, H, L, A and specials I, R, IXH, IXL, IYH, IYL
+    or indirect access using registers (HL) (IX) (IY)
+    """
+    m = REG_SINGLES.get(arg.strip().upper(), NO_REG)
     prefix = []
     postfix = []
-    if m == 8 and not allow_i:
-        m = -1
-    if m == 9 and not allow_r:
-        m = -1
+    if m == REG_I and not allow_i:
+        m = NO_REG
+    if m == REG_R and not allow_r:
+        m = NO_REG
 
     if allow_half:
-        if m == 10:
+        if m == REG_IXH:
             prefix = [0xdd]
-            m = 4
-        if m == 11:
+            m = REG_H
+        if m == REG_IXL:
             prefix = [0xdd]
-            m = 5
-        if m == 12:
+            m = REG_L
+        if m == REG_IYH:
             prefix = [0xfd]
-            m = 4
-        if m == 13:
+            m = REG_H
+        if m == REG_IYL:
             prefix = [0xfd]
-            m = 5
+            m = REG_L
     else:
-        if m >= 10 and m <= 13:
-            m = -1
+        if m >= REG_IXH and m <= REG_IYL:
+            m = NO_REG
 
-    if m == -1 and re.search(r"\A\s*\(\s*HL\s*\)\s*\Z", arg, re.IGNORECASE):
-        m = 6
+    if m == NO_REG and re.search(r"\A\s*\(\s*HL\s*\)\s*\Z", arg, re.IGNORECASE):
+        m = REG_IND
 
-    if m == -1 and allow_index:
+    if m == NO_REG and allow_index:
         match = re.search(r"\A\s*\(\s*(I[XY])\s*\)\s*\Z", arg, re.IGNORECASE)
         if match:
-            m = 6
+            m = REG_IND
             prefix = [0xdd] if match.group(1).lower() == 'ix' else [0xfd]
             postfix = [0]
 
         elif allow_offset:
             match = re.search(r"\A\s*\(\s*(I[XY])\s*([+-].*)\s*\)\s*\Z", arg, re.IGNORECASE)
             if match:
-                m = 6
+                m = REG_IND
                 prefix = [0xdd] if match.group(1).lower() == 'ix' else [0xfd]
                 if p == 2:
                     offset = g_context.parse_expression(match.group(2), byte=1, signed=1)
@@ -622,7 +682,7 @@ def store_register_arg_type(p, opargs, offset, ninstr, step_per_register=1):
     check_args(opargs, 1)
     pre, r, post = single(p, opargs, allow_half=1)
     instr = pre
-    if r == -1:
+    if r == NO_REG:
         match = re.search(r"\A\s*\(\s*(.*)\s*\)\s*\Z", opargs)
         if match:
             abort("illegal indirection")
@@ -646,9 +706,9 @@ def store_cbshifts_type(p, opargs, offset, step_per_register=1):
         # compound instruction of the form RLC B,(IX+c)
         _, r1, _ = single(p, args[0], allow_half=0, allow_index=0)
         pre2, r2, post2 = single(p, args[1], allow_half=0, allow_index=1)
-        if r1 == -1 or r2 == -1:
+        if r1 == NO_REG or r2 == NO_REG:
             abort("registers not recognized for compound instruction")
-        if r1 == 6:
+        if r1 == REG_IND:
             abort("(HL) not allowed as target of compound instruction")
         if len(pre2) == 0:
             abort("must use index register as operand of compound instruction")
@@ -663,7 +723,7 @@ def store_cbshifts_type(p, opargs, offset, step_per_register=1):
         instr = pre
         instr.extend([0xcb])
         instr.extend(post)
-        if r == -1:
+        if r == NO_REG:
             abort("invalid argument")
         else:
             instr.append(offset + step_per_register * r)
@@ -673,10 +733,10 @@ def store_cbshifts_type(p, opargs, offset, step_per_register=1):
 
 def store_registerorpair_arg_type(p, opargs, rinstr, rrinstr, step_per_register=8, step_per_pair=16):
     check_args(opargs, 1)
-    pre,r,post = single(p, opargs)
-    if r == -1:
+    pre, r, post = single(p, opargs)
+    if r == NO_REG:
         pre,rr = double(opargs)
-        if rr==-1:
+        if rr == NO_REG:
             abort("Invalid argument")
 
         instr = pre
@@ -693,11 +753,11 @@ def store_add_type(p, opargs, rinstr, ninstr, rrinstr, step_per_register=1, step
     args = opargs.split(',', 1)
     r=-1
     if len(args) == 2:
-        pre,r,post = single(p, args[0])
-    if len(args) == 1 or r == 7:
+        pre, r, post = single(p, args[0])
+    if len(args) == 1 or r == REG_A:
         pre, r, post = single(p, args[-1])
         instr = pre
-        if r == -1:
+        if r == NO_REG:
             match = re.search(r"\A\s*\(\s*(.*)\s*\)\s*\Z", args[-1])
             if match:
                 abort("illegal indirection")
@@ -718,9 +778,9 @@ def store_add_type(p, opargs, rinstr, ninstr, rrinstr, step_per_register=1, step
         if rr1 == rr2 and pre != dummy:
             abort("Can't mix index registers and HL")
         if len(rrinstr) > 1 and pre:
-            abort("can't use index registers in this instruction")
+            abort(f"this instruction can't use index registers {args[0]} {pre} {rr1}")
 
-        if len(args) != 2 or rr1 != 2 or rr2 == -1:
+        if len(args) != 2 or rr1 != REG_HL or rr2 == NO_REG:
             abort("invalid operands")
         instr = pre
         instr.extend(rrinstr)
@@ -739,8 +799,8 @@ def store_bit_type(p, opargs, offset):
         b = 0  # lets wait until the second pass for missing symbols
     if b > 7 or b < 0:
         abort("argument out of range")
-    pre,r,post = single(p, arg2, allow_half=0)
-    if r == -1:
+    pre, r, post = single(p, arg2, allow_half=0)
+    if r == NO_REG:
         abort("Invalid argument")
     instr = pre
     instr.append(0xcb)
@@ -754,7 +814,7 @@ def store_pushpop_type(p, opargs, offset):
     check_args(opargs,1)
     prefix, rr = double(opargs, allow_af_instead_of_sp=1)
     instr = prefix
-    if rr == -1:
+    if rr == NO_REG:
         abort("Invalid argument")
     else:
         instr.append(offset + 16 * rr)
@@ -1151,11 +1211,11 @@ def store_store_cbshifts_type(p, opargs, offset, step_per_register=1):
     args = opargs.split(',', 1)
     if len(args) == 2:
         # compound instruction of the form RLC B,(IX+c)
-        pre1, r1, post1 = single(p, args[0], allow_half=0, allow_index=0)
+        _, r1, _ = single(p, args[0], allow_half=0, allow_index=0)
         pre2, r2, post2 = single(p, args[1], allow_half=0, allow_index=1)
-        if r1 == -1 or r2 == -1:
+        if r1 == NO_REG or r2 == NO_REG:
             abort("registers not recognized for compound instruction")
-        if r1 == 6:
+        if r1 == REG_IND:
             abort("(HL) not allowed as target of compound instruction")
         if len(pre2) == 0:
             abort("must use index register as operand of compound instruction")
@@ -1170,7 +1230,7 @@ def store_store_cbshifts_type(p, opargs, offset, step_per_register=1):
         instr = pre
         instr.extend([0xcb])
         instr.extend(post)
-        if r == -1:
+        if r == NO_REG:
             abort("invalid argument")
         else:
             instr.append(offset + step_per_register * r)
@@ -1282,7 +1342,7 @@ def op_PUSH(p, opargs):
 def op_JP(p,opargs):
     if (len(opargs.split(',',1)) == 1):
         prefix, r, _ = single(p, opargs, allow_offset=0,allow_half=0)
-        if r == 6:
+        if r == REG_IND:
             instr = prefix
             instr.append(0xe9)
             if p == 2:
@@ -1362,7 +1422,7 @@ def op_EX(p, opargs):
 
     if re.search(r"\A\s*\(\s*SP\s*\)\s*\Z", args[0], re.IGNORECASE):
         pre2, rr2 = double(args[1],allow_af_instead_of_sp=1, allow_af_alt=1, allow_index=1)
-        if rr2 == 2:
+        if rr2 == REG_HL:
             instr = pre2
             instr.append(0xe3)
         else:
@@ -1370,12 +1430,12 @@ def op_EX(p, opargs):
     else:
         pre1, rr1 = double(args[0], allow_af_instead_of_sp=1, allow_index=0)
         pre2, rr2 = double(args[1], allow_af_instead_of_sp=1, allow_af_alt=1, allow_index=0)
-        if (rr1 == 1 and rr2 == 2) or (rr1 == 2 and rr2 == 1):
+        if (rr1 == REG_DE and rr2 == REG_HL) or (rr1 == REG_HL and rr2 == REG_DE):
             # EX DE,HL is the opcode but WinAPE allows EX HL,DE so we allow it too
             instr = pre1
             instr.extend(pre2)
             instr.append(0xeb)
-        elif rr1 == 3 and rr2 == 4:
+        elif rr1 == REG_SP and rr2 == REG_AFA:
             instr = [0x08]
         else:
             abort("can't exchange " + args[0].strip() + " with " + args[1].strip())
@@ -1388,9 +1448,9 @@ def op_IN(p, opargs):
     args = opargs.split(',', 1)
     if p == 2:
         _, r, _ = single(p, args[0], allow_index=0, allow_half=0)
-        if r!=-1 and r!=6 and re.search(r"\A\s*\(\s*C\s*\)\s*\Z", args[1], re.IGNORECASE):
+        if r != NO_REG and r != REG_IND and re.search(r"\A\s*\(\s*C\s*\)\s*\Z", args[1], re.IGNORECASE):
             g_context.store(p, [0xed, 0x40 + 8 * r])
-        elif r == 7:
+        elif r == REG_A:
             match = re.search(r"\A\s*\(\s*(.*)\s*\)\s*\Z", args[1])
             if match == None:
                 abort("no expression in " + args[1])
@@ -1405,10 +1465,10 @@ def op_OUT(p, opargs):
     check_args(opargs, 2)
     args = opargs.split(',', 1)
     if p == 2:
-        pre, r, post = single(p, args[1], allow_index=0, allow_half=0)
-        if r!=-1 and r!=6 and re.search(r"\A\s*\(\s*C\s*\)\s*\Z", args[0], re.IGNORECASE):
+        _, r, _ = single(p, args[1], allow_index=0, allow_half=0)
+        if r != NO_REG and r != REG_IND and re.search(r"\A\s*\(\s*C\s*\)\s*\Z", args[0], re.IGNORECASE):
             g_context.store(p, [0xed, 0x41 + 8 * r])
-        elif r == 7:
+        elif r == REG_A:
             match = re.search(r"\A\s*\(\s*(.*)\s*\)\s*\Z", args[0])
             n = g_context.parse_expression(match.group(1))
             g_context.store(p, [0xd3, n])
@@ -1421,9 +1481,9 @@ def op_LD(p,opargs):
     arg1 ,arg2 = opargs.split(',', 1)
 
     prefix, rr1 = double(arg1)
-    if rr1 != -1:
+    if rr1 != NO_REG:
         prefix2, rr2 = double(arg2)
-        if rr1 == 3 and rr2 == 2:
+        if rr1 == REG_SP and rr2 == REG_HL:
             instr = prefix2
             instr.append(0xf9)
             g_context.store(p, instr)
@@ -1437,7 +1497,7 @@ def op_LD(p,opargs):
             else:
                 nn = 0
             instr = prefix
-            if rr1 == 2:
+            if rr1 == REG_HL:
                 instr.extend([0x2a, nn%256, nn//256])
             else:
                 instr.extend([0xed, 0x4b + 16*rr1, nn%256, nn//256])
@@ -1455,7 +1515,7 @@ def op_LD(p,opargs):
             return len (instr)
 
     prefix, rr2 = double(arg2)
-    if rr2 != -1:
+    if rr2 != NO_REG:
         match = re.search(r"\A\s*\(\s*(.*)\s*\)\s*\Z", arg1)
         if match:
             # ld (nn), rr
@@ -1464,7 +1524,7 @@ def op_LD(p,opargs):
             else:
                 nn = 0
             instr = prefix
-            if rr2 == 2:
+            if rr2 == REG_HL:
                 instr.extend([0x22, nn%256, nn//256])
             else:
                 instr.extend([0xed, 0x43 + 16*rr2, nn%256, nn//256])
@@ -1473,59 +1533,59 @@ def op_LD(p,opargs):
 
     prefix1,r1,postfix1 = single(p, arg1, allow_i=1, allow_r=1)
     prefix2,r2,postfix2 = single(p, arg2, allow_i=1, allow_r=1)
-    if r1 != -1 :
-        if r2 != -1:
-            if (r1 > 7) or (r2 > 7):
-                if r1==7:
-                    if r2==8:
+    if r1 != NO_REG:
+        if r2 != NO_REG:
+            if (r1 > REG_A) or (r2 > REG_A):
+                if r1 == REG_A:
+                    if r2 == REG_I:
                         g_context.store(p, [0xed,0x57])
                         return 2
-                    elif r2==9:
+                    elif r2 == REG_R:
                         g_context.store(p, [0xed,0x5f])
                         return 2
-                if r2==7:
-                    if r1==8:
+                if r2 == REG_A:
+                    if r1 == REG_I:
                         g_context.store(p, [0xed,0x47])
                         return 2
-                    elif r1==9:
+                    elif r1 == REG_R:
                         g_context.store(p, [0xed,0x4f])
                         return 2
                 abort("Invalid argument")
 
-            if r1==6 and r2==6:
+            if r1 == REG_IND and r2 == REG_IND:
                 abort("Ha - nice try. That's a HALT.")
 
-            if (r1==4 or r1==5) and (r2==4 or r2==5) and prefix1 != prefix2:
+            if (r1 == REG_H or r1 == REG_L) and (r2 == REG_H or r2 == REG_L) and prefix1 != prefix2:
                 abort("Illegal combination of operands")
 
-            if r1==6 and (r2==4 or r2==5) and len(prefix2) != 0:
+            if r1 == REG_IND and (r2 == REG_H or r2 == REG_L) and len(prefix2) != 0:
                 abort("Illegal combination of operands")
 
-            if r2==6 and (r1==4 or r1==5) and len(prefix1) != 0:
+            if r2 == REG_IND and (r1 == REG_H or r1 == REG_L) and len(prefix1) != 0:
                 abort("Illegal combination of operands")
 
             instr = prefix1
             if len(prefix1) == 0:
                 instr.extend(prefix2)
-            instr.append(0x40 + 8*r1 + r2)
+            instr.append(0x40 + 8 * r1 + r2)
             instr.extend(postfix1)
             instr.extend(postfix2)
             g_context.store(p, instr)
             return len(instr)
 
         else:
-            if r1 > 7:
+            if r1 > REG_A:
                 abort("Invalid argument")
 
-            if r1==7 and re.search(r"\A\s*\(\s*BC\s*\)\s*\Z", arg2, re.IGNORECASE):
+            if r1 == REG_A and re.search(r"\A\s*\(\s*BC\s*\)\s*\Z", arg2, re.IGNORECASE):
                 g_context.store(p, [0x0a])
                 return 1
-            if r1==7 and re.search(r"\A\s*\(\s*DE\s*\)\s*\Z", arg2, re.IGNORECASE):
+            if r1 == REG_A and re.search(r"\A\s*\(\s*DE\s*\)\s*\Z", arg2, re.IGNORECASE):
                 g_context.store(p, [0x1a])
                 return 1
             match = re.search(r"\A\s*\(\s*(.*)\s*\)\s*\Z", arg2)
             if match:
-                if r1 != 7:
+                if r1 != REG_A:
                     abort("Illegal indirection")
                 if p == 2:
                     nn = g_context.parse_expression(match.group(1), word=1)
@@ -1533,7 +1593,7 @@ def op_LD(p,opargs):
                 return 3
 
             instr = prefix1
-            instr.append(0x06 + 8*r1)
+            instr.append(0x06 + 8 * r1)
             instr.extend(postfix1)
             if p == 2:
                 n = g_context.parse_expression(arg2, byte=1)
@@ -1543,7 +1603,7 @@ def op_LD(p,opargs):
             g_context.store(p, instr)
             return len(instr)
 
-    elif r2==7:
+    elif r2 == REG_A:
         # ld (bc/de/nn),a
         if re.search(r"\A\s*\(\s*BC\s*\)\s*\Z", arg1, re.IGNORECASE):
             g_context.store(p, [0x02])
@@ -1557,7 +1617,7 @@ def op_LD(p,opargs):
                 nn = g_context.parse_expression(match.group(1), word=1)
                 g_context.store(p, [0x32, nn%256, nn//256])
             return 3
-    abort("LD args not understood - "+arg1+", "+arg2)
+    abort("LD args not understood - " + arg1 + ", " + arg2)
     return 1
 
 def op_IF(p, opargs):

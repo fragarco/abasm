@@ -10,8 +10,10 @@ class CodeExamples(unittest.TestCase):
         testdir = os.path.dirname(__file__)
         cls.refdir = os.path.join(testdir, "refs")
         cls.outdir = os.path.join(testdir, "outputs")
-        removeexpr = os.path.join(cls.outdir, "*.*")
-        for file in glob.glob(removeexpr): os.remove(file)
+        extensions = ["*.bin", "*.map", "*.lst"]
+        for ext in extensions:
+            removeexpr = os.path.join(cls.outdir, ext)
+            for file in glob.glob(removeexpr): os.remove(file)
         abasm.create_opdict()
 
     def _compare_bins(self, infile, outfile):
