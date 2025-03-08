@@ -519,9 +519,9 @@ When an instruction or directive requires a number as a parameter, you can use a
 
 # The Z80 instruction set
 
-This section provides a short list of all Z80 available instructions. While many resources list instruction timing in cycles or T-states, the Amstrad CPC has its own timing due to the Gate Array pausing the Z80 to access video memory. Therefore, it's more accurate to measure timing on the Amstrad CPC based on the cost of the NOP instruction (1 microsecond).
+This section provides a short list of all Z80 available instructions. While many resources list instruction timing in cycles or T-states, the Amstrad CPC has its own timing due to the Gate Array pausing the Z80 to access video memory. Therefore, it's more accurate to measure timing on the Amstrad CPC based on the cost of the NOP instruction (1 microsecond). Times can be checked in the following web site too:
 
-- [Z80 Timings on Amstrad CPC - Cheat Sheet](https://www.cpcwiki.eu/imgs/b/b4/Z80_CPC_Timings_cheat_sheet.20230709.pdf): This document is invaluable for understanding the real timing cost of all Z80 instructions.
+- [Z80 Timings on Amstrad CPC - Cheat Sheet](https://www.cpcwiki.eu/imgs/b/b4/Z80_CPC_Timings_cheat_sheet.20230709.pdf)
 
 **Key:**
 ```
@@ -889,7 +889,7 @@ XOR   (IY+d)    5 Exclusive OR value at location (IY+d) and accumulator.
 
 **[1]** It's important to remember that OUT/IN family instructions use `BC` content and not only C, even if the op code is `OUT (C)`. In Amstrad CPC, instructions OUTD, OUTI, OTIR, etc., don't make much sense because AMSTRAD CPC uses register `B`(!!) from the address in BC to store the port number and not `C` as many other Z80 machines do. 
 
-**[2]** All the Z80 restart instructions, except for one, have been reserved for system use. RST 1 to RST 5 (&08-&28) are used to extend the instruction set by implementing special call and jump instructions that enable and disable ROMs. RST 6 (&30) is available to the user. More information can be obtained here: [ROMs. TAM and Restart Instructions.](https://www.cpcwiki.eu/imgs/f/f6/S968se02.pdf)
+**[2]** All the Z80 restart instructions, except for one, have been reserved for system use. RST 1 to RST 5 (&08-&28) are used to extend the instruction set by implementing special call and jump instructions that enable and disable ROMs. RST 6 (&30) is available to the user. More information can be obtained here: [ROMs. RAM and Restart Instructions.](https://www.cpcwiki.eu/imgs/f/f6/S968se02.pdf)
 
 # Changelog
 
