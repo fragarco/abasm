@@ -31,6 +31,7 @@
     - [STOP](#stop)
     - [WHILE](#while)
   - [Expressions and Special Characters](#expressions-and-special-characters)
+- [The Z80 instruction set](#the-z80-instruction-set)
 - [Changelog](#changelog)
 
 # Introduction
@@ -236,13 +237,11 @@ Regarding operands, ABASM fully supports all standard Z80 8-bit registers: A, B,
 
 Lastly, ABASM supports all standard Z80 condition flags: NZ, Z, NC, C, PO, PE, P, and M.
 
-To learn more about each instruction, the following list of helpful reference sources can be consulted:
+To learn more about each instruction, a short list can be consulted in the `Z80 Instruction Set`, later on this same document. However, the following list of helpful reference sources can be visited to gain a more deep knowledge:
 
 - [@ClrHome Z80 Table of Instructions](https://clrhome.org/table/): A well-organized table that provides a concise summary of all Z80 instructions.
 - [Zilog's Official Documentation for the Z80 Processor](https://www.zilog.com/docs/z80/um0080.pdf): Especially useful are the last two sections titled *Z80 CPU Instructions* and *Z80 Instruction Set*.
 - [Z80 Heaven](http://z80-heaven.wikidot.com/): A web with a detailed information for each instruction.
-- [Z80 Timings on Amstrad CPC - Cheat Sheet](https://www.cpcwiki.eu/imgs/b/b4/Z80_CPC_Timings_cheat_sheet.20230709.pdf): This document is invaluable for understanding the real timing cost of all Z80 instructions. While many resources list instruction timing in cycles or T-states, the Amstrad CPC has its own timing due to the Gate Array pausing the Z80 to access video memory. Therefore, it's more accurate to measure timing on the Amstrad CPC based on the cost of the NOP instruction.
-
 
 ## Assembler Directives
 
@@ -518,19 +517,393 @@ When an instruction or directive requires a number as a parameter, you can use a
   
 (1) A single character enclosed in double quotes will be converted to its ASCII value in numerical expressions. Double and single quotes can be used to enclose strings but neither can appear in the string body.
 
+# The Z80 instruction set
+
+This section provides a short list of all Z80 available instructions. While many resources list instruction timing in cycles or T-states, the Amstrad CPC has its own timing due to the Gate Array pausing the Z80 to access video memory. Therefore, it's more accurate to measure timing on the Amstrad CPC based on the cost of the NOP instruction (1 microsecond).
+
+- [Z80 Timings on Amstrad CPC - Cheat Sheet](https://www.cpcwiki.eu/imgs/b/b4/Z80_CPC_Timings_cheat_sheet.20230709.pdf): This document is invaluable for understanding the real timing cost of all Z80 instructions.
+
+**Key:**
+```
+r 	8-bit register (B,C,D,E,H,L,A)
+n 	8-bit value
+d 	8-bit displacement
+
+rr 	16-bit register (HL,DE,BC)
+nn 	16-bit value
+dd  16-bit displacement
+
+cc	condition code (z,nz,c,nc,p,m,po,pe)
+nc 	condition not satisfied
+c 	condition satisfied
+
+b   bit position number [7-0]
+```
+
+```
+opcode    timing    explanation
+
+ADC   A,r       1 Add with carry register r to accumulator.
+ADC   A,n       2 Add with carry value n to accumulator.
+ADC   A,IXH     2 Add with carry high byte from IX to accumulator.
+ADC   A,IXL     2 Add with carry low byte from IX to accumulator.
+ADC   A,IYH     2 Add with carry high byte from IY to accumulator.
+ADC   A,IYL     2 Add with carry low byte from IY to accumulator.
+ADC   A,(HL)    2 Add with carry location (HL) to acccumulator.
+ADC   A,(IX+d)  5 Add with carry location (IX+d) to accumulator.
+ADC   A,(IY+d)  5 Add with carry location (IY+d) to accumulator.
+
+ADC   HL,BC     4 Add with carry register pair BC to HL.
+ADC   HL,DE     4 Add with carry register pair DE to HL.
+ADC   HL,HL     4 Add with carry register pair HL to HL.
+ADC   HL,SP     4 Add with carry register pair SP to HL.
+
+ADD   A,r       1 Add register r to accumulator.
+ADD   A,n       2 Add value n to accumulator.
+ADC   A,IXH     2 Add high byte from IX to accumulator.
+ADC   A,IXL     2 Add low byte from IX to accumulator.
+ADC   A,IYH     2 Add high byte from IY to accumulator.
+ADC   A,IYL     2 Add low byte from IY to accumulator.
+ADD   A,(HL)    2 Add location (HL) to acccumulator.
+ADD   A,(IX+d)  5 Add location (IX+d) to accumulator.
+ADD   A,(IY+d)  5 Add location (IY+d) to accumulator.
+
+ADD   HL,BC     3 Add register pair BC to HL.
+ADD   HL,DE     3 Add register pair DE to HL.
+ADD   HL,HL     3 Add register pair HL to HL.
+ADD   HL,SP     3 Add register pair SP to HL.
+
+ADD   IX,BC     4 Add register pair BC to IX.
+ADD   IX,DE     4 Add register pair DE to IX.
+ADD   IX,IX     4 Add register pair IX to IX.
+ADD   IX,SP     4 Add register pair SP to IX.
+
+ADD   IY,BC     4 Add register pair BC to IY.
+ADD   IY,DE     4 Add register pair DE to IY.
+ADD   IY,IY     4 Add register pair IY to IY.
+ADD   IY,SP     4 Add register pair SP to IY.
+
+AND   r         1 Logical AND of register r to accumulator.
+AND   n         2 Logical AND of value n to accumulator.
+AND   IXH       2 Logical AND of IX high byte to accumulator.
+AND   IXL       2 Logical AND of IX low byte to accumulator.
+AND   IYH       2 Logical AND of IY high byte to accumulator.
+AND   IYL       2 Logical AND of IY low byte to accumulator.
+AND   (HL)      2 Logical AND of value at location (HL) to accumulator.
+AND   (IX+d)    5 Logical AND of value at location (IX+d) to accumulator.
+AND   (IY+d)    5 Logical AND of value at location (IY+d) to accumulator.
+
+BIT   b,r       2 Test bit b of register r.
+BIT   b,(HL)    3 Test bit b of location (HL).
+BIT   b,(IX+d)  6 Test bit b of location (IX+d).
+BIT   b,(IY+d)  6 Test bit b of location (IY+d).
+
+CALL  nn        5 Call subroutine at location.
+CALL  cc,nn   3/5 Call subroutine at location nn if condition CC is true (5) else (3).
+
+CCF             1 Complement carry flag.
+
+CP    r         1 Compare register r with accumulator.
+CP    n         2 Compare value n with accumulator.
+CP    IXH       1 Compare IX high byte with accumulator.
+CP    IXL       1 Compare IX low byte with accumulator.
+CP    IYH       1 Compare IY high byte with accumulator.
+CP    IYL       1 Compare IY low byte with accumulator.
+CP    (HL)      2 Compare value at location (HL) with accumulator.
+CP    (IX+d)    5 Compare value at location (IX+d) with accumulator.
+CP    (IY+d)    5 Compare value at location (IY+d) with accumulator.
+
+CPD             5 Compare location (HL) and acc., decrement HL and BC,
+CPDR          5/6 Perform a CPD and repeat until BC=0 (5), if BC<>0 (6).
+CPI             5 Compare location (HL) and acc., incr HL, decr BC.
+CPIR          5/6 Perform a CPI and repeat until BC=0 (5), if BC<>0 (6).
+CPL             1 Complement accumulator (1's complement).
+
+DAA             1 Decimal adjust accumulator.
+
+DEC   r         1 Decrement register r.
+DEC   IXH       2 Decrement IX high byte.
+DEC   IXL       2 Decrement IX low byte.
+DEC   IYH       2 Decrement IY high byte.
+DEC   IYL       2 Decrement IY low byte.
+DEC   (HL)      3 Decrement value at location (HL).
+DEC   (IX+d)    6 Decrement value at location (IX+d).
+DEC   (IY+d)    6 Decrement value at location (IY+d).
+
+DEC   BC        2 Decrement register pair BC.
+DEC   DE        2 Decrement register pair DE.
+DEC   HL        2 Decrement register pair HL.
+DEC   IX        3 Decrement IX.
+DEC   IY        3 Decrement IY.
+DEC   SP        2 Decrement register pair SP.
+
+DI              1 Disable interrupts. (except NMI at 0066h)
+
+DJNZ  n       3/4 Decrement B and jump relative if B<>0 (4) else (3).
+
+EI              1 Enable interrupts.
+
+EX    AF,AF'    1 Exchange the contents of AF and AF'.
+EX    DE,HL     1 Exchange the contents of DE and HL.
+EX    (SP),HL   6 Exchange the location (SP) and HL.
+EX    (SP),IX   7 Exchange the location (SP) and IX.
+EX    (SP),IY   7 Exchange the location (SP) and IY.
+EXX             1 Exchange the contents of BC,DE,HL with BC',DE',HL'.
+
+HALT          1/* Halt computer and wait for interrupt (variable timing).
+
+IM    0         2 Set interrupt mode 0. (instruction on data bus by int device)
+IM    1         2 Set interrupt mode 1. (rst 38)
+IM    2         2 Set interrupt mode 2. (vector jump)
+
+IN    A,(n)     3 Load the accumulator with input from device/port n.
+IN    r,(C)     4 Load the register r with input from device/port stored in B(!!)[1].
+
+INC   r         1 Increment register r.
+INC   IXH       2 Increment IX high byte.
+INC   IXL       2 Increment IX low byte.
+INC   IYH       2 Increment IY high byte.
+INC   IYL       2 Increment IY low byte.
+INC   (HL)      3 Increment location (HL).
+INC   (IX+d)    6 Increment location (IX+d).
+INC   (IY+d)    6 Increment location (IY+d).
+
+INC   BC        2 Increment register pair BC.
+INC   DE        2 Increment register pair DE.
+INC   HL        2 Increment register pair HL.
+INC   IX        3 Increment IX.
+INC   IY        3 Increment IY.
+INC   SP        2 Increment register pair SP.
+
+IND             5 (HL)=Input from port (C), Decrement HL and B.
+INDR          5/6 Perform an IND and repeat until B=0 (5), if B<>0 (6).
+INI             5 (HL)=Input from port (C), HL=HL+1, B=B-1.
+INIR          5/6 Perform an INI and repeat until B=0 (5), if B<>0 (6).
+
+JP    nn        3 Unconditional jump to location nn.
+JP    cc,nn     3 Jump to location nn if condition cc is true.
+JP    (HL)      1 Unconditional jump to location (HL).
+JP    (IX)      2 Unconditional jump to location (IX).
+JP    (IY)      2 Unconditional jump to location (IY).
+
+JR    c,n     2/3 Jump relative to PC+n if carry=1 (3) else (2).
+JR    n         3 Unconditional jump relative to PC+n.
+JR    nc,n    2/3 Jump relative to PC+n if carry=0 (3) else (2).
+JR    nz,n    2/3 Jump relative to PC+n if non zero (3) else (2).
+JR    z,n     2/3 Jump relative to PC+n if zero (3) else (2).
+
+LD    A,R       3 Load accumulator with R.(memory refresh register)
+LD    A,I       3 Load accumulator with I.(interrupt vector register)
+LD    A,(BC)    2 Load accumulator with value at location (BC).
+LD    A,(DE)    2 Load accumulator with value at location (DE).
+LD    A,(nn)    4 Load accumulator with value at location nn.
+
+LD    I,A       3 Load I with accumulator.
+LD    R,A       3 Load R with accumulator.
+LD    r,n       2 Load register r with value n.
+LD    r,(HL)    2 Load register r with value at location (HL).
+LD    r,(IX+d)  5 Load register r with value at location (IX+d).
+LD    r,(IY+d)  5 Load register r with value at location (IY+d).
+
+LD    SP,HL     2 Load SP with HL.
+LD    SP,IX     3 Load SP with IX.
+LD    SP,IY     3 Load SP with IY.
+
+LD    BC,nn     3 Load register pair BC with nn.
+LD    DE,nn     3 Load register pair DE with nn.
+LD    HL,nn     3 Load register pair HL with nn.
+LD    IX,nn     4 Load IX with value nn.
+LD    IY,nn     4 Load IY with value nn.
+LD    SP,nn     3 Load register pair SP with nn.
+LD    BC,(nn)   6 Load register pair BC with value at location (nn).
+LD    DE,(nn)   6 Load register pair DE with value at location (nn).
+LD    HL,(nn)   5 Load HL with value at location (nn), L-first.
+LD    IX,(nn)   6 Load IX with value at location (nn).
+LD    IY,(nn)   6 Load IY with value at location (nn).
+LD    SP,(nn)   6 Load register pair SP with value at location (nn).
+
+LD    (BC),A    2 Load location (BC) with accumulator.
+LD    (DE),A    2 Load location (DE) with accumulator.
+LD    (HL),n    3 Load location (HL) with value n.
+LD    (HL),r    2 Load location (HL) with register r.
+LD    (IX+d),n  6 Load location (IX+d) with value n.
+LD    (IX+d),r  5 Load location (IX+d) with register r.
+LD    (IY+d),n  6 Load location (IY+d) with value n.
+LD    (IY+d),r  5 Load location (IY+d) with register r.
+
+LD    (nn),A    4 Load location (nn) with accumulator.
+LD    (nn),BC   6 Load location (nn) with register pair BC.
+LD    (nn),DE   6 Load location (nn) with register pair DE.
+LD    (nn),HL   5 Load location (nn) with HL.
+LD    (nn),SP   6 Load location (nn) with register pair SP.
+LD    (nn),IX   6 Load location (nn) with IX.
+LD    (nn),IY   6 Load location (nn) with IY.
+
+LDD             5 Load location (DE) with location (HL), decrement DE,HL,BC.
+LDDR          5/6 Perform an LDD and repeat until BC=0 (5) else (6).
+LDI             5 Load location (DE) with location (HL), incr DE,HL; decr BC.
+LDIR          5/6 Perform an LDI and repeat until BC=0 (5) else (6).
+
+NEG             2 Negate accumulator (2's complement).
+NOP             1 No operation.
+
+OR    r         1 Logical OR of register r and accumulator.
+OR    n         2 Logical OR of value n and accumulator.
+OR    IXH       2 Logical OR of IX high byte and accumulator.
+OR    IXL       2 Logical OR of IX low byte and accumulator.
+OR    IYH       2 Logical OR of IY high byte and accumulator.
+OR    IYL       2 Logical OR of IY low byte and accumulator.
+OR    (HL)      2 Logical OR of value at location (HL) and accumulator.
+OR    (IX+d)    5 Logical OR of value at location (IX+d) and accumulator.
+OR    (IY+d)    5 Logical OR of value at location (IY+d) and accumulator.
+
+OTDR          5/6 Perform an OUTD and repeat until B=0 (5) else (6)[1].
+OTIR          5/6 Perform an OTI and repeat until B=0 (5) else (6)[1].
+OUT   (C),r     4 Load output port stored in reg B(!!) with register r[1].
+OUT   (n),A     3 Load output port (n) with accumulator[1].
+OUTD            5 Load output port in reg B(!!) with (HL), decrement HL and B[1].
+OUTI            5 Load output port in reg B(!!) with (HL), incr HL, decr B[1].
+
+POP   AF        3 Load register pair AF with top of stack.
+POP   BC        3 Load register pair BC with top of stack.
+POP   DE        3 Load register pair DE with top of stack.
+POP   HL        3 Load register pair HL with top of stack.
+POP   IX        5 Load IX with top of stack.
+POP   IY        5 Load IY with top of stack.
+PUSH  AF        4 Load register pair AF onto stack.
+PUSH  BC        4 Load register pair BC onto stack.
+PUSH  DE        4 Load register pair DE onto stack.
+PUSH  HL        4 Load register pair HL onto stack.
+PUSH  IX        5 Load IX onto stack.
+PUSH  IY        5 Load IY onto stack.
+
+RES   b,r       2 Reset bit b of register r.
+RES   b,(HL)    4 Reset bit b in value at location (HL).
+RES   b,(IX+d)  7 Reset bit b in value at location (IX+d).
+RES   b,(IY+d)  7 Reset bit b in value at location (IY+d).
+
+RET             3 Return from subroutine.
+RET   cc      2/4 Return from subroutine if condition cc is true (4) else (2).
+RETI            4 Return from interrupt.
+RETN            4 Return from non-maskable interrupt.
+
+RL    r         2 Rotate left through register r.
+RL    (HL)      4 Rotate left through value at location (HL).
+RL    (IX+d)    7 Rotate left through value at location (IX+d).
+RL    (IY+d)    7 Rotate left through value at location (IY+d).
+RLA             4 Rotate left accumulator through carry.
+
+RLC   r         2 Rotate register r left circular.
+RLC   (HL)      4 Rotate location (HL) left circular.
+RLC   (IX+d)    7 Rotate location (IX+d) left circular.
+RLC   (IY+d)    7 Rotate location (IY+d) left circular.
+
+RLCA            1 Rotate left circular accumulator.
+RLD             5 Rotate digit left and right between accumulator and (HL).
+
+RR    r         2 Rotate right through carry register r.
+RR    (HL)      4 Rotate right through carry location (HL).
+RR    (IX+d)    7 Rotate right through carry location (IX+d).
+RR    (IY+d)    7 Rotate right through carry location (IY+d).
+
+RRA             1 Rotate right accumulator through carry.
+
+RRC   r         2 Rotate register r right circular.
+RRC   (HL)      4 Rotate value at location (HL) right circular.
+RRC   (IX+d)    7 Rotate value at location (IX+d) right circular.
+RRC   (IY+d)    7 Rotate value at location (HL+d) right circular.
+
+RRCA            1 Rotate right circular accumulator.
+RRD             5 Rotate digit right and left between accumulator and (HL).
+
+RST   &00       4 RESET. Reserved [2]. Resets the system.
+RST   &08       4 LOW JUMP. Reserved [2]. Jumps to a routine in the lower 16K.
+RST   &10       4 SIDE CALL. Reserved [2]. Calls a routine in an associated ROM.
+RST   &18       4 FAR CALL. Reserved [2]. Calls a routine anywhere in memory.
+RST   &20       4 RAM LAM. Reserved [2]. Reads the byte from RAM at the address of HL.
+RST   &28       4 FIRM JUMP. Reserved [2]. Jumps to a routine in the lower ROM.
+RST   &30       4 USER RST. Avaiable for the user to extend the instruction set.
+RST   &38       4 INTERRUPT. Reserver [2]. Reserverd for interrupts.
+
+SBC   A,r       1 Subtract register r from accumulator with carry.
+SBC   A,n       2 Subtract value n from accumulator with carry.
+ADC   A,IXH     2 Subtract IX high byte from accumulator with carry.
+ADC   A,IXL     2 Subtract IX low byte from accumulator with carry.
+ADC   A,IYH     2 Subtract IY high byte from accumulator with carry.
+ADC   A,IYL     2 Subtract IY low byte from accumulator with carry.
+SBC   A,(HL)    2 Subtract value at location (HL) from accu. with carry.
+SBC   A,(IX+d)  5 Subtract value at location (IX+d) from accu. with carry.
+SBC   A,(IY+d)  5 Subtract value at location (IY+d) from accu. with carry.
+SBC   HL,BC     4 Subtract register pair BC from HL with carry.
+SBC   HL,DE     4 Subtract register pair DE from HL with carry.
+SBC   HL,HL     4 Subtract register pair HL from HL with carry.
+SBC   HL,SP     4 Subtract register pair SP from HL with carry.
+
+SCF             1 Set carry flag (C=1).
+
+SET   b,r       2 Set bit b of register r.
+SET   b,(HL)    4 Set bit b of location (HL).
+SET   b,(IX+d)  7 Set bit b of location (IX+d).
+SET   b,(IY+d)  7 Set bit b of location (IY+d).
+
+SLA   r         2 Shift register r left arithmetic.
+SLA   (HL)      4 Shift value at location (HL) left arithmetic.
+SLA   (IX+d)    7 Shift value at location (IX+d) left arithmetic.
+SLA   (IY+d)    7 Shift value at location (IY+d) left arithmetic.
+
+SLL   r         2 Shift register r left logical.
+SLL   (HL)      4 Shift value at location (HL) left logical.
+SLL   (IX+d)    7 Shift value at location (IX+d) left logical.
+SLL   (IY+d)    7 Shift value at location (IY+d) left logical.
+
+SRA   r         2 Shift register r right arithmetic.
+SRA   (HL)      4 Shift value at location (HL) right arithmetic.
+SRA   (IX+d)    7 Shift value at location (IX+d) right arithmetic.
+SRA   (IY+d)    7 Shift value at location (IY+d) right arithmetic.
+
+SRL   r         2 Shift register r right logical.
+SRL   (HL)      4 Shift value at location (HL) right logical.
+SRL   (IX+d)    7 Shift value at location (IX+d) right logical.
+SRL   (IY+d)    7 Shift value at location (IY+d) right logical.
+
+SUB   r         1 Subtract register r from accumulator.
+SUB   n         2 Subtract value n from accumulator.
+SUB   IXH       2 Subtract IX high byte from accumulator.
+SUB   IXL       2 Subtract IX low byte from accumulator.
+SUB   IYH       2 Subtract IY high byte from accumulator.
+SUB   IYL       2 Subtract IY low byte from accumulator.
+SUB   (HL)      2 Subtract location (HL) from accumulator.
+SUB   (IX+d)    5 Subtract location (IX+d) from accumulator.
+SUB   (IY+d)    5 Subtract location (IY+d) from accumulator.
+
+XOR   r         1 Exclusive OR register r and accumulator.
+XOR   n         2 Exclusive OR value n and accumulator.
+XOR   IXH       2 Exclusive OR IX high byte and accumulator.
+XOR   IXL       2 Exclusive OR IX low byte and accumulator.
+XOR   IYH       2 Exclusive OR IY high byte and accumulator.
+XOR   IYL       2 Exclusive OR IY low byte and accumulator.
+XOR   (HL)      2 Exclusive OR value at location (HL) and accumulator.
+XOR   (IX+d)    5 Exclusive OR value at location (IX+d) and accumulator.
+XOR   (IY+d)    5 Exclusive OR value at location (IY+d) and accumulator.
+```
+
+**[1]** It's important to remember that OUT/IN family instructions use `BC` content and not only C, even if the op code is `OUT (C)`. In Amstrad CPC, instructions OUTD, OUTI, OTIR, etc., don't make much sense because AMSTRAD CPC uses register `B`(!!) from the address in BC to store the port number and not `C` as many other Z80 machines do. 
+
+**[2]** All the Z80 restart instructions, except for one, have been reserved for system use. RST 1 to RST 5 (&08-&28) are used to extend the instruction set by implementing special call and jump instructions that enable and disable ROMs. RST 6 (&30) is available to the user. More information can be obtained here: [ROMs. TAM and Restart Instructions.](https://www.cpcwiki.eu/imgs/f/f6/S968se02.pdf)
+
 # Changelog
 
-- Version 1.2 - ??/??/????
+- Version 1.1.1 - ??/??/????
    * 
 
-- Version 1.1 - 06/03/2025
+- Version 1.1.0 - 06/03/2025
   * Support for directive LIMIT
   * Support for local labels in macro code
   * New assembler flag --verbose added as an option
   * Adding Tests that can be run with python -m unittest
   * Some minor fixes and improvements
 
-- Version 1.0 - 03/10/2024
+- Version 1.0.0 - 03/10/2024
   * First released version
 
 

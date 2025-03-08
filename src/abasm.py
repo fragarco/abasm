@@ -333,7 +333,10 @@ class AsmContext:
             self.lstcode = ""
             mempos = self.origin
             for b in bytes:
-                self.memory[mempos] = b
+                try:
+                    self.memory[mempos] = b
+                except ValueError as e:
+                    abort("0-255 range value was expected")
                 self.lstcode = self.lstcode + "%02X " % (b)
                 mempos = mempos + 1
             self.memory_low = min(self.memory_low, self.origin)
@@ -387,7 +390,7 @@ class AsmContext:
         # Lines must start by characters or underscord or '.'
         match = re.match(r'^(\.\w+|\!\w+|\w+)(.*)', line.strip())
         if not match:
-            abort("in '" + line + "'. Valid literals must start with a letter, an underscord, '.' or '!' symbols")
+            abort("in " + line + ". Valid literals must start with a letter, an underscord, '.' or '!' symbols")
 
         inst = match.group(1).upper().strip()
         args = match.group(2).strip()
@@ -474,7 +477,7 @@ class AsmContext:
             opcode = opcode.strip()
             if opcode != "":
                 # sanity check
-                if opcode.count('"') % 2 != 0 or opcode.count("'") % 2 != 0:
+                if opcode.count('"') % 2 != 0:
                     abort("mismatched quotes")
                 # label: equ <value> exception
                 if (index+ 1) < len(opcodes) and 'EQU 'in opcodes[index+1].upper():
@@ -572,7 +575,7 @@ def warning(message):
 def abort(message):
     line1 = f"{os.path.basename(g_context.currentfile)}: error: {message}"
     code = g_context.currentline.strip()
-    line2 = '' if code == '' else f"in '{code}'"
+    line2 = '' if code == '' else f"in {code}"
     if g_context.listingfile != None:
         g_context.listingfile.close()
     if __name__ == "__main__":
@@ -1256,7 +1259,7 @@ def op_SLA(p, opargs):
 def op_SRA(p, opargs):
     return store_store_cbshifts_type(p, opargs, 0x28)
 
-def op_SL1(p, opargs):
+def op_SLL(p, opargs):
     return store_store_cbshifts_type(p, opargs, 0x30)
 
 def op_SRL(p, opargs):

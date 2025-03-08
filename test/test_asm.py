@@ -56,5 +56,8 @@ class CodeExamples(unittest.TestCase):
     def test_sprite(self):
         self._compare_bins("sprite.asm", "sprite.bin")
 
+    def test_opcodes(self):
+        self._compare_bins("opcodes.asm", "opcodes.bin")
+
 if __name__ == "__main__":
     unittest.main()
