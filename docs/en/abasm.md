@@ -791,7 +791,7 @@ RL    r         2 Rotate left through register r.
 RL    (HL)      4 Rotate left through value at location (HL).
 RL    (IX+d)    7 Rotate left through value at location (IX+d).
 RL    (IY+d)    7 Rotate left through value at location (IY+d).
-RLA             4 Rotate left accumulator through carry.
+RLA             1 Rotate left accumulator through carry.
 
 RLC   r         2 Rotate register r left circular.
 RLC   (HL)      4 Rotate location (HL) left circular.
@@ -893,8 +893,11 @@ XOR   (IY+d)    5 Exclusive OR value at location (IY+d) and accumulator.
 
 # Changelog
 
-- Version 1.1.1 - ??/??/????
-   * 
+- Version 1.1.1 - 09/03/2025
+   * SLL opcodes were not recognized
+   * EX AF,AF' has been fixed
+   * Z80 Instruction Set section added to the manuals
+   * Some other minor fixes and improvements
 
 - Version 1.1.0 - 06/03/2025
   * Support for directive LIMIT
