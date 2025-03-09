@@ -1,3 +1,8 @@
+<!-- omit in toc -->
+ABASM: USER MANUAL
+==================
+**A Python based assembler for the Amstrad CPC machines**
+
 - [Introduction](#introduction)
   - [Why Another Assembler for Amstrad?](#why-another-assembler-for-amstrad)
 - [Basic Usage](#basic-usage)

@@ -1,3 +1,8 @@
+<!-- omit in toc -->
+ABASM: MANUAL DEL USUARIO
+=========================
+**Un ensamblador en Python para los Amstrad CPC**
+
 - [Introducción](#introducción)
   - [¿Por qué otro ensamblador para Amstrad?](#por-qué-otro-ensamblador-para-amstrad)
 - [Cómo se usa](#cómo-se-usa)
@@ -33,7 +38,6 @@
   - [Expresiones y Caracteres Especiales](#expresiones-y-caracteres-especiales)
 - [Conjunto de instrucciones del Z80](#conjunto-de-instrucciones-del-z80)
 - [Historial de cambios](#historial-de-cambios)
-
 
 # Introducción
 
@@ -90,8 +94,6 @@ python3 ABASM.py program.asm --start 0x2000
 ```
 
 ¡Claro! Aquí tienes el texto original en español con las correcciones ortográficas y gramaticales realizadas para mejorar el estilo:
-
----
 
 # Productos del ensamblado
 
