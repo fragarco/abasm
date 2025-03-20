@@ -77,12 +77,21 @@ BIT   7,B
 BIT   7,C
 BIT   7,D
 BIT   7,E
+BIT   7,H
+BIT   7,L
 BIT   7,(HL)    ;3 Test bit b of location (HL).
 BIT   7,(IX+0)  ;6 Test bit b of location (IX+d).
 BIT   7,(IY+0)  ;6 Test bit b of location (IY+d).
 
 CALL  main      ;5 Call subroutine at location.
 CALL  z,main  ;3/5 Call subroutine at location nn if condition CC is true (5) else (3).
+CALL  nz,main
+CALL  c,main
+CALL  nc,main
+CALL  p,main
+CALL  m,main
+CALL  pe,main
+CALL  po,main
 
 CCF             ;1 Complement carry flag.
 
@@ -133,7 +142,7 @@ DEC   IY        ;3 Decrement IY.
 DEC   SP        ;2 Decrement register pair SP.
 
 DI              ;1 Disable interrupts. (except NMI at 0066h)
-DJNZ  @-10    ;3/4 Decrement B and jump relative if B<>0 (4) else (3).
+DJNZ  @-10      ;3/4 Decrement B and jump relative if B<>0 (4) else (3).
 EI              ;1 Enable interrupts.
 
 EX    AF,AF'    ;1 Exchange the contents of AF and AF'.
@@ -183,16 +192,23 @@ INI             ;5 (HL)=Input from port (C), HL=HL+1, B=B-1.
 INIR          ;5/6 Perform an INI and repeat until B=0 (5), if B<>0 (6).
 
 JP    main      ;3 Unconditional jump to location nn.
-JP    z,main    ;3 Jump to location nn if condition cc is true.
 JP    (HL)      ;1 Unconditional jump to location (HL).
 JP    (IX)      ;2 Unconditional jump to location (IX).
 JP    (IY)      ;2 Unconditional jump to location (IY).
+JP    z,main    ;3 Jump to location nn if condition cc is true.
+JP    nz,main
+JP    c,main
+JP    nc,main
+JP    p,main
+JP    m,main
+JP    pe,main
+JP    po,main
 
-JR    c,@-10  ;2/3 Jump relative to PC+n if carry=1 (3) else (2).
 JR    @-10      ;3 Unconditional jump relative to PC+n.
-JR    nc,@-10 ;2/3 Jump relative to PC+n if carry=0 (3) else (2).
-JR    nz,@-10 ;2/3 Jump relative to PC+n if non zero (3) else (2).
 JR    z,@-10  ;2/3 Jump relative to PC+n if zero (3) else (2).
+JR    nz,@-10 ;2/3 Jump relative to PC+n if non zero (3) else (2).
+JR    c,@-10  ;2/3 Jump relative to PC+n if carry=1 (3) else (2).
+JR    nc,@-10 ;2/3 Jump relative to PC+n if carry=0 (3) else (2).
 
 LD    A,R       ;3 Load accumulator with R.(memory refresh register)
 LD    A,I       ;3 Load accumulator with I.(interrupt vector register)
@@ -345,7 +361,15 @@ RES   7,(IX+0)  ;7 Reset bit b in value at location (IX+d).
 RES   7,(IY+0)  ;7 Reset bit b in value at location (IY+d).
 
 RET             ;3 Return from subroutine.
+RET   z
 RET   nz      ;2/4 Return from subroutine if condition cc is true (4) else (2).
+RET   c
+RET   nc
+RET   p
+RET   m
+RET   pe
+RET   po
+
 RETI            ;4 Return from interrupt.
 RETN            ;4 Return from non-maskable interrupt.
 
