@@ -20,7 +20,7 @@ along with this program; if not, write to the Free Software
 Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 """
 __author__='Javier "Dwayne Hicks" Garcia'
-__version__='1.1.1'
+__version__='1.1.2'
 
 import sys, os
 import re
@@ -144,22 +144,6 @@ class AsmContext:
         self.defining_macro = None
         self.applying_macro = None
         self.list_instruction = True
-    
-    def parse_logic_expr(self, expr):
-        """
-        Resolves an expression that can be reduced to 0 = FALSE or !0 = TRUE.
-        """
-        values = re.findall(r'\w+', expr)
-        for i in range(0, len(values)):
-            values[i] = g_context.parse_expression(values[i])
-        logic = re.findall(r'[<|>|=|<=|>=|!=|==]', expr)
-        if len(logic) and logic[0] == '=': logic[0] = "=="
-
-        if len(values) == 1: return values[0]
-        if len(values) == 2:
-            operation = "%d %s %d" % (values[0], logic[0], values[1])
-            return eval(operation)
-        abort("evaluating logical expression " + expr)
        
     def parse_expression(self, arg, signed=0, byte=0, word=0, allowundef=0):
         """
@@ -216,6 +200,9 @@ class AsmContext:
                             testsymbol = str(result)
                         elif testsymbol[0] == '"' and testsymbol[-1]=='"':
                             # string literal used in some expressions
+                            pass
+                        elif testsymbol[0] == '!' and c == '=':
+                            # is not a local label but the logic operation !=
                             pass
                         else:
                             errormsg = f"symbol {testsymbol} is undefined"
@@ -330,12 +317,12 @@ class AsmContext:
 
     def store(self, p, bytes):
         if p == 2:
-            self.lstcode = ""
             mempos = self.origin
+            self.lstcode = ""
             for b in bytes:
                 try:
                     self.memory[mempos] = b
-                except ValueError as e:
+                except ValueError:
                     abort("0-255 range value was expected")
                 self.lstcode = self.lstcode + "%02X " % (b)
                 mempos = mempos + 1
@@ -966,21 +953,22 @@ def op_DEFM(p, opargs):
 
 def op_DEFB(p, opargs):
     args = AsmContext.split_line(opargs, ',')
-    bytes = []
+    totbytes = []
     for arg in args:
         texts = re.findall(r'"(.*?)"', arg)
         if len(texts) == 0: texts = re.findall(r"'(.*?)'", arg)
-        if len(texts) > 0:
-            # text string between "" or '', special case is '' which
-            # produces an empty list but should write &00
+        if len(texts) > 0 and len(texts[0]) > 1:
+            # manage text strings of multiple characters
+            # otherwise we go to parse_expression which will convert
+            # single characters in numeric values
             txtbytes = list(texts[0].encode('latin-1'))
             if len(txtbytes) == 0: txtbytes = [0]
-            bytes = bytes + txtbytes
+            totbytes = totbytes + txtbytes
         else:
             byte = 0 if p == 1 else g_context.parse_expression(arg, byte=1)
-            bytes.append(byte)
-    if p == 2: g_context.store(p, bytes)
-    return len(bytes)
+            totbytes.append(byte)
+    if p == 2: g_context.store(p, totbytes)
+    return len(totbytes)
 
 def op_LET(p, opargs):
     args = opargs.replace(" ", "").upper().split("=")
@@ -1625,11 +1613,15 @@ def op_LD(p,opargs):
 
 def op_IF(p, opargs):
     check_args(opargs, 1)
+    # WinAPE supports = as equal sym in IF directive while we need ==
+    if '=' in opargs and '==' not in opargs and '!=' not in opargs:
+        opargs = opargs.replace('=','==')
+
     g_context.ifstack.append((g_context.currentfile, g_context.ifstate))
     if g_context.ifstate < IFSTATE_DISCART:
         # No undefined symbols are allowed in IF expressions or we may
         # calculate wrong other symbols
-        cond = g_context.parse_logic_expr(opargs)
+        cond = g_context.parse_expression(opargs)
         if cond:
             g_context.ifstate = IFSTATE_ASSEMBLE
         else:
@@ -1643,7 +1635,11 @@ def op_ELSE(p, opargs):
         g_context.ifstate = IFSTATE_FIND_END
     elif g_context.ifstate == IFSTATE_DISCART:
         if opargs.upper().startswith("IF"):
-            cond = g_context.parse_logic_expr(opargs[2:].strip())
+            ifarg = opargs[2:].strip()
+            # WinAPE supports = as equal sym in IF directive while we need ==
+            if '=' in ifarg and '==' not in ifarg and '!=' not in ifarg:
+                ifarg = ifarg.replace('=','==')
+            cond = g_context.parse_expression(ifarg)
             if cond:
                 g_context.ifstate = IFSTATE_ASSEMBLE
             else:
