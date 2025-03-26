@@ -26,9 +26,9 @@ class CodeExamples(unittest.TestCase):
         try:
             infile = infile.replace(".asm", ".bin")
             with open(infile, "rb") as fd:
-                refbin = fd.readlines()
+                refbin = fd.read()
             with open(outfile, "rb") as fd:
-                newbin = fd.readlines()
+                newbin = fd.read()
         except Exception as e:
             self.fail("Error accesing to the binary files " + str(e))
         self.assertEqual(len(refbin), len(newbin), "binary lengths are different")
@@ -55,6 +55,9 @@ class CodeExamples(unittest.TestCase):
 
     def test_sprite(self):
         self._compare_bins("sprite.asm", "sprite.bin")
+
+    def test_directives(self):
+        self._compare_bins("directives.asm", "directives.bin")
 
     def test_opcodes(self):
         self._compare_bins("opcodes.asm", "opcodes.bin")
