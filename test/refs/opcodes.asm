@@ -210,6 +210,104 @@ JR    nz,@-10 ;2/3 Jump relative to PC+n if non zero (3) else (2).
 JR    c,@-10  ;2/3 Jump relative to PC+n if carry=1 (3) else (2).
 JR    nc,@-10 ;2/3 Jump relative to PC+n if carry=0 (3) else (2).
 
+LD    A,A
+LD    A,B
+LD    A,C
+LD    A,D
+LD    A,E
+LD    A,H
+LD    A,L
+LD    A,IXH
+LD    A,IXL
+LD    A,IYH
+LD    A,IYL
+
+LD    B,A
+LD    B,B
+LD    B,C
+LD    B,D
+LD    B,E
+LD    B,H
+LD    B,L
+LD    B,IXH
+LD    B,IXL
+LD    B,IYH
+LD    B,IYL
+
+LD    C,A
+LD    C,B
+LD    C,C
+LD    C,D
+LD    C,E
+LD    C,H
+LD    C,L
+LD    C,IXH
+LD    C,IXL
+LD    C,IYH
+LD    C,IYL
+
+LD    D,A
+LD    D,B
+LD    D,C
+LD    D,D
+LD    D,E
+LD    D,H
+LD    D,L
+LD    D,IXH
+LD    D,IXL
+LD    D,IYH
+LD    D,IYL
+
+LD    E,A
+LD    E,B
+LD    E,C
+LD    E,D
+LD    E,E
+LD    E,H
+LD    E,L
+LD    E,IXH
+LD    E,IXL
+LD    E,IYH
+LD    E,IYL
+
+LD    H,A
+LD    H,B
+LD    H,C
+LD    H,D
+LD    H,E
+LD    H,H
+LD    H,L
+
+LD    L,A
+LD    L,B
+LD    L,C
+LD    L,D
+LD    L,E
+LD    L,H
+LD    L,L
+
+LD    IXH,A
+LD    IXH,B
+LD    IXH,C
+LD    IXH,D
+LD    IXH,E
+LD    IXL,A
+LD    IXL,B
+LD    IXL,C
+LD    IXL,D
+LD    IXL,E
+
+LD    IYH,A
+LD    IYH,B
+LD    IYH,C
+LD    IYH,D
+LD    IYH,E
+LD    IYL,A
+LD    IYL,B
+LD    IYL,C
+LD    IYL,D
+LD    IYL,E
+
 LD    A,R       ;3 Load accumulator with R.(memory refresh register)
 LD    A,I       ;3 Load accumulator with I.(interrupt vector register)
 LD    A,(BC)    ;2 Load accumulator with value at location (BC).
