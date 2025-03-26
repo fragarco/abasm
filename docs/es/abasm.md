@@ -292,6 +292,12 @@ Esta directiva evalúa si la condición proporcionada se cumple. Si no es así, 
 ASSERT @<0xC000
 ```
 
+Los operadores básicos que se pueden usar en estar expresiones son:
+ - *==* : igual que.
+ - *!=* : distinto que.
+ - *<*, *>* : menor que o mayor que.  
+ - *<=*, *>=*: menor o igual que, mayor o igual que. 
+
 ### DB, DM, DEFB, DEFM 
 
 - DEFB  n [,n ...]
@@ -362,6 +368,13 @@ ENDIF
 ```
 
 Esta directiva es útil cuando se combina con la opción `--define` de ABASM, que permite cambiar qué código se ensambla dependiendo de la llamada hecha al ensamblador. Sin embargo, cualquier símbolo o constante referenciada en la expresión lógica debe haberse declarado previamente.
+
+Los operadores básicos que se pueden usar en estar expresiones son:
+ - *=* : aunque == es el operador adecuado, ABASM soporta '=' por compatibilidad con WinAPE.
+ - *==* : igual que.
+ - *!=* : distinto que.
+ - *<*, *>* : menor que o mayor que.  
+ - *<=*, *>=*: menor o igual que, mayor o igual que.  
 
 ### INCBIN
 
@@ -534,368 +547,651 @@ Esta sección proporciona una lista breve de todas las instrucciones soportadas 
 
 - [Tiempos del Z80 para el Amstrad CPC - Hoja de referencia rápida](https://www.cpcwiki.eu/imgs/b/b4/Z80_CPC_Timings_cheat_sheet.20230709.pdf)
 
-**Key:**
+**Claves:**
 ```
-r 	registro de 8-bits (B,C,D,E,H,L,A)
-n 	valor numérico de 8-bits (0-255)
-d 	desplazamiento de 8-bits (0-255)
+r 	  registro de 8 bits (B,C,D,E,H,L,A)
+n     valor numérico de 8 bits (rango 0-254)
+hh 	  valor hexadecimal de 8 bits (rango &00-&FF)
+d 	  offset numérico de 1 byte (-128 a 127)
 
-rr 	registro de 16-bits (HL,DE,BC)
-nn 	valor numérico de 16-bits (0-65.535)
-dd  desplazamiento de 16-bits
+rr 	  registro doble de 16 bits (HL,DE,BC)
+nn    valor numérico de 16 bits (rango 0-65535)
+HHhh 	valor hexadecimal de 16 bits (rango &0000-&FFFF)
 
-cc	código de condición (z,nz,c,nc,p,m,po,pe)
-nc 	condición no cumplida
-c 	condición cumplida
+cc	  condición (z,nz,c,nc,p,m,po,pe)
+cn 	  condición no satisfecha
+cs 	  condición satisfecha
 
-b   posición de un bit (7-0)
+b     posición de un bit dentro de un byte (7-0)
 ```
 
+**Lista de instrucciones:**
 ```
-opcode    timing    explicación
+bytes         opcode        tiempo    explicación
+-------------------------------------------------------------------------------
+8F          	ADC   A,A       1 Suma con acarreo el registro r al acumulador.
+88          	ADC   A,B
+89          	ADC   A,C
+8A          	ADC   A,D
+8B          	ADC   A,E
+8C          	ADC   A,H
+8D          	ADC   A,L
+CE hh       	ADC   A,n       2 Suma con acarreo el valor n al acumulador.
+DD 8C       	ADC   A,IXH     2 Suma con acarreo el byte alto de IX al acumulador.
+DD 8D       	ADC   A,IXL     2 Suma con acarreo el byte bajo de IX al acumulador.
+FD 8C       	ADC   A,IYH     2 Suma con acarreo el byte alto de IY al acumulador.
+FD 8D       	ADC   A,IYL     2 Suma con acarreo el byte bajo de IY al acumulador.
+8E          	ADC   A,(HL)    2 Suma con acarreo el valor en la ubicación HL al acumulador.
+DD 8E hh    	ADC   A,(IX+d)  5 Suma con acarreo el valor en la ubicación IX+d al acumulador.
+FD 8E hh    	ADC   A,(IY+d)  5 Suma con acarreo el valor en la ubicación IY+d al acumulador.
+ED 4A       	ADC   HL,BC     4 Suma con acarreo el registro doble rr a HL.
+ED 5A       	ADC   HL,DE
+ED 6A       	ADC   HL,HL
+ED 7A       	ADC   HL,SP
 
-ADC   A,r       1 Suma con acarreo el registro r al acumulador.
-ADC   A,n       2 Suma con acarreo el valor n al acumulador.
-ADC   A,IXH     2 Suma con acarreo el byte alto de IX al acumulador.
-ADC   A,IXL     2 Suma con acarreo el byte bajo de IX al acumulador.
-ADC   A,IYH     2 Suma con acarreo el byte alto de IY al acumulador.
-ADC   A,IYL     2 Suma con acarreo el byte bajo de IY al acumulador.
-ADC   A,(HL)    2 Suma con acarreo el valor en la ubicación (HL) al acumulador.
-ADC   A,(IX+d)  5 Suma con acarreo el valor en la ubicación (IX+d) al acumulador.
-ADC   A,(IY+d)  5 Suma con acarreo el valor en la ubicación (IY+d) al acumulador.
+87          	ADD   A,A       1 Suma el registro r al acumulador.
+80          	ADD   A,B
+81          	ADD   A,C
+82          	ADD   A,D
+83          	ADD   A,E
+84          	ADD   A,H
+85          	ADD   A,L
+C6 hh       	ADD   A,n       2 Suma el valor n al acumulador.
+DD 84       	ADD   A,IXH     2 Suma el byte alto de IX al acumulador.
+DD 85       	ADD   A,IXL     2 Suma el byte bajo de IX al acumulador.
+FD 84       	ADD   A,IYH     2 Suma el byte alto de IY al acumulador.
+FD 85       	ADD   A,IYL     2 Suma el byte bajo de IY al acumulador.
+86          	ADD   A,(HL)    2 Suma el valor en la ubicación HL al acumulador.
+DD 86 hh    	ADD   A,(IX+d)  5 Suma el valor en la ubicación IX+d al acumulador.
+FD 86 hh    	ADD   A,(IY+d)  5 Suma el valor en la ubicación IY+d al acumulador.
+09          	ADD   HL,BC     3 Suma el registro doble rr a HL.
+19          	ADD   HL,DE
+29          	ADD   HL,HL
+39          	ADD   HL,SP
+DD 09       	ADD   IX,BC     4 Suma el registro doble rr a IX.
+DD 19       	ADD   IX,DE
+DD 29       	ADD   IX,IX
+DD 39       	ADD   IX,SP
+FD 09       	ADD   IY,BC     4 Suma el registro doble rr a IY.
+FD 19       	ADD   IY,DE
+FD 29       	ADD   IY,IY
+FD 39       	ADD   IY,SP
 
-ADC   HL,BC     4 Suma con acarreo el registro doble BC a HL.
-ADC   HL,DE     4 Suma con acarreo el registro doble DE a HL.
-ADC   HL,HL     4 Suma con acarreo el registro doble HL a HL.
-ADC   HL,SP     4 Suma con acarreo el registro SP a HL.
+A7          	AND   A         1 AND lógico del registro r con el acumulador.
+A0          	AND   B
+A1          	AND   C
+A2          	AND   D
+A3          	AND   E
+A4          	AND   H
+A5          	AND   L
+E6 hh       	AND   n         2 AND lógico del valor n con el acumulador.
+DD A4       	AND   IXH       2 AND lógico del byte alto de IX con el acumulador.
+DD A5       	AND   IXL       2 AND lógico del byte bajo de IX con el acumulador.
+FD A4       	AND   IYH       2 AND lógico del byte alto de IY con el acumulador.
+FD A5       	AND   IYL       2 AND lógico del byte bajo de IY con el acumulador.
+A6          	AND   (HL)      2 AND lógico del valor en la ubicación HL con el acumulador.
+DD A6 hh    	AND   (IX+d)    5 AND lógico del valor en la ubicación IX+d con el acumulador.
+FD A6 hh    	AND   (IY+d)    5 AND lógico del valor en la ubicación IY+d con el acumulador.
 
-ADD   A,r       1 Suma el registro r al acumulador.
-ADD   A,n       2 Suma el valor n al acumulador.
-ADD   A,IXH     2 Suma el byte alto de IX al acumulador.
-ADD   A,IXL     2 Suma el byte bajo de IX al acumulador.
-ADD   A,IYH     2 Suma el byte alto de IY al acumulador.
-ADD   A,IYL     2 Suma el byte bajo de IY al acumulador.
-ADD   A,(HL)    2 Suma el valor en la ubicación (HL) al acumulador.
-ADD   A,(IX+d)  5 Suma el valor en la ubicación (IX+d) al acumulador.
-ADD   A,(IY+d)  5 Suma el valor en la ubicación (IY+d) al acumulador.
+CB bF       	BIT   b,A       2 Chequea si el bit b del registro r es 1.
+CB b8       	BIT   b,B         El resultado queda en el flag Z.
+CB b9       	BIT   b,C
+CB bA       	BIT   b,D
+CB bB       	BIT   b,E
+CB bC       	BIT   b,H
+CB bD       	BIT   b,L
+CB bE       	BIT   b,(HL)    3 Chequea si el bit b del valor en la ubicación HL es 1.
+DD CB hh bE 	BIT   b,(IX+d)  6 Chequea si el bit b del valor en la ubicación IX+d.
+FD CB hh bE 	BIT   b,(IY+d)  6 Chequea si el bit b del valor en la ubicación IY+d.
 
-ADD   HL,BC     3 Suma el registro doble BC a HL.
-ADD   HL,DE     3 Suma el registro doble DE a HL.
-ADD   HL,HL     3 Suma el registro doble HL a HL.
-ADD   HL,SP     3 Suma el registro SP a HL.
+CD hh HH    	CALL  HHhh      5 Llama a la subrutina en la dirección de memoria dada.
+CC hh HH    	CALL  z,HHhh  3/5 Llama a la subrutina si el flag Z es 1, si no (3).
+C4 hh HH    	CALL  nz,HHhh 3/5 Llama a la subrutina si el flag Z es 0, si no (3).
+DC hh HH    	CALL  c,HHhh  3/5 Llama a la subrutina si el flag C es 1, si no (3).
+D4 hh HH    	CALL  nc,HHhh 3/5 Llama a la subrutina si el flag C es 0, si no (3).
+F4 hh HH    	CALL  p,HHhh  3/5 Llama a la subrutina si el flag S es 0, si no (3).
+FC hh HH    	CALL  m,HHhh  3/5 Llama a la subrutina si el flag S es 1, si no (3).
+EC hh HH    	CALL  pe,HHhh 3/5 Llama a la subrutina si el flag P/V es 1, si no (3).
+E4 hh HH    	CALL  po,HHhh 3/5 Llama a la subrutina si el flag P/V es 0, si no (3).
 
-ADD   IX,BC     4 Suma el registro doble BC a IX.
-ADD   IX,DE     4 Suma el registro doble DE a IX.
-ADD   IX,IX     4 Suma el registro IX a IX.
-ADD   IX,SP     4 Suma el registro SP a IX.
+3F          	CCF             1 Invierte el valor del flag de acarreo.
 
-ADD   IY,BC     4 Suma el registro doble BC a IY.
-ADD   IY,DE     4 Suma el registro doble DE a IY.
-ADD   IY,IY     4 Suma el registro IY a IY.
-ADD   IY,SP     4 Suma el registro SP a IY.
+BF          	CP    A         1 Compara el registro r con el acumulador.
+B8          	CP    B           El flag Z es 1 si A == N si no, es 0.
+B9          	CP    C           El flag C es 1 si A < N si no, es 0 (sin signo)   
+BA          	CP    D           El flag S <> P/V si A < N si no, S = P/V (con signo).  
+BB          	CP    E               
+BC          	CP    H               
+BD          	CP    L
+FE hh       	CP    n         2 Compara el valor n con el acumulador.
+DD BC       	CP    IXH       1 Compara el byte alto de IX con el acumulador.
+DD BD       	CP    IXL       1 Compara el byte bajo de IX con el acumulador.
+FD BC       	CP    IYH       1 Compara el byte alto de IY con el acumulador.
+FD BD       	CP    IYL       1 Compara el byte bajo de IY con el acumulador.
+BE          	CP    (HL)      2 Compara el valor de la ubicación en HL con A.
+DD BE hh    	CP    (IX+d)    5 Compara el valor de la ubicación en IX+d con A.
+FD BE hh    	CP    (IY+d)    5 Compara el valor de la ubicación en IY+d con A.
 
-AND   r         1 AND lógico del registro r con el acumulador.
-AND   n         2 AND lógico del valor n con el acumulador.
-AND   IXH       2 AND lógico del byte alto de IX con el acumulador.
-AND   IXL       2 AND lógico del byte bajo de IX con el acumulador.
-AND   IYH       2 AND lógico del byte alto de IY con el acumulador.
-AND   IYL       2 AND lógico del byte bajo de IY con el acumulador.
-AND   (HL)      2 AND lógico del valor en la ubicación (HL) con el acumulador.
-AND   (IX+d)    5 AND lógico del valor en la ubicación (IX+d) con el acumulador.
-AND   (IY+d)    5 AND lógico del valor en la ubicación (IY+d) con el acumulador.
+ED A9       	CPD             5 Compara el valor de la ubicación en HL con A, HL-1, BC-1.
+ED B9       	CPDR          5/6 Repite CPD hasta que BC=0 (5), si BC<>0 (6).
+ED A1       	CPI             5 Compara el valor de la ubicación en HL con A, HL+1, BC-1.
+ED B1       	CPIR          5/6 Repite CPI hasta que BC=0 (5), si BC<>0 (6).
+2F          	CPL             1 Invierte los bits del acumulador (complemento a 1).
 
-BIT   b,r       2 Chequea si el bit b del registro r es 1.
-BIT   b,(HL)    3 Chequea si el bit b del valor en la ubicación (HL) es 1.
-BIT   b,(IX+d)  6 Chequea si el bit b del valor en la ubicación (IX+d).
-BIT   b,(IY+d)  6 Chequea si el bit b del valor en la ubicación (IY+d).
+27          	DAA             1 Ajusta el acumulador según el formato decimal BCD. 
 
-CALL  nn        5 Llama a la subrutina en la dirección nn.
-CALL  cc,nn   3/5 Llama a la subrutina en la dirección nn si se cumple cc (5), si no (3).
+3D          	DEC   A         1 Decrementa el registro r.
+05          	DEC   B
+0D          	DEC   C
+15          	DEC   D
+1D          	DEC   E
+25          	DEC   H
+2D          	DEC   L
+DD 25       	DEC   IXH       2 Decrementa el byte alto de IX.
+DD 2D       	DEC   IXL       2 Decrementa el byte bajo de IX.
+FD 25       	DEC   IYH       2 Decrementa el byte alto de IY.
+FD 2D       	DEC   IYL       2 Decrementa el byte bajo de IY.
+35          	DEC   (HL)      3 Decrementa el valor de la ubicación en HL.
+DD 35 hh    	DEC   (IX+d)    6 Decrementa el valor de la ubicación en IX+d.
+FD 35 hh    	DEC   (IY+d)    6 Decrementa el valor de la ubicación en IY+d.
+0B          	DEC   BC        2 Decrementa el registro doble rr.
+1B          	DEC   DE
+2B          	DEC   HL
+3B          	DEC   SP
+DD 2B       	DEC   IX        3 Decrementa IX.
+FD 2B       	DEC   IY        3 Decrementa IY.
 
-CCF             1 Invierte el valor del flag de acarreo.
+F3          	DI              1 Deshabilita las interrupciones (excepto NMI en 0066h).
+hh F4       	DJNZ  n       3/4 B-1 y salta de manera relativa si B<>0 (4), si B=0 (3).
+FB          	EI              1 Habilita las interrupciones.
 
-CP    r         1 Compara el registro r con el acumulador.
-CP    n         2 Compara el valor n con el acumulador.
-CP    IXH       1 Compara el byte alto de IX con el acumulador.
-CP    IXL       1 Compara el byte bajo de IX con el acumulador.
-CP    IYH       1 Compara el byte alto de IY con el acumulador.
-CP    IYL       1 Compara el byte bajo de IY con el acumulador.
-CP    (HL)      2 Compara el valor en la ubicación (HL) con el acumulador.
-CP    (IX+d)    5 Compara el valor en la ubicación (IX+d) con el acumulador.
-CP    (IY+d)    5 Compara el valor en la ubicación (IY+d) con el acumulador.
+08          	EX    AF,AF'    1 Intercambia el contenido de AF y AF'.
+EB          	EX    DE,HL     1 Intercambia el contenido de DE y HL.
+E3          	EX    (SP),HL   6 Intercambia el valor de la ubicación en SP y HL.
+DD E3       	EX    (SP),IX   7 Intercambia el valor de la ubicación en SP e IX.
+FD E3       	EX    (SP),IY   7 Intercambia el valor de la ubicación en SP e IX.
+D9          	EXX             1 Intercambia el contenido de BC,DE,HL con BC',DE',HL'.
 
-CPD             5 Compara el valor en la ubicación (HL) con el acumulador, decrementa HL, BC.
-CPDR          5/6 Repite CPD hasta que BC=0 (5), si BC<>0 (6).
-CPI             5 Compara el valor en la ubicación (HL) con el acumulador, inc. HL, dec. BC.
-CPIR          5/6 Repite CPI hasta que BC=0 (5), si BC<>0 (6).
-CPL             1 Invierte los bits del acumulador (complemento a 1).
+76          	HALT            * Detiene el procesador a la espera de una interrupción.
+                                Su tiempo de ejecución es variable.
 
-DAA             1 Ajusta el acumulador según el formato decimal BCD.
+ED 46       	IM    0         2 Establece el modo de interrupción a 0 (dispositivo externo).
+ED 56       	IM    1         2 Establece el modo de interrupción a 1 (rst 38).
+ED 5E       	IM    2         2 Establece el modo de interrupción a 2 (salto a vector).
 
-DEC   r         1 Decrementa el registro r.
-DEC   IXH       2 Decrementa el byte alto de IX.
-DEC   IXL       2 Decrementa el byte bajo de IX.
-DEC   IYH       2 Decrementa el byte alto de IY.
-DEC   IYL       2 Decrementa el byte bajo de IY.
-DEC   (HL)      3 Decrementa el valor en la ubicación (HL).
-DEC   (IX+d)    6 Decrementa el valor en la ubicación (IX+d).
-DEC   (IY+d)    6 Decrementa el valor en la ubicación (IY+d).
+DB hh       	IN    A,(n)     3 Carga el acumulador con un valor del dispositivo/puerto n.
+ED 40       	IN    B,(C)     4 Carga el registro r con un valor del dispositivo/puerto en B.
+ED 48       	IN    C,(C)       Ver nota [1] al final del listado.
+ED 50       	IN    D,(C)
+ED 58       	IN    E,(C)
+ED 60       	IN    H,(C)
+ED 68       	IN    L,(C)
 
-DEC   BC        2 Decrementa el registro doble BC.
-DEC   DE        2 Decrementa el registro doble DE.
-DEC   HL        2 Decrementa el registro doble HL.
-DEC   IX        3 Decrementa el registro IX.
-DEC   IY        3 Decrementa el registro IY.
-DEC   SP        2 Decrementa el registro SP.
+3C          	INC   A         1 Incrementa el valor del registro r.
+04          	INC   B
+0C          	INC   C
+14          	INC   D
+1C          	INC   E
+24          	INC   H
+2C          	INC   L
+DD 24       	INC   IXH       2 Incrementa el valor del byte alto de IX.
+DD 2C       	INC   IXL       2 Incrementa el valor del byte bajo de IX.
+FD 24       	INC   IYH       2 Incrementa el valor del byte alto de IY.
+FD 2C       	INC   IYL       2 Incrementa el valor del byte bajo de IY.
+34          	INC   (HL)      3 Incrementa el valor en la ubicación de HL.
+DD 34 hh    	INC   (IX+d)    6 Incrementa el valor en la ubicación IX+d.
+FD 34 hh    	INC   (IY+d)    6 Incrementa el valor en la ubicación IY+d.
+03          	INC   BC        2 Incrementa el valor del registro doble rr.
+13          	INC   DE
+23          	INC   HL
+33          	INC   SP
+DD 23       	INC   IX        3 Incrementa el valor del registro IX.
+FD 23       	INC   IY        3 Incrementa el valor del registro IY
 
-DI              1 Deshabilita las interrupciones (excepto NMI en 0066h).
+ED AA       	IND             5 (HL) guarda el valor del dispositivo B!![1], HL-1 y B-1!![1].
+ED BA       	INDR          5/6 Realiza un IND y repite hasta que B=0 (5), si B<>0 (6) !![1].
+ED A2       	INI             5 (HL) guarda el valor del dispositivo B!![1], HL+1, B-1 !![1].
+ED B2       	INIR          5/6 Realiza un INI y repite hasta que B=0 (5), si B<>0 (6) !![1].
 
-DJNZ  n       3/4 Decrementa B y salta de manera relativa si B<>0 (4), si B=0 (3).
+C3 hh HH    	JP    HHhh      3 Salto incondicional a la dirección HHhh.
+E9          	JP    (HL)      1 Salto incondicional a la ubicación en HL.
+DD E9       	JP    (IX)      2 Salto incondicional a la ubicación en IX.
+FD E9       	JP    (IY)      2 Salto incondicional a la ubicación en IY.
+CA hh HH    	JP    z,HHhh    3 Salto a HHhh si el flag Z es 1.
+C2 hh HH    	JP    nz,HHhh   3 Salto a HHhh si el flag Z es 0.
+DA hh HH    	JP    c,HHhh    3 Salto a HHhh si el flag C es 1.
+D2 hh HH    	JP    nc,HHhh   3 Salto a HHhh si el flag C es 0.
+F2 hh HH    	JP    p,HHhh    3 Salto a HHhh si el flag S es 0.
+FA hh HH    	JP    m,HHhh    3 Salto a HHhh si el flag S es 1.
+EA hh HH    	JP    pe,HHhh   3 Salto a HHhh si el flag P/V es 1.
+E2 hh HH    	JP    po,HHhh   3 Salto a HHhh si el flag P/V es 0.
 
-EI              1 Habilita las interrupciones.
+18 hh       	JR    n         3 Salto incondicional relativo a PC+n.       
+28 hh       	JR    z,n     2/3 Salto relativo a PC+n si el flag Z es 1 (3), si no (2).
+20 hh       	JR    nz,n    2/3 Salto relativo a PC+n si el flag Z es 0 (3), si no (2).
+38 hh       	JR    c,n     2/3 Salto relativo a PC+n si el flag C es 1 (3), si no (2).
+30 hh       	JR    nc,n    2/3 Salto relativo a PC+n si el flag C es 0 (3), si no (2).
 
-EX    AF,AF'    1 Intercambia el contenido de AF y AF'.
-EX    DE,HL     1 Intercambia el contenido de DE y HL.
-EX    (SP),HL   6 Intercambia el valor en la ubicación (SP) y HL.
-EX    (SP),IX   7 Intercambia el valor en la ubicación (SP) y IX.
-EX    (SP),IY   7 Intercambia el valor en la ubicación (SP) y IY.
-EXX             1 Intercambia el contenido de BC,DE,HL con BC',DE',HL'.
+7F          	LD    A,A       1 Copia en el acumulador el valor del registro r.
+78          	LD    A,B
+79          	LD    A,C
+7A          	LD    A,D
+7B          	LD    A,E
+7C          	LD    A,H
+7D          	LD    A,L
+ED 5F       	LD    A,R       3 Copia en A el valor de R (registro de refresco de memoria).
+ED 57       	LD    A,I       3 Copia en A el valor de I (registro de vector de interrupción).
+DD 7C       	LD    A,IXH     2 Copia en A el valor del byte alto de IX.
+DD 7D       	LD    A,IXL     2 Copia en A el valor del byte bajo de IX.
+FD 7C       	LD    A,IYH     2 Copia en A el valor del byte alto de IY.
+FD 7D       	LD    A,IYL     2 Copia en A el valor del byte bajo de IY.
 
-HALT          1/* Detiene el procesador a la espera de una interrupción (tiempo variable).
+47          	LD    B,A       1 Copia en B el valor del registro r.
+40          	LD    B,B
+41          	LD    B,C
+42          	LD    B,D
+43          	LD    B,E
+44          	LD    B,H
+45          	LD    B,L
+DD 44       	LD    B,IXH     2 Copia en B el valor del byte alto de IX.
+DD 45       	LD    B,IXL     2 Copia en B el valor del byte bajo de IX.
+FD 44       	LD    B,IYH     2 Copia en B el valor del byte alto de IY.
+FD 45       	LD    B,IYL     2 Copia en B el valor del byte bajo de IY.
 
-IM    0         2 Establece el modo de interrupción 0 (int de un dispositivo externo).
-IM    1         2 Establece el modo de interrupción 1 (rst 38).
-IM    2         2 Establece el modo de interrupción 2 (salto a vector).
+4F          	LD    C,A       1 Copia en C el valor del registro r.
+48          	LD    C,B
+49          	LD    C,C
+4A          	LD    C,D
+4B          	LD    C,E
+4C          	LD    C,H
+4D          	LD    C,L
+DD 4C       	LD    C,IXH     2 Copia en C el valor del byte alto de IX.
+DD 4D       	LD    C,IXL     2 Copia en C el valor del byte bajo de IX.
+FD 4C       	LD    C,IYH     2 Copia en C el valor del byte alto de IY.
+FD 4D       	LD    C,IYL     2 Copia en C el valor del byte bajo de IY.
 
-IN    A,(n)     3 Carga el acumulador con un valor del dispositivo/puerto n.
-IN    r,(C)     4 Carga el registro r con un valor del dispositivo/puerto en B(!!)[1].
+57          	LD    D,A       1 Copia en D el valor del registro r.
+50          	LD    D,B
+51          	LD    D,C
+52          	LD    D,D
+53          	LD    D,E
+54          	LD    D,H
+55          	LD    D,L
+DD 54       	LD    D,IXH     2 Copia en D el valor del byte alto de IX.
+DD 55       	LD    D,IXL     2 Copia en D el valor del byte bajo de IX.
+FD 54       	LD    D,IYH     2 Copia en D el valor del byte alto de IY.
+FD 55       	LD    D,IYL     2 Copia en D el valor del byte bajo de IY.
 
-INC   r         1 Incrementa el registro r.
-INC   IXH       2 Incrementa el byte alto de IX.
-INC   IXL       2 Incrementa el byte bajo de IX.
-INC   IYH       2 Incrementa el byte alto de IY.
-INC   IYL       2 Incrementa el byte bajo de IY.
-INC   (HL)      3 Incrementa el valor en la ubicación (HL).
-INC   (IX+d)    6 Incrementa el valor en la ubicación (IX+d).
-INC   (IY+d)    6 Incrementa el valor en la ubicación (IY+d).
+5F          	LD    E,A       1 Copia en E el valor del registro r.
+58          	LD    E,B
+59          	LD    E,C
+5A          	LD    E,D
+5B          	LD    E,E
+5C          	LD    E,H
+5D          	LD    E,L
+DD 5C       	LD    E,IXH     2 Copia en E el valor del byte alto de IX.
+DD 5D       	LD    E,IXL     2 Copia en E el valor del byte bajo de IX.
+FD 5C       	LD    E,IYH     2 Copia en E el valor del byte alto de IY.
+FD 5D       	LD    E,IYL     2 Copia en E el valor del byte bajo de IY.
 
-INC   BC        2 Incrementa el registro doble BC.
-INC   DE        2 Incrementa el registro doble DE.
-INC   HL        2 Incrementa el registro doble HL.
-INC   IX        3 Incrementa el registro IX.
-INC   IY        3 Incrementa el registro IY.
-INC   SP        2 Incrementa el registro SP.
+67          	LD    H,A       1 Copia en H el valor del registro r.
+60          	LD    H,B
+61          	LD    H,C
+62          	LD    H,D
+63          	LD    H,E
+64          	LD    H,H
+65          	LD    H,L
 
-IND             5 (HL) guarda el valor del dispositivo B!![1], Decrementa HL y B!![1].
-INDR          5/6 Realiza un IND y repete hasta que B=0 (5), si B<>0 (6) !![1].
-INI             5 (HL) guarda el valor del dispositivo B!![1], HL=HL+1, B=B-1 !![1].
-INIR          5/6 Realiza un INI y repete hasta que B=0 (5), si B<>0 (6) !![1].
+6F          	LD    L,A       1 Copia en L el valor del registro r.
+68          	LD    L,B
+69          	LD    L,C
+6A          	LD    L,D
+6B          	LD    L,E
+6C          	LD    L,H
+6D          	LD    L,L
 
-JP    nn        3 Salto incondicional a la dirección nn.
-JP    cc,nn     3 Salto a la dirección nn si la condición cc se cumple.
-JP    (HL)      1 Salto incondicional a la ubicación (HL).
-JP    (IX)      2 Salto incondicional a la ubicación (IX).
-JP    (IY)      2 Salto incondicional a la ubicación (IY).
+ED 47       	LD    I,A       3 Copia en I el valor del acumulador.
+ED 4F       	LD    R,A       3 Copia en R el valor del acumulador.
 
-JR    c,n     2/3 Salto relativo a PC+n si acarreo=1 (3), si acarreo=0 (2).
-JR    n         3 Salto incondicional relativo a PC+n.
-JR    nc,n    2/3 Salto relativo a PC+n si acarreo=0 (3), si acarreo=0 (2).
-JR    nz,n    2/3 Salto relativo a PC+n si nz (3), si z (2).
-JR    z,n     2/3 Salto relativo a PC+n si z (3), si nz (2).
+3E hh       	LD    A,n       2 Copia en el registro r el valor n.
+06 hh       	LD    B,n
+0E hh       	LD    C,n
+16 hh       	LD    D,n
+1E hh       	LD    E,n
+26 hh       	LD    H,n
+2E hh       	LD    L,n
 
-LD    A,R       3 Carga el acumulador con R (registro de refresco de memoria).
-LD    A,I       3 Carga el acumulador con I (registro de vector de interrupción).
-LD    A,(BC)    2 Carga el acumulador con el valor en la ubicación (BC).
-LD    A,(DE)    2 Carga el acumulador con el valor en la ubicación (DE).
-LD    A,(nn)    4 Carga el acumulador con el valor en la dirección nn.
+7E          	LD    A,(HL)    2 Copia en el registro r el valor en la ubicación de HL.
+46          	LD    B,(HL)
+4E          	LD    C,(HL)
+56          	LD    D,(HL)
+66          	LD    H,(HL)
+6E          	LD    L,(HL)
 
-LD    I,A       3 Carga I con el acumulador.
-LD    R,A       3 Carga R con el acumulador.
-LD    r,n       2 Carga el registro r con el valor n.
-LD    r,(HL)    2 Carga el registro r con el valor en la ubicación (HL).
-LD    r,(IX+d)  5 Carga el registro r con el valor en la ubicación (IX+d).
-LD    r,(IY+d)  5 Carga el registro r con el valor en la ubicación (IY+d).
+DD 7E hh    	LD    A,(IX+d)  5 Copia en el registro r el valor en la ubicación de IX+d.
+DD 46 hh    	LD    B,(IX+d)
+DD 4E hh    	LD    C,(IX+d)
+DD 56 hh    	LD    D,(IX+d)
+DD 5E hh    	LD    E,(IX+d)
+DD 66 hh    	LD    H,(IX+d)
+DD 6E hh    	LD    L,(IX+d)
+FD 7E hh    	LD    A,(IY+d)  5 Copia en el registro r el valor en la ubicación de IY+d.
+FD 46 hh    	LD    B,(IY+d)
+FD 4E hh    	LD    C,(IY+d)
+FD 56 hh    	LD    D,(IY+d)
+FD 5E hh    	LD    E,(IY+d)
+FD 66 hh    	LD    H,(IY+d)
+FD 6E hh    	LD    L,(IY+d)
 
-LD    SP,HL     2 Carga SP con HL.
-LD    SP,IX     3 Carga SP con IX.
-LD    SP,IY     3 Carga SP con IY.
+0A          	LD    A,(BC)    2 Copia en el acumulador el valor en la ubicación de BC.
+1A          	LD    A,(DE)    2 Copia en el acumulador el valor en la ubicación de DE.
+3A hh HH    	LD    A,(HHhh)  4 Copia en el acumulador el valor en la ubicación HHhh.
 
-LD    BC,nn     3 Carga el registro doble BC con nn.
-LD    DE,nn     3 Carga el registro doble DE con nn.
-LD    HL,nn     3 Carga el registro doble HL con nn.
-LD    IX,nn     4 Carga IX con el valor nn.
-LD    IY,nn     4 Carga IY con el valor nn.
-LD    SP,nn     3 Carga el registro SP con nn.
-LD    BC,(nn)   6 Carga registro doble BC con el valor en la ubicación (nn).
-LD    DE,(nn)   6 Carga registro doble DE con el valor en la ubicación (nn).
-LD    HL,(nn)   5 Carga HL con el valor en la ubicación (nn), primero L.
-LD    IX,(nn)   6 Carga IX con el valor en la ubicación (nn).
-LD    IY,(nn)   6 Carga IY con el valor en la ubicación (nn).
-LD    SP,(nn)   6 Carga el registro SP con el valor en la ubicación (nn).
+F9          	LD    SP,HL     2 Copia en SP el valor de HL.
+DD F9       	LD    SP,IX     3 Copia en SP el valor de IX.
+FD F9       	LD    SP,IY     3 Copia en SP el valor de IY.
+31 hh HH    	LD    SP,nn     3 Copia en SP el valor nn.
+ED 7B hh HH 	LD    SP,(HHhh) 6 Copia en SP el valor en la ubicación HHhh.
 
-LD    (BC),A    2 Carga la ubicación (BC) con el valor del acumulador.
-LD    (DE),A    2 Carga la ubicación (DE) con el valor del acumulador.
-LD    (HL),n    3 Carga la ubicación (HL) con el valor n.
-LD    (HL),r    2 Carga la ubicación (HL) con el valor del registro r.
-LD    (IX+d),n  6 Carga la ubicación (IX+d) con el valor n.
-LD    (IX+d),r  5 Carga la ubicación (IX+d) con el valor del registro r.
-LD    (IY+d),n  6 Carga la ubicación (IY+d) con el valor n.
-LD    (IY+d),r  5 Carga la ubicación (IY+d) con el valor del registro r.
+01 hh HH    	LD    BC,nn     3 Copia en el registro doble rr el valor nn.
+11 hh HH    	LD    DE,nn
+21 hh HH    	LD    HL,nn
+DD 21 hh HH 	LD    IX,nn     4 Copia en IX el valor nn.
+FD 21 hh HH 	LD    IY,nn     4 Copia en IY el valor nn.
 
-LD    (nn),A    4 Carga la ubicación (nn) con el valor del acumulador.
-LD    (nn),BC   6 Carga la ubicación (nn) con el valor de BC.
-LD    (nn),DE   6 Carga la ubicación (nn) con el valor de DE.
-LD    (nn),HL   5 Carga la ubicación (nn) con el valor de HL.
-LD    (nn),SP   6 Carga la ubicación (nn) con el valor de SP.
-LD    (nn),IX   6 Carga la ubicación (nn) con el valor de IX.
-LD    (nn),IY   6 Carga la ubicación (nn) con el valor de IY.
+ED 4B hh HH 	LD    BC,(HHhh) 6 Copia en el registro doble rr el valor en la ubicación HHhh.
+ED 5B hh HH 	LD    DE,(HHhh)
+2A hh HH    	LD    HL,(HHhh)
+DD 2A hh HH 	LD    IX,(HHhh) 6 Copia en IX el valor en la ubicación HHhh.
+FD 2A hh HH 	LD    IY,(HHhh) 6 Copia en IY el valor en la ubicación HHhh.
 
-LDD             5 Copia en (DE) el valor de la ubicación (HL), decrementa DE, HL, BC.
-LDDR          5/6 Repite LDD hasta que BC=0 (5), si BC<>0 (6).
-LDI             5 Copia en (DE) el valor de la ubicación (HL), inc DE, HL; dec BC.
-LDIR          5/6 Repite LDI hasta que BC=0 (5), si BC<>0 (6).
+02          	LD    (BC),A    2 Copia en la ubicación de rr el valor en r.
+12          	LD    (DE),A
+77          	LD    (HL),A
+70          	LD    (HL),B
+71          	LD    (HL),C
+72          	LD    (HL),D
+73          	LD    (HL),E
+74          	LD    (HL),H
+75          	LD    (HL),L
+36 hh       	LD    (HL),n    3 Copia en la ubicación de HL el valor n.
+DD 36 dd nn 	LD    (IX+d),n  6 Copia en la ubicación de IX+d el valor n.
+DD 77 hh    	LD    (IX+d),A  5 Copia en la ubicación de IX+d el valor del registro r.
+DD 70 hh    	LD    (IX+d),B
+DD 71 hh    	LD    (IX+d),C
+DD 72 hh    	LD    (IX+d),D
+DD 73 hh    	LD    (IX+d),E
+DD 74 hh    	LD    (IX+d),H
+DD 75 hh    	LD    (IX+d),L
+FD 36 dd nn 	LD    (IY+d),n  6 Copia en la ubicación de IY+d el valor n.
+FD 77 hh    	LD    (IY+d),A  5 Copia en la ubicación de IY+d el valor del registro r.
+FD 70 hh    	LD    (IY+d),B
+FD 71 hh    	LD    (IY+d),C
+FD 72 hh    	LD    (IY+d),D
+FD 73 hh    	LD    (IY+d),E
+FD 74 hh    	LD    (IY+d),H
+FD 75 hh    	LD    (IY+d),L
 
-NEG             2 Cambia el signo del acumulador (complemento a 2).
-NOP             1 Operación vacía.
+32 hh HH    	LD    (HHhh),A  4 Copia en la ubicación HHhh el valor del acumulador.
+22 hh HH    	LD    (HHhh),HL 5 Copia en la ubicación HHhh el valor de HL.
+ED 43 hh HH 	LD    (HHhh),BC 6 Copia en la ubicación HHhh el valor del registro doble rr.
+ED 53 hh HH 	LD    (HHhh),DE
+DD 22 hh HH 	LD    (HHhh),IX
+FD 22 hh HH 	LD    (HHhh),IY
+ED 73 hh HH 	LD    (HHhh),SP
 
-OR    r         1 OR lógico entre el registro r y el acumulador.
-OR    n         2 OR lógico entre el valor n y el acumulador.
-OR    IXH       2 OR lógico entre el byte alto de IX y el acumulador.
-OR    IXL       2 OR lógico entre el byte bajo de IX y el acumulador.
-OR    IYH       2 OR lógico entre el byte alto de IY y el acumulador.
-OR    IYL       2 OR lógico entre el byte bajo de IY y el acumulador.
-OR    (HL)      2 OR lógico entre el valor en la ubicación (HL) y el acumulador.
-OR    (IX+d)    5 OR lógico entre el valor en la ubicación (IX+d) y el acumulador.
-OR    (IY+d)    5 OR lógico entre el valor en la ubicación (IY+d) y el acumulador.
+ED A8       	LDD             5 Copia en (DE) el valor de la ubicación en HL, DE-1, HL-1, BC-1.
+ED B8       	LDDR          5/6 Repite LDD hasta que BC=0 (5), si BC<>0 (6).
+ED A0       	LDI             5 Copia en (DE) el valor de la ubicación en HL, DE+1, HL+1, BC-1.
+ED B0       	LDIR          5/6 Repite LDI hasta que BC=0 (5), si BC<>0 (6).
 
-OTDR          5/6 Repite OUTD hasta que B=0 (5), si B<>0 (6)[1].
-OTIR          5/6 Repite OTI hasta que B=0 (5), si B<>0 (6)[1].
-OUT   (C),r     4 Escribe en el puerto de salida almacenado en B(!!) el valor de r[1].
-OUT   (n),A     3 Escribe en el puerto de salida (n) el valor del acumulador[1].
-OUTD            5 Escribe (HL) en el puerto de salida indicado por B(!!), dec HL y B[1].
-OUTI            5 Escribe (HL) en el puerto de salida indicado por B(!!), inc HL, dec B[1].
+ED 44       	NEG             2 Cambia el signo del acumulador (complemento a 2).
+00          	NOP             1 Operación vacía (No Operation).
 
-POP   AF        3 Carga el registro doble AF con el valor de la pila.
-POP   BC        3 Carga el registro doble BC con el valor de la pila.
-POP   DE        3 Carga el registro doble DE con el valor de la pila.
-POP   HL        3 Carga el registro doble HL con el valor de la pila.
-POP   IX        5 Carga el registro IX con el valor de la pila.
-POP   IY        5 Carga el registro IY con el valor de la pila.
-PUSH  AF        4 Almacena el registro doble AF en la pila.
-PUSH  BC        4 Almacena el registro doble BC en la pila.
-PUSH  DE        4 Almacena el registro doble DE en la pila.
-PUSH  HL        4 Almacena el registro doble HL en la pila.
-PUSH  IX        5 Almacena IX en la pila.
-PUSH  IY        5 Almacena IY en la pila.
+B7          	OR    A         1 OR lógico entre el registro r y el acumulador.
+B0          	OR    B
+B1          	OR    C
+B2          	OR    D
+B3          	OR    E
+B4          	OR    H
+B5          	OR    L
+DD B4       	OR    IXH       2 OR lógico entre el byte alto de IX y el acumulador.
+DD B5       	OR    IXL       2 OR lógico entre el byte bajo de IX y el acumulador.
+FD B4       	OR    IYH       2 OR lógico entre el byte alto de IY y el acumulador.
+FD B5       	OR    IYL       2 OR lógico entre el byte bajo de IY y el acumulador.
+F6 hh       	OR    n         2 OR lógico entre el valor n y el acumulador.
+B6          	OR    (HL)      2 OR lógico entre el valor en la ubicación de HL y A.
+DD B6 hh    	OR    (IX+d)    5 OR lógico entre el valor en la ubicación de IX+d y A.
+FD B6 hh    	OR    (IY+d)    5 OR lógico entre el valor en la ubicación de IY+d y A.
+ 
+ED BB       	OTDR          5/6 Repite OUTD hasta que B=0 (5), si B<>0 (6)[1].
+ED B3       	OTIR          5/6 Repite OTI hasta que B=0 (5), si B<>0 (6)[1].
+ED 79       	OUT   (C),A     4 Escribe en el puerto de salida almacenado en B el valor de r.
+ED 49       	OUT   (C),C       Revisar la nota [1] al final del listado.
+ED 51       	OUT   (C),D
+ED 59       	OUT   (C),E
+ED 61       	OUT   (C),H
+ED 69       	OUT   (C),L
+D3 hh       	OUT   (n),A     3 Escribe en el puerto de salida n el valor de A [1].
+ED AB       	OUTD            5 Escribe el valor de la ubicación de HL
+                                en el puerto de salida indicado por B(!!), HL-1, B-1[1].
+ED A3       	OUTI            5 Escribe el valor de la ubicación de HL 
+                                en el puerto de salida indicado por B(!!), HL+1, B-1[1].
 
-RES   b,r       2 Pone a 0 el bit b del registro r.
-RES   b,(HL)    4 Pone a 0 el bit b en el valor de la ubicación (HL).
-RES   b,(IX+d)  7 Pone a 0 el bit b en el valor de la ubicación (IX+d).
-RES   b,(IY+d)  7 Pone a 0 el bit b en el valor de la ubicación (IY+d).
+F1          	POP   AF        3 Copia en el registro doble rr el último valor de la pila.
+C1          	POP   BC
+D1          	POP   DE
+E1          	POP   HL
+DD E1       	POP   IX        5 Copia en IX el último valor de la pila.
+FD E1       	POP   IY        5 Copia en IY el último valor de la pila.
 
-RET             3 Retorna de la subrutina.
-RET   cc      2/4 Retorna de la subrutina si la condición cc se cumple (4), si no (2).
-RETI            4 Retorna de la interrupción.
-RETN            4 Retorna de la interrupción no enmascarable.
+F5          	PUSH  AF        4 Copia en la pila el valor del registro doble rr.
+C5          	PUSH  BC
+D5          	PUSH  DE
+E5          	PUSH  HL
+DD E5       	PUSH  IX        5 Copia en la pila el valor de IX.
+FD E5       	PUSH  IY        5 Copia en la pila el valor de IY.
 
-RL    r         2 Rota a la izquierda el valor del registro r usando el flag c.
-RL    (HL)      4 Rota a la izquierda el valor en la ubicación (HL) usando el flag c.
-RL    (IX+d)    7 Rota a la izquierda el valor en la ubicación (IX+d) usando el flag c.
-RL    (IY+d)    7 Rota a la izquierda el valor en la ubicación (IY+d) usando el flag c.
-RLA             1 Rota a la izquierda el acumulador usando el flag de acarreo.
+CB **       	RES   b,A       2 Pone a 0 el bit b del registro r.
+CB **       	RES   b,B         ** El último byte codifica el bit y el
+CB **       	RES   b,C            registro. Los valores empiezan en 80 y
+CB **       	RES   b,D            terminan en BF, el byte se compone como:
+CB **       	RES   b,E            1 0 b b b r r r
+CB **       	RES   b,H            b = [0-7]
+CB **       	RES   b,L            r = B=0, C, D, E, H, L, A=7
+CB **       	RES   b,(HL)    4 Pone a 0 el bit b del valor en la ubicación de HL.
+DD CB hh ** 	RES   b,(IX+d)  7 Pone a 0 el bit b del valor en la ubicación de IX+d.
+FD CB hh ** 	RES   b,(IY+d)  7 Pone a 0 el bit b del valor en la ubicación de IY+d.
 
-RLC   r         2 Rota el valor en el registro r a la izquierda de manera circular.
-RLC   (HL)      4 Rota el valor en la ubicación (HL) a la izquierda de manera circular.
-RLC   (IX+d)    7 Rota el valor en la ubicación (IX+d) a la izquierda de manera circular.
-RLC   (IY+d)    7 Rota el valor en la ubicación (IY+d) a la izquierda de manera circular.
+C9          	RET             3 Retorna de la subrutina.
+C8          	RET   z       2/4 Retorna de la subrutina si el flag Z es 1 (4) si no (2).
+C0          	RET   nz      2/4 Retorna de la subrutina si el flag Z es 0 (4) si no (2).
+D8          	RET   c       2/4 Retorna de la subrutina si el flag C es 1 (4) si no (2).
+D0          	RET   nc      2/4 Retorna de la subrutina si el flag C es 0 (4) si no (2).
+F0          	RET   p       2/4 Retorna de la subrutina si el flag S es 0 (4) si no (2).
+F8          	RET   m       2/4 Retorna de la subrutina si el flag S es 1 (4) si no (2).
+E8          	RET   pe      2/4 Retorna de la subrutina si el flag P/V es 1 (4) si no (2).
+E0          	RET   po      2/4 Retorna de la subrutina si el flag P/V es 0 (4) si no (2).
 
-RLCA            1 Rota a la izquierda de manera circular el acumulador.
-RLD             5 Rota a la izquierda el valor de 12 bits compuesto por A (4 bits) y (HL).
+ED 4D       	RETI            4 Retorna de la interrupción.
+ED 45       	RETN            4 Retorna de la interrupción no enmascarable.
 
-RR    r         2 Rota a la derecha el valor del registro r usando el flag de acarreo.
-RR    (HL)      4 Rota a la derecha el valor en la ubicación (HL) usando el flag de acarreo.
-RR    (IX+d)    7 Rota a la derecha el valor en la ubicación (IX+d) usando el flag c.
-RR    (IY+d)    7 Rota a la derecha el valor en la ubicación (IY+d) usando el flag c.
+CB 17       	RL    A         2 Rota a la izquierda el valor del registro r
+CB 10       	RL    B           a través del flag C: el bit 7 se mueve al flag
+CB 11       	RL    C           de acarreo C y el valor actual de dicho flag
+CB 12       	RL    D           se mueve al bit 0.
+CB 13       	RL    E
+CB 14       	RL    H
+CB 15       	RL    L
+CB 16       	RL    (HL)      4 Rota a izq. el valor en la ubicación de HL. Usa flag C.
+DD CB hh 16 	RL    (IX+d)    7 Rota a izq. el valor en la ubicación de IX+d. Usa flag C.
+FD CB hh 16 	RL    (IY+d)    7 Rota a izq. el valor en la ubicación de IY+d. Usa flag C.
 
-RRA             1 Rota a la derecha el valor del acumulador usando el flag de acarreo.
+17          	RLA             1 Rota a la izquierda el valor en A a través del flag C.
 
-RRC   r         2 Rota el valor del registro r a la derecha de manera circular.
-RRC   (HL)      4 Rota el valor de la ubicación (HL) a la derecha de manera circular.
-RRC   (IX+d)    7 Rota el valor de la ubicación (IX+d) a la derecha de manera circular.
-RRC   (IY+d)    7 Rota el valor de la ubicación (IY+d) a la derecha de manera circular.
+CB 07       	RLC   A         2 Rota el valor de r a la izquierda de manera circular:
+CB 00       	RLC   B           el bit 7 se copia tanto al flag de acarreo C como
+CB 01       	RLC   C           al bit 0.
+CB 02       	RLC   D
+CB 03       	RLC   E
+CB 04       	RLC   H
+CB 05       	RLC   L
+CB 06       	RLC   (HL)      4 Rota el valor en (HL) a la izquierda de manera circular.
+DD CB hh 06 	RLC   (IX+d)    7 Rota el valor en (IX+d) a la izquierda de manera circular.
+FD CB hh 06 	RLC   (IY+d)    7 Rota el valor en (IY+d) a la izquierda de manera circular.
 
-RRCA            1 Rota el valor del acumulador a la derecha de manera circular.
-RRD             5 Rota a la derecha el valor de 12 bits compuesto por A (4 bits) y (HL).
+07          	RLCA            1 Rota a la izquierda de manera circular el valor de A.
+ED 6F       	RLD             5 Rota a la izq. de forma circular cuatro bits (nibble):
+                                nibble bajo A -> nibble bajo (HL) -> nibble alto (HL) ->
+                                nibble bajo A.
 
-RST   &00       4 RESET. Reservado [2]. Resetea el sistema.
-RST   &08       4 LOW CALL. Reservado [2]. Salta a una rutina en los primeros 16K.
-RST   &10       4 SIDE CALL. Reservado [2]. Llama a una rutina en una ROM.
-RST   &18       4 FAR CALL. Reservado [2]. Llama a una rutina en cualquier pos de memoria.
-RST   &20       4 RAM LAM. Reservado [2]. Lee el byte desde RAM en la dirección de HL.
-RST   &28       4 FIRM JUMP. Reservado [2]. Salta a una rutina en el ROM inferior.
-RST   &30       4 USER RST. Disponible para el usuario.
-RST   &38       4 INTERRUPT. Reservado [2]. Reservado para interrupciones.
+CB 1F       	RR    A         2 Rota a la derecha el valor del registro r
+CB 18       	RR    B           a través del flag C: el bit 0 se mueve al flag
+CB 19       	RR    C           de acarreo C y el valor actual de dicho flag
+CB 1A       	RR    D           se mueve al bit 7.
+CB 1B       	RR    E
+CB 1C       	RR    H
+CB 1D       	RR    L
+CB 1E       	RR    (HL)      4 Rota a der. el valor en la ubicación de HL. Usa flag C.
+DD CB hh 1E 	RR    (IX+d)    7 Rota a der. el valor en la ubicación de IX+d. Usa flag C.
+FD CB hh 1E 	RR    (IY+d)    7 Rota a der. el valor en la ubicación de IY+d. Usa flag C.
 
-SBC   A,r       1 Resta el registro r del acumulador con acarreo.
-SBC   A,n       2 Resta el valor n del acumulador con acarreo.
-ADC   A,IXH     2 Resta el byte alto de IX del acumulador con acarreo.
-ADC   A,IXL     2 Resta el byte bajo de IX del acumulador con acarreo.
-ADC   A,IYH     2 Resta el byte alto de IY del acumulador con acarreo.
-ADC   A,IYL     2 Resta el byte bajo de IY del acumulador con acarreo.
-SBC   A,(HL)    2 Resta el valor en la ubicación (HL) del acumulador con acarreo.
-SBC   A,(IX+d)  5 Resta el valor en la ubicación (IX+d) del acumulador con acarreo.
-SBC   A,(IY+d)  5 Resta el valor en la ubicación (IY+d) del acumulador con acarreo.
-SBC   HL,BC     4 Resta el registro doble BC de HL con acarreo.
-SBC   HL,DE     4 Resta el registro doble DE de HL con acarreo.
-SBC   HL,HL     4 Resta el registro doble HL de HL con acarreo.
-SBC   HL,SP     4 Resta el registro SP de HL con acarreo.
+1F          	RRA             1 Rota a la derecha el valor de A a través del flag C.
 
-SCF             1 Establece el flag de acarreo (c=1).
+CB 0F       	RRC   A         2 Rota el valor de r a la derecha de manera circular:
+CB 08       	RRC   B           el bit 0 se copia tanto al flag de acarreo C como
+CB 09       	RRC   C           al bit 7.
+CB 0A       	RRC   D
+CB 0B       	RRC   E
+CB 0C       	RRC   H
+CB 0D       	RRC   L
+CB 0E       	RRC   (HL)      4 Rota el valor en (HL) a la der. de manera circular.
+DD CB hh 0E 	RRC   (IX+d)    7 Rota el valor en (IX+d) a la der. de manera circular.
+FD CB hh 0E 	RRC   (IY+d)    7 Rota el valor en (IY+d) a la der. de manera circular.
 
-SET   b,r       2 Establece a 1 el bit b del registro r.
-SET   b,(HL)    4 Establece a 1 el bit b en el valor de la ubicación (HL).
-SET   b,(IX+d)  7 Establece a 1 el bit b en el valor de la ubicación (IX+d).
-SET   b,(IY+d)  7 Establece a 1 el bit b en el valor de la ubicación (IY+d).
+0F          	RRCA            1 Rota el valor de A a la derecha de manera circular.
+ED 67       	RRD             5 Rota a la der. de forma circular cuatro bits (nibble):
+                                nibble bajo A -> nibble alto (HL) -> nibble bajo (HL) ->
+                                nibble bajo A.
 
-SLA   r         2 Desplaza el registro r a la izquierda de manera aritmética.
-SLA   (HL)      4 Desplaza el valor en la ubicación (HL) a la izquierda de manera aritmética.
-SLA   (IX+d)    7 Desplaza el valor en (IX+d) a la izquierda de manera aritmética.
-SLA   (IY+d)    7 Desplaza el valor en (IY+d) a la izquierda de manera aritmética.
+C7          	RST   &00       4 RESET. Reservado [2]. Reinicia el sistema.
+CF          	RST   &08       4 LOW CALL. Reservado [2]. Salta a una rutina en los primeros 16K.
+D7          	RST   &10       4 SIDE CALL. Reservado [2]. Llama a una rutina en una ROM.
+DF          	RST   &18       4 FAR CALL. Reservado [2]. Llama a una rutina en cualquier pos de memoria.
+E7          	RST   &20       4 RAM LAM. Reservado [2]. Lee el byte desde RAM en la dirección de HL.
+EF          	RST   &28       4 FIRM JUMP. Reservado [2]. Salta a una rutina en el ROM inferior.
+F7          	RST   &30       4 USER RST. Disponible para el usuario.
+FF          	RST   &38       4 INTERRUPT. Reservado [2]. Reservado para interrupciones.
 
-SLL   r         2 Desplaza el registro r a la izquierda de manera lógica.
-SLL   (HL)      4 Desplaza el valor en la ubicación (HL) a la izquierda de manera lógica.
-SLL   (IX+d)    7 Desplaza el valor en la ubicación (IX+d) a la izquierda de manera lógica.
-SLL   (IY+d)    7 Desplaza el valor en la ubicación (IY+d) a la izquierda de manera lógica.
+9F          	SBC   A,A       1 Resta el registro r del acumulador con acarreo.
+98          	SBC   A,B
+99          	SBC   A,C
+9A          	SBC   A,D
+9B          	SBC   A,E
+9C          	SBC   A,H
+9D          	SBC   A,L
+DD 9C       	SBC   A,IXH     2 Resta el byte alto de IX del acumulador con acarreo.
+DD 9D       	SBC   A,IXL     2 Resta el byte bajo de IX del acumulador con acarreo.
+FD 9C       	SBC   A,IYH     2 Resta el byte alto de IY del acumulador con acarreo.
+FD 9D       	SBC   A,IYL     2 Resta el byte bajo de IY del acumulador con acarreo.
+DE hh       	SBC   A,n       2 Resta el valor n del acumulador con acarreo.
+9E          	SBC   A,(HL)    2 Resta el valor de la ubicación en HL de A con acarreo.
+DD 9E hh    	SBC   A,(IX+d)  5 Resta el valor de la ubicación en IX+d de A con acarreo.
+FD 9E hh    	SBC   A,(IY+d)  5 Resta el valor de la ubicación en IY+d de A con acarreo.
+ED 42       	SBC   HL,BC     4 Resta el registro doble rr de HL con acarreo.
+ED 52       	SBC   HL,DE
+ED 62       	SBC   HL,HL
+ED 72       	SBC   HL,SP
 
-SRA   r         2 Desplaza el registro r a la derecha de manera aritmética.
-SRA   (HL)      4 Desplaza el valor en la ubicación (HL) a la derecha de manera aritmética.
-SRA   (IX+d)    7 Desplaza el valor en la ubicación (IX+d) a la derecha de manera aritmética.
-SRA   (IY+d)    7 Desplaza el valor en la ubicación (IY+d) a la derecha de manera aritmética.
+37          	SCF             1 Establece el flag de acarreo (C=1).
 
-SRL   r         2 Desplaza el registro r a la derecha de manera lógica.
-SRL   (HL)      4 Desplaza el valor en la ubicación (HL) a la derecha de manera lógica.
-SRL   (IX+d)    7 Desplaza el valor en la ubicación (IX+d) a la derecha de manera lógica.
-SRL   (IY+d)    7 Desplaza el valor en la ubicación (IY+d) a la derecha de manera lógica.
+CB **       	SET   b,A       2 Establece a 1 el bit b del registro r.
+CB **       	SET   b,B         ** El último byte codifica el bit y el
+CB **       	SET   b,C            registro. La secuencia empieza en 80
+CB **       	SET   b,D            y termina en BF, el byte se compone como:
+CB **       	SET   b,E            1 1 b b b r r r
+CB **       	SET   b,H            b = [0-7]
+CB **       	SET   b,L            r = B=0, C, D, E, H, L, A=7
+CB **       	SET   b,(HL)    4 Establece a 1 el bit b del valor en ubicación de HL.
+DD CB hh ** 	SET   b,(IX+d)  7 Establece a 1 el bit b del valor en ubicación de IX+d.
+FD CB hh ** 	SET   b,(IY+d)  7 Establece a 1 el bit b del valor en ubicación de IY+d.
 
-SUB   r         1 Resta el registro r del acumulador.
-SUB   n         2 Resta el valor n del acumulador.
-SUB   IXH       2 Resta el byte alto de IX del acumulador.
-SUB   IXL       2 Resta el byte bajo de IX del acumulador.
-SUB   IYH       2 Resta el byte alto de IY del acumulador.
-SUB   IYL       2 Resta el byte bajo de IY del acumulador.
-SUB   (HL)      2 Resta el valor en la ubicación (HL) del acumulador.
-SUB   (IX+d)    5 Resta el valor en la ubicación (IX+d) del acumulador.
-SUB   (IY+d)    5 Resta el valor en la ubicación (IY+d) del acumulador.
+CB 27       	SLA   A         2 Desplaza el registro r a la izquierda de manera aritmética.
+CB 20       	SLA   B           El valor del bit 7 se copia a flag de acarreo C.
+CB 21       	SLA   C           El valor del bit 0 se fija a 0.
+CB 22       	SLA   D
+CB 23       	SLA   E
+CB 24       	SLA   H
+CB 25       	SLA   L
+CB 26       	SLA   (HL)      4 Desplaza el valor en (HL) a la izq. Bit 0 = 0.
+DD CB hh 26 	SLA   (IX+d)    7 Desplaza el valor en (IX+d) a la izq. Bit 0 = 0.
+FD CB hh 26 	SLA   (IY+d)    7 Desplaza el valor en (IY+d) a la izq. Bit 0 = 0.
 
-XOR   r         1 Realiza una OR exclusiva entre el registro r y el acumulador.
-XOR   n         2 Realiza una OR exclusiva entre el valor n y el acumulador.
-XOR   IXH       2 Realiza una OR exclusiva entre el byte alto de IX y el acumulador.
-XOR   IXL       2 Realiza una OR exclusiva entre el byte bajo de IX y el acumulador.
-XOR   IYH       2 Realiza una OR exclusiva entre el byte alto de IY y el acumulador.
-XOR   IYL       2 Realiza una OR exclusiva entre el byte bajo de IY y el acumulador.
-XOR   (HL)      2 Realiza una OR exclusiva entre el valor en la ubicación (HL) y A.
-XOR   (IX+d)    5 Realiza una OR exclusiva entre el valor en la ubicación (IX+d) y A.
-XOR   (IY+d)    5 Realiza una OR exclusiva entre el valor en la ubicación (IY+d) y A.
+CB 37       	SLL   A         2 Desplaza el registro r a la izquierda de forma "lógica".
+CB 30       	SLL   B           El valor del bit 7 se copia en el flag de acarreo C.
+CB 31       	SLL   C           El valor del bit 0 se fija a 1.
+CB 32       	SLL   D
+CB 33       	SLL   E
+CB 34       	SLL   H
+CB 35       	SLL   L
+CB 36       	SLL   (HL)      4 Desplaza el valor en (HL) a la izquierda Bit 0 = 1.
+DD CB hh 36 	SLL   (IX+d)    7 Desplaza el valor en (IX+d) a la izquierda Bit 0 = 1.
+FD CB hh 36 	SLL   (IY+d)    7 Desplaza el valor en (IY+d) a la izquierda Bit 0 = 1.
+
+CB 2F       	SRA   A         2 Desplaza el valor de r a la derecha de forma aritmética.
+CB 28       	SRA   B           El valor del bit 0 se copia en el flag de acarreo C.
+CB 29       	SRA   C           El valor del bit 7 se fija a 0.
+CB 2A       	SRA   D
+CB 2B       	SRA   E
+CB 2C       	SRA   H
+CB 2D       	SRA   L
+CB 2E       	SRA   (HL)      4 Desplaza el valor en (HL) a la derecha. Bit 7 = 0.
+DD CB hh 2E 	SRA   (IX+d)    7 Desplaza el valor en (IX+d) a la derecha. Bit 7 = 0.
+FD CB hh 2E 	SRA   (IY+d)    7 Desplaza el valor en (IY+d) a la derecha. Bit 7 = 0.
+
+
+CB 3F       	SRL   A         2 Desplaza el registro r a la derecha de forma "lógica".
+CB 38       	SRL   B           El bit 0 se copia al flag C (acarreo).
+CB 39       	SRL   C           El bit 7 se fija a 1.
+CB 3A       	SRL   D
+CB 3B       	SRL   E
+CB 3C       	SRL   H
+CB 3D       	SRL   L
+CB 3E       	SRL   (HL)      4 Desplaza el valor en (HL) a la derecha. Bit 7 = 1.
+DD CB hh 3E 	SRL   (IX+d)    7 Desplaza el valor en (IX+d) a la derecha. Bit 7 = 1.
+FD CB hh 3E 	SRL   (IY+d)    7 Desplaza el valor en (IY+d) a la derecha. Bit 7 = 1.
+
+97          	SUB   A         1 Resta el valor del registro r del acumulador.
+90          	SUB   B
+91          	SUB   C
+92          	SUB   D
+93          	SUB   E
+94          	SUB   H
+95          	SUB   L
+D6 hh       	SUB   n         2 Resta el valor n del acumulador.
+DD 94       	SUB   IXH       2 Resta el byte alto de IX del acumulador.
+DD 95       	SUB   IXL       2 Resta el byte bajo de IX del acumulador.
+FD 94       	SUB   IYH       2 Resta el byte alto de IY del acumulador.
+FD 95       	SUB   IYL       2 Resta el byte bajo de IY del acumulador.
+96          	SUB   (HL)      2 Resta el valor de la ubicación en HL del acumulador.
+DD 96 hh    	SUB   (IX+d)    5 Resta el valor de la ubicación en IX+d del acumulador.
+FD 96 hh    	SUB   (IY+d)    5 Resta el valor de la ubicación en IY+d del acumulador.
+
+AF          	XOR   A         1 Realiza una OR exclusiva entre el registro r y A.
+A8          	XOR   B
+A9          	XOR   C
+AA          	XOR   D
+AB          	XOR   E
+AC          	XOR   H
+AD          	XOR   L
+EE hh       	XOR   n         2 Realiza una OR exclusiva entre el valor n y A.
+DD AC       	XOR   IXH       2 Realiza una OR exclusiva entre el byte alto de IX y A.
+DD AD       	XOR   IXL       2 Realiza una OR exclusiva entre el byte bajo de IX y A.
+FD AC       	XOR   IYH       2 Realiza una OR exclusiva entre el byte alto de IY y A.
+FD AD       	XOR   IYL       2 Realiza una OR exclusiva entre el byte bajo de IY y A.
+AE          	XOR   (HL)      2 Realiza una OR exclusiva entre el valor en (HL) y A.
+DD AE hh    	XOR   (IX+d)    5 Realiza una OR exclusiva entre el valor en (IX+d) y A.
+FD AE hh    	XOR   (IY+d)    5 Realiza una OR exclusiva entre el valor en (IY+d) y A.
 ```
 
 **[1]** Es importante recordar que las instrucciones de la familia OUT/IN utilizan el contenido de `BC` y no solo `C`, incluso si el código de operación es `OUT (C)`. En el Amstrad CPC, las instrucciones OUTD, OUTI, OTIR, etc., no tienen mucho sentido porque el AMSTRAD CPC utiliza el valor de `B`(!!) del registro doble `BC` para indicar el número del puerto y no `C`, como hacen muchas otras máquinas basadas en el Z80.
@@ -904,11 +1200,16 @@ XOR   (IY+d)    5 Realiza una OR exclusiva entre el valor en la ubicación (IY+d
 
 # Historial de cambios
 
-- Version 1.1.1 - 09/03/2025
-   * no se reconocía la familia de opcodes SLL
-   * EX AF,AF' daba error
-   * Se ha añadido la sección `Conjunto de Instrucciones del Z80` a los manuales
-   * Otros pequeños arreglos y mejoras 
+- Versión 1.1.2 - 26/03/2025
+  * El listado de instrucciones del Z80 include ahora el código máquina asociado.
+  * Se han Arreglado las expresiones matemáticas con carácteres en la directiva DB.
+  * Otros pequeños arreglos y mejoras.
+
+- Versión 1.1.1 - 09/03/2025
+  * No se reconocía la familia de opcodes SLL.
+  * EX AF,AF' daba error.
+  * Se ha añadido la sección `Conjunto de Instrucciones del Z80` a los manuales.
+  * Otros pequeños arreglos y mejoras. 
 
 - Versión 1.1.0 - 06/03/2025
   * Soporte para la directiva LIMIT.
