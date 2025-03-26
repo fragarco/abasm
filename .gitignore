@@ -168,6 +168,9 @@ cython_debug/
 *.lst
 *.map
 
+# ABASM markdown to HTML documents
+*.html
+
 # ABASM DEV WIP directory
 tmp/
 extras/
