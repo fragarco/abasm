@@ -42,6 +42,12 @@ RSTATE_ASSEMBLE = 1  # assemble code inside REPEAT body
 RSTATE_FIND_END = 2  # do not assemble code inside REPEAT body
 RSTATE_LOOP     = 3  # go back to REPEAT condition
 
+# Minimun tolerance level required to pass as a warning
+TLEVEL_STRINCT  = 0
+TLEVEL_LOW      = 1
+TLEVEL_HIGH     = 2
+TLEVEL_LENIENT  = 3
+
 NO_REG = -1
 REG_B = 0
 REG_C = 1
@@ -106,6 +112,7 @@ class AsmContext:
     def __init__(self):
         self.reset()
         self.verbose = False
+        self.tolerance = 0
         self.registernames = [
             "A", "F", "B", "C", "D", "E", "H", "L", "I", "R",
             "IXL", "IXH", "IYL", "IYH", "AF", "BC", "DE", "HL",
@@ -116,14 +123,14 @@ class AsmContext:
         self.outputfile = ""
         self.listingfile = None
         self.origin = 0x4000
-        self.limit  = 65536
+        self.limit  = 64*1024
         self.modulename = ""
         self.modules = []
         self.include_stack = []
         self.symboltable = {}
         self.lettable = {}
         self.symusetable = {}
-        self.memory = bytearray(0x00 for i in range(0,0xFFFF))
+        self.memory = bytearray(0x00 for _ in range(0, 64*1024))
         self.memory_high = 0
         self.memory_low = 0xFFFF
         self.machine_code = bytearray()
@@ -144,6 +151,7 @@ class AsmContext:
         self.defining_macro = None
         self.applying_macro = None
         self.list_instruction = True
+        self.tolerance = 0
        
     def parse_expression(self, arg, signed=0, byte=0, word=0, allowundef=0):
         """
@@ -243,11 +251,11 @@ class AsmContext:
         if not signed:
             if byte:
                 if narg < -128 or narg > 255:
-                    warning ("unsigned byte value truncated from " + str(narg))
+                    warning(f'unsigned byte value truncated from {str(narg)}', TLEVEL_HIGH)
                 narg %= 256
             elif word:
                 if narg < -32768 or narg > 65535:
-                    warning ("unsigned word value truncated from " + str(narg))
+                    warning(f'unsigned word value truncated from {str(narg)}', TLEVEL_HIGH)
                 narg %= 65536
         return narg
 
@@ -301,7 +309,7 @@ class AsmContext:
                 self.check_symbol(label, type='label')
                 self.set_symbol(label, self.origin, is_label = True, type='label')
             elif self.get_symbol(label) != self.origin:
-                abort("label address differs from previous stored value")
+                warning(f'label address redefinition: {hex(self.get_symbol(label)).upper()} != {hex(self.origin).upper()}', TLEVEL_LENIENT)
 
     def process_macro(self, macro, args):
         argv = args.replace(' ', '').split(',')
@@ -555,12 +563,20 @@ g_opcode_functions = {}
 ###########################################################################
 # Error and warning reporting
 
-def warning(message):
-    print("[abasm]", os.path.basename(g_context.currentfile) + ':', 'warning:', message)
-    print('\t', g_context.currentline.strip())
+def warning(message, tolerancelevel):
+    """
+    tolerancelevel > current level -> warning is converted in error
+    tolerancelevel = current level -> warning is shown
+    tolerancelevel < current level -> warning is ignored
+    """
+    if tolerancelevel > g_context.tolerance:
+        abort(message, tolerancelevel)
+    elif tolerancelevel == g_context.tolerance:
+        print("[abasm]", os.path.basename(g_context.currentfile) + ':', f'warning (TL{tolerancelevel}):', message)
+        print('\t', f"in {g_context.currentline.strip()}")
 
-def abort(message):
-    line1 = f"{os.path.basename(g_context.currentfile)}: error: {message}"
+def abort(message, tolerancelevel=0):
+    line1 = f"{os.path.basename(g_context.currentfile)}: error (TL{tolerancelevel}): {message}"
     code = g_context.currentline.strip()
     line2 = '' if code == '' else f"in {code}"
     if g_context.listingfile != None:
@@ -855,13 +871,13 @@ def op_SAVE(p, opargs):
 def op_DUMP(p, opargs):
     # Not currently implemented. Maxam used it to write symbol information
     # ABASM outputs the MAP file instead
-    warning ("directive DUMP found but ignored, Abasm uses MAP files instead")
+    warning('directive DUMP found but ignored, Abasm uses MAP files instead', TLEVEL_LOW)
     return 0
 
 def op_BRK(p, opargs):
     # Not currently implemented. WinAPE uses it to set a breakpoint using RST &30
     # as MAXAM did back in the day
-    warning ("directive BRK (breakpoint) found but ignored")
+    warning('directive BRK (breakpoint) found but ignored', TLEVEL_LOW)
     return 0
 
 def op_PRINT(p, opargs):
@@ -1260,7 +1276,7 @@ def op_SUB(p, opargs):
     # lets support that in case we get two parameters and issue a warning
     args = opargs.strip().split(',')
     if len(args) > 1:
-        warning('invalid <SUB expr,expr> opcode. Assuming alias SUB A,expr')
+        warning('invalid SUB <expr>,<expr> opcode, SUB <expr> expected', TLEVEL_LOW)
         opargs = args[1]
     return store_register_arg_type(p, opargs, 0x90, [0xd6])
 
@@ -1271,7 +1287,7 @@ def op_AND(p, opargs):
     # lets support that in case we get two parameters and issue a warning
     args = opargs.strip().split(',')
     if len(args) > 1:
-        warning('invalid <ADD expr,expr> opcode. Assuming alias ADD A,expr')
+        warning('invalid ADD <expr>,<expr> opcode, ADD <expr> expected', TLEVEL_LOW)
         opargs = args[1]
     return store_register_arg_type(p, opargs, 0xa0, [0xe6])
 
@@ -1285,7 +1301,7 @@ def op_OR(p, opargs):
     # lets support that in case we get two parameters and issue a warning
     args = opargs.strip().split(',')
     if len(args) > 1:
-        warning('invalid <OR expr,expr> opcode. Assuming alias OR A,expr')
+        warning('invalid OR <expr>,<expr> opcode, OR <expr> expected', TLEVEL_LOW)
         opargs = args[1]
     return store_register_arg_type(p, opargs, 0xb0, [0xf6])
 
@@ -1296,7 +1312,7 @@ def op_CP(p, opargs):
     # lets support that in case we get two parameters and issue a warning
     args = opargs.strip().split(',')
     if len(args) > 1:
-        warning('invalid <CP expr,expr> opcode. Assuming alias CP A,expr')
+        warning('invalid CP <expr>,<expr> opcode, CP <expr> expected', TLEVEL_LOW)
         opargs = args[1]
     return store_register_arg_type(p, opargs, 0xb8, [0xfe])
 
@@ -1709,18 +1725,19 @@ def create_opdict():
         if 'op_' == sym[0:3]:
             g_opcode_functions[sym] = fun
 
-def assemble(inputfile, outputfile = None, predefsymbols = [], startaddr = 0x4000):
+def assemble(inputfile, outputfile = None, predefsymbols = [], startaddr = 0x4000, tolerance = 0):
     if (outputfile == None):
         outputfile = os.path.splitext(inputfile)[0] + ".bin"
     
     g_context.reset()
     g_context.outputfile = outputfile
+    g_context.tolerance = tolerance
     for sym in predefsymbols:
         sym[0] = sym[0].upper()
         try:
             val = aux_int(sym[1])
         except:
-            print("Error: invalid format for command-line symbol definition in" + val)
+            print("error: invalid format for command-line symbol definition in" + val)
             sys.exit(1)
         g_context.set_symbol(sym[0], aux_int(sym[1]), type='predefined symbol')
 
@@ -1739,11 +1756,18 @@ def process_args():
         description = f'A Z80 assembler focused on the Amstrad CPC. Based on pyz80 but using a dialect compatible with Maxam/WinAPE and RVM.'
     )
     parser.add_argument('inputfile', help = 'Input file.')
-    parser.add_argument('-d', '--define', nargs = 2, default = [], action = 'append', help = 'Defines a pair SYMBOL=VALUE.')
-    parser.add_argument('-o', '--output', help = 'Target file in binary format. If not specified, first input file name will be used.')
-    parser.add_argument('--start', type = aux_int, default = 0x4000, help = 'Starting address. Can be overwritten by ORG directive (default 0x4000).')
-    parser.add_argument('-v', '--version', action='version', version=f' Abasm Assembler Version {__version__}', help = "Shows program's version and exits")
-    parser.add_argument('--verbose', action='store_true', help = 'Prints all source code lines as they are assembled')
+    parser.add_argument('-d', '--define', nargs = 2, default = [], action = 'append',
+                        help = 'Defines a pair SYMBOL=VALUE.')
+    parser.add_argument('-o', '--output',
+                        help = 'Target file in binary format. If not specified, first input file name will be used.')
+    parser.add_argument('--start', type = aux_int, default = 0x4000,
+                        help = 'Starting address. Can be overwritten by ORG directive (default 0x4000).')
+    parser.add_argument('-t', '--tolerance', type = aux_int, default=0,
+                        help = 'Sets the tolerance level for deviations from strictly correct syntax (WinApe performs relatively lenient syntax checks).Accepted values: 0, 1, and 2.The default value is 0, indicating the strictest level of syntax enforcement.')
+    parser.add_argument('-v', '--version', action='version', version=f' Abasm Assembler Version {__version__}',
+                        help = "Shows program's version and exits")
+    parser.add_argument('--verbose', action='store_true',
+                        help = 'Prints all source code lines as they are assembled')
     args = parser.parse_args()
     return args
 
@@ -1752,7 +1776,7 @@ def main():
     args = process_args()
     g_context.verbose = args.verbose
     create_opdict()
-    assemble(args.inputfile, args.output, args.define, args.start)
+    assemble(args.inputfile, args.output, args.define, args.start, args.tolerance)
     sys.exit(0)
 
 if __name__ == "__main__":
