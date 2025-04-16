@@ -133,6 +133,7 @@ class AsmContext:
         self.memory = bytearray(0x00 for _ in range(0, 64*1024))
         self.memory_high = 0
         self.memory_low = 0xFFFF
+        self.memory_bytes = 0
         self.machine_code = bytearray()
         self.ifstack = []
         self.ifstate = IFSTATE_DISABLED
@@ -277,7 +278,7 @@ class AsmContext:
             self.lettable[sym] = value
         self.symboltable[sym] = (value, self.modulename)
         if self.verbose:
-            print(f" adding {type} {orgsym} to the symbols table with values ({value}, {self.modulename})")
+            print(f"{self.currentfile} adding {type} {orgsym} to the symbols table with values ({value}, {self.modulename})")
 
     def get_symbol(self, sym):
         sym = sym.upper()
@@ -323,11 +324,12 @@ class AsmContext:
         macrocode.append(f"_MACRO_LEAVE_ {macro}")
         return macrocode
 
-    def store(self, p, bytes):
+    def store(self, p, content):
         if p == 2:
             mempos = self.origin
             self.lstcode = ""
-            for b in bytes:
+            self.memory_bytes = self.memory_bytes + len(content)
+            for b in content:
                 try:
                     self.memory[mempos] = b
                 except ValueError:
@@ -372,11 +374,9 @@ class AsmContext:
         self.listingfile.write(line + "\n")
 
     def save_binfile(self, filename):
-        size = 0
-        if self.memory_low < self.memory_high:
+        if self.memory_bytes > 0:
             # something has been assembled
-            size = self.memory_high - self.memory_low + 1
-            self.save_memory(filename, self.memory_low, size)
+            self.save_memory(filename, self.memory_low, self.memory_bytes)
             self.save_mapfile(filename)
         else:
             abort("EOF and nothing was assembled")
@@ -1632,7 +1632,6 @@ def op_IF(p, opargs):
     # WinAPE supports = as equal sym in IF directive while we need ==
     if '=' in opargs and '==' not in opargs and '!=' not in opargs:
         opargs = opargs.replace('=','==')
-
     g_context.ifstack.append((g_context.currentfile, g_context.ifstate))
     if g_context.ifstate < IFSTATE_DISCART:
         # No undefined symbols are allowed in IF expressions or we may
@@ -1668,7 +1667,7 @@ def op_ELSE(p, opargs):
 
 def op_ELSEIF(p, opargs):
     # Pass "IF (cond)" to op_ELSE
-    return op_ELSE(p, opargs[4:])
+    return op_ELSE(p, "IF " + opargs)
 
 def op_ENDIF(p, opargs):
     check_args(opargs, 0)
@@ -1763,7 +1762,7 @@ def process_args():
     parser.add_argument('--start', type = aux_int, default = 0x4000,
                         help = 'Starting address. Can be overwritten by ORG directive (default 0x4000).')
     parser.add_argument('-t', '--tolerance', type = aux_int, default=0,
-                        help = 'Sets the tolerance level for deviations from strictly correct syntax (WinApe performs relatively lenient syntax checks).Accepted values: 0, 1, and 2.The default value is 0, indicating the strictest level of syntax enforcement.')
+                        help = 'Sets the tolerance level for deviations from strictly correct syntax (WinApe performs relatively lenient syntax checks). Accepted values: 0, 1, and 2. The default value is 0, indicating the strictest level of syntax enforcement.')
     parser.add_argument('-v', '--version', action='version', version=f' Abasm Assembler Version {__version__}',
                         help = "Shows program's version and exits")
     parser.add_argument('--verbose', action='store_true',
