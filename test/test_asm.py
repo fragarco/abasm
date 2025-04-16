@@ -59,6 +59,9 @@ class CodeExamples(unittest.TestCase):
     def test_directives(self):
         self._compare_bins("directives.asm", "directives.bin")
 
+    def test_iflabel(self):
+        self._compare_bins("iflabel.asm", "iflabel.bin")
+
     def test_opcodes(self):
         self._compare_bins("opcodes.asm", "opcodes.bin")
 
