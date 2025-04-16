@@ -69,6 +69,7 @@ Este comando ensamblará el archivo `program.asm` y generará un fichero binario
 
 - `-d` o `--define`: Permite definir pares `SÍMBOLO=VALOR`. Dichos símbolos pueden utilizarse en el código como constantes o etiquetas. Esta opción se puede emplear múltiples veces para definir varios símbolos.
 - `--start`: Define la dirección de memoria que se tomará como punto de inicio para la carga del programa. Por defecto, esta dirección es `0x4000`, aunque también puede establecerse directamente dentro del código usando la directiva `ORG`.
+- `-t` o `--tolerance`: Fija el nivel de tolerancia ante alternativas a los opcodes soportados y ante otros pequeños errores. WinApe es bastante laxo en la comprobación de la sintaxis, así que puede ser necesario utilizar esta opción si se está trabajando con código proveniente de este programa. Por defecto, su valor es 0, el modo más estricto y menos permisivo. Los valores 1 y 2 incrementan progresivamente el nivel de tolerancia.
 - `-o` o `--output`: Especifica el nombre del archivo binario de salida. Si no se utiliza esta opción, se empleará el nombre del archivo de entrada cambiando su extensión por `.bin`.
 - `-v` o `--version`: Muestra el número de versión de ABASM.
 - `--verbose`: Imprime mucha más información por consola durante el proceso de ensamblado. 
@@ -161,7 +162,7 @@ La extensión del fichero de símbolos es `.MAP` y su formato es el de un diccio
 
 La sintaxis de ABASM está diseñada para asemejarse lo máximo posible a la del ensamblador MAXAM. Esta sintaxis es bastante compatible con la soportada por el simulador WinAPE. Además, ABASM admite algunas variaciones que también lo hacen compatible con la sintaxis utilizada por el simulador Retro Virtual Machine. El objetivo es permitir que los desarrolladores cuenten con varias herramientas para la depuración y prueba de sus programas.
 
-A continuación se muestra un ejemplo sencillo de un programa escrito utilizando la sintaxis de ABASM. Este ejemplo muestra tres de los elementos básicos de cualquier programa escrito en ensamblador: etiquetas, instrucciones y comentarios. Un cuarto elemento serían las directivas del ensamblador, comandos dirigidos al propio ABASM en lugar de al procesador Z80. En este capítulo también repasaremos el listado completo de directivas soportadas.
+A continuación, se muestra un ejemplo sencillo de un programa escrito utilizando la sintaxis de ABASM. Este ejemplo muestra tres de los elementos básicos de cualquier programa escrito en ensamblador: etiquetas, instrucciones y comentarios. Un cuarto elemento serían las directivas del ensamblador, comandos dirigidos al propio ABASM en lugar de al procesador. En este capítulo también repasaremos el listado completo de las directivas soportadas.
 
 Un aspecto importante y común a los cuatro elementos es que ABASM no discrimina entre mayúsculas y minúsculas. Por lo tanto, 'LD A,32' y 'ld a,32' producen el mismo resultado. Lo mismo se aplica a las etiquetas: 'main', 'MAIN' o 'Main' se consideran la misma etiqueta.
 
@@ -184,7 +185,7 @@ main              ; define la etiqueta global 'main'
 
 ```
 
-Otro aspecto importante de ABASM es que permite usar el símbolo '.' al principio de las etiquetas para definir las que son locales y solo accesibles desde el archivo o módulo en el que son declaradas.
+Otro aspecto importante de ABASM es que permite usar el símbolo '!' al principio de las etiquetas para definir las que son locales y solo accesibles desde el archivo o módulo en el que son declaradas.
 
 ## Comentarios
 
@@ -238,7 +239,13 @@ ld a,32
 
 El *opcode* (el nemotécnico asociado más bien) sería 'ld a', mientras que el operando sería '32'. El significado del opcode es 'cargar en el registro A', mientras que el valor a cargar sería directamente el número 32.
 
-ABASM soporta todas las instrucciones estándar del Z80. Con la intención de mejorar la compatibilidad con la sintaxis de WinAPE, algunas instrucciones como AND, CP, OR y SUB aceptan incluir el registro A como parte del *opcode*. Sin embargo, se prefiere la forma abreviada sin el A explícito, y se emite un *warning* si se encuentra el formato extendido (por ejemplo, `CP A, &0A` es equivalente a `CP &0A` pero generará un *warning* durante el ensamblado).
+ABASM soporta todas las instrucciones estándar del Z80. Con la intención de mejorar la compatibilidad con la sintaxis de WinAPE, algunas instrucciones como AND, CP, OR y SUB pueden incluir el registro A como parte del *opcode*. Sin embargo, se prefiere la forma abreviada sin el A explícito. Los usuarios pueden controlar como de permisivo es el ensablador a través del parámetro `--tolerance NIVEL`. Según su valor, estas variaciones pueden considerarse un error, emitir un *warning* o ser aceptadas por completo.
+
+| Nivel de tolerancia | Comportamiento |
+| ------------- | ------------- |
+| --tolerance 0 | Valor por defecto, el modo más estricto. Los opcodes SUB A, CP A, etc., tolerados por WinApe producen un error de sintaxis en ABASM. |
+| --tolerance 1 | Los opcodes alternativos de WinApe SUB A, CP A, etc., producen un *warning* pero no detienen el ensamblado. |
+| --tolerance 2 | Los opcodes alternativos se aceptan completamente. Los errores debidos a truncamientos, por ejemplo, valor de dos bytes utilizado en un operando de un byte, producen *warnings* en vez de errores. |
 
 A nivel de operandos, ABASM es totalmente compatible con los registros estándar de 8 bits del Z80: A, B, C, D, E, H y L, así como con los registros especiales de 8 bits I y R. También es compatible con todos los registros estándar de 16 bits del Z80: AF, BC, DE, HL y SP, junto con los registros de índice IX e IY. Además, ABASM ofrece soporte para el uso no documentado de las porciones de 8 bits de los registros IX e IY, permitiendo el uso de IXL, IXH, IYL e IYH. El registro alternativo AF' también se puede utilizar en las instrucciones adecuadas, como con la instrucción `EX AF, AF'`.
 
@@ -1200,6 +1207,12 @@ FD AE hh    	XOR   (IY+d)    5 Realiza una OR exclusiva entre el valor en (IY+d)
 
 # Historial de cambios
 
+- Version 1.1.3 - 16/04/2025
+  * Se ha añadido la utilidad bindiff para comparar binarios.
+  * Se ha corregido un error en la directiva ELSEIF.
+  * Se ha añadido la opción `--tolerance` para poder suprimir *warnings* o convertirlos en errores.
+  * Otros pequeños arreglos y mejoras.
+  
 - Versión 1.1.2 - 26/03/2025
   * El listado de instrucciones del Z80 include ahora el código máquina asociado.
   * Se han Arreglado las expresiones matemáticas con carácteres en la directiva DB.

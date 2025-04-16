@@ -69,6 +69,7 @@ This command will assemble the `program.asm` file and generate a binary file wit
 
 - `-d` or `--define`: Allows defining `SYMBOL=VALUE` pairs. These symbols can be used in the code as constants or labels. This option can be used multiple times to define several symbols.
 - `--start`: Defines the memory address that will be used as the starting point for loading the program. By default, this address is `0x4000`, but it can also be set directly in the code using the `ORG` directive.
+- `--tolerance`: Sets the tolerance level for deviations from strictly correct syntax (WinApe performs relatively lenient syntax checks). Accepted values: 0, 1, and 2. The default value is 0, indicating the strictest level of syntax enforcement.
 - `-o` or `--output`: Specifies the name of the output binary file. If this option is not used, the name of the input file will be used, with its extension changed to `.bin`.
 - `v` or `--output`: Shows program's version and exits.
 - `--verbose`: Prints more information in the console as the assemble progresses.
@@ -182,7 +183,7 @@ main              ; defines the global label 'main'
 
 ```
 
-Another important aspect is that ABASM reserves the character '.' at the beginning of any label to designate local labels, which will only be accesible from within the source file where they got declared.
+Another important aspect is that ABASM reserves the character '!' at the beginning of any label to designate local labels, which will only be accesible from within the source file where they got declared.
 
 ## Comments
 
@@ -236,7 +237,13 @@ ld a,32
 
 The *opcode* (or its nemotecnic more precisely) would be 'ld a', while the operand would be '32'. The meaning of the opcode is 'load into register A', and the value to load is the number 32.
 
-ABASM supports all standard Z80 instructions. To enhance compatibility with WinAPE syntax, instructions like AND, CP, OR, and SUB accept adding the A register as part of the *opcode*. However, the shorter form without the explicit A is preferred, and a warning will be issued if the extended format is encountered (e.g., `CP A, &0A` is equivalent to `CP &0A` but will issue a warning if found).
+ABASM supports all standard Z80 instructions. To enhance compatibility with WinAPE syntax, instructions like AND, CP, OR, and SUB can accept adding the A register as part of the *opcode*. However, the shorter form without the explicit A is preferred. Users can contol how this altenatives are managed (issue an error, issue a warning, acept them) thorugh the command-line option `--tolerance LEVEL'.
+
+| Tolerance level  | Behaviour |
+|------------------|-------------|
+| --tolerance 0  | Default value. This is the strictest mode. Opcodes such as `SUB A`, `CP A`, etc., which are tolerated by WinApe, will result in a syntax error in ABASM. |
+| --tolerance 1  | Allows alternative opcodes like `SUB A`, `CP A`, etc. These will generate a warning instead of an error, and the assembly process will continue. |
+| --tolerance 2  | Fully accepts alternative opcodes. Errors due to issues like truncation —for example, using a two-byte value in a one-byte operand— will generate warnings instead of stopping the assembly. |
 
 Regarding operands, ABASM fully supports all standard Z80 8-bit registers: A, B, C, D, E, H, and L, as well as the special 8-bit registers I and R. It also supports all standard Z80 16-bit registers: AF, BC, DE, HL, and SP, along with the index registers IX and IY. Additionally, ABASM provides support for the undocumented use of the 8-bit portions of the IX and IY registers, allowing for IXL, IXH, IYL, and IYH. The alternate AF' register is also supported for use in appropriate instructions, such as in the `EX AF, AF'` command.
 
@@ -1191,6 +1198,12 @@ FD AE hh    	XOR   (IY+d)    5 Exclusive OR value at location in IY+d and accumu
 **[2]** All the Z80 restart instructions, except for one, have been reserved for system use. RST 1 to RST 5 (&08-&28) are used to extend the instruction set by implementing special call and jump instructions that enable and disable ROMs. RST 6 (&30) is available to the user. More information can be obtained here: [ROMs. RAM and Restart Instructions.](https://www.cpcwiki.eu/imgs/f/f6/S968se02.pdf)
 
 # Changelog
+
+- Version 1.1.3 - 16/04/2025
+  * Utility bindiff added to the set.
+  * ELSEIF directive fixed.
+  * New option `--tolerance` controls if warnings must be managed as errors or be completely ignored.
+  * Some other minor fixes and improvements.
 
 - Version 1.1.2 - 26/03/2025
   * Z80 instruction list has been updated to include the machine code per instruction.
