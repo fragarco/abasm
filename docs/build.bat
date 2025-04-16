@@ -10,9 +10,11 @@ del .\es\*.html
 %PANDOC% .\en\abasm.md -o .\en\abasm.html
 %PANDOC% .\en\cdt.md -o .\en\cdt.html
 %PANDOC% .\en\dsk.md -o .\en\dsk.html
+%PANDOC% .\en\dsk.md -o .\en\bindiff.html
 
 %PANDOC% .\es\abasm.md -o .\es\abasm.html
 %PANDOC% .\es\cdt.md -o .\es\cdt.html
 %PANDOC% .\es\dsk.md -o .\es\dsk.html
+%PANDOC% .\en\dsk.md -o .\es\bindiff.html
 
 @echo on
