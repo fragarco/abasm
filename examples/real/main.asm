@@ -119,32 +119,58 @@ _float_check_exp:
     push   af
     sub    c        ; check if decimal position plus digits is too much
     cp     &F8
-    jr     c,_float_write_exp_small
-    pop    af
+    jr     c,_float_write_exp_small ; restores af
+    pop    af                       ; restores af if didn't jump
     jr     _float_check_exp_end
+
 _float_write_exp_small:
     pop    af
     ld     (ix+0),"E"
     ld     (ix+1),"-"
-    ld     (ix+2),"X"
-    ld     (ix+3),"X"
-    ld     a,1
+    neg              ; make exponent positive (it was negative)
+    jr      _float_write_exp
+
+_float_check_exp_big:
+    cp     10         ; EXP > 10? then we need E notation
+    jr     c,_float_check_exp_end
+    ld     (ix+0),"E"
+    ld     (ix+1),"+" ; continue directly into _float_write_exp
+
+_float_write_exp:
+    ; At this point we have written E+ or E- in the buffer
+    ld     d,a       ; save exponent in d
+    ld     e,10      ; divide by 10 to get first digit
+    call   div8
+    add    "0"
+    ld     (ix+3),a  ; store ones digit
+    ld     a,d
+    add    "0"
+    ld     (ix+2),a  ; store tens digit
+    ld     a,1       ; set decimal position to 1
     ld     c,1
     jr     _float_copy_numbers
+
+; Convert exponent to decimal digits. Big numbers
 _float_check_exp_big:
     cp     10        ; EXP > 10? then we need E notation
     jr     c,_float_check_exp_end
     ld     (ix+0),"E"
     ld     (ix+1),"+"
-    ld     (ix+2),"X"
-    ld     (ix+3),"X"
-    ld     a,1      ; new decimal position
+    ld     d,a       ; save exponent in d
+    ld     e,10      ; divide by 10 to get first digit
+    call   div8
+    add    "0"
+    ld     (ix+3),a  ; store ones digit
+    ld     a,d
+    add    "0"
+    ld     (ix+2),a  ; store tens digit
+    ld     a,1       ; new decimal position
     ld     c,1
     jr     _float_copy_numbers
+
 _float_check_exp_end:
     ld     c,a      ; keep in C the decimal position + 9
     
-
     ; At this point
     ; A and C hold the decimal point position
     ; B number of current written digits
@@ -244,6 +270,20 @@ _float_remove_trailing_char:
     djnz    $-7
     ret
 
+div8:
+    ; Divide A by E
+    ; Input: A = numerator, E = denominator
+    ; Output: A = remainder, D = quotient
+    ld d,0     ; Initialize quotient
+div8_loop:
+    cp e       ; Compare A with E
+    jr c,div8_end  ; If A < E, we're done
+    sub e      ; Subtract E from A
+    inc d      ; Increment quotient
+    jr div8_loop   ; Continue dividing
+div8_end:
+    ret
+
 read "print.asm"
 
 _float_acum:
@@ -266,12 +306,12 @@ _float_acum:
     db  &00, &00, &00, &F6, &87    ;-123
     db  &00, &00, &60, &89, &8B    ;-1099
     db  &A0, &A2, &79, &6B, &9B    ;123456789
-    db  &A4, &05, &2C, &13, &9F    ;1234567890
-    db  &00, &28, &6B, &6E, &9E    ;1000000000
-    db  &00, &F9, &02, &15, &A2    ;10000000000
-    db  &80, &10, &B7, &41, &A2    ;12999999999
-    db  &CF, &FE, &E6, &5B, &5F    ;0.0000000001
-    db  &1D, &C6, &BF, &4F, &79    ;0.0063399999
+    db  &A4, &05, &2C, &13, &9F    ;1234567890  -> 1.234567E+09
+    db  &00, &28, &6B, &6E, &9E    ;1000000000  -> 1E+09
+    db  &00, &F9, &02, &15, &A2    ;10000000000 -> 1E+10
+    db  &80, &10, &B7, &41, &A2    ;12999999999 -> 1.3E+10
+    db  &CF, &FE, &E6, &5B, &5F    ;0.0000000001-> 1E-10
+    db  &1D, &C6, &BF, &4F, &79    ;0.0063399999-> 6.34000E-03
 
 _float_conv_buffer
     defs 10
