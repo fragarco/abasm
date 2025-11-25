@@ -102,134 +102,115 @@ _calculate_digits_next:
     ; C has the significant number of digits (9 - trailing 0s)
     ; E is the position of the decimal point minus 9
     ; IX points to the last converted digit
-    ld     hl,text  ; address of our target text buffer
-    ld     a,d      ; A is now the sign: 01 for + and FF for -
-    sub    1        ; A = 0 if possitive
-    jr     z,_float_check_exp
-    ld     (hl),"-" ; Lets write the negative sign
-    inc    hl
+    ld      hl,text  ; address of our target text buffer
+    ld      a,d      ; A is now the sign: 01 for + and FF for -
+    sub     1        ; A = 0 if possitive
+    jr      z,_float_check_exp
+    ld      (hl),"-" ; Lets write the negative sign
+    inc     hl
 
 _float_check_exp:
-    ld     b,0      ; total number of written digits
-    ld     ix,_float_conv_buffer+5 ; position for E notation
-    ld     a,e
-    add    9        ; restore decimal position
-    cp     &80      ; EXP > 0? is a big number else small one
-    jr     c,_float_check_exp_big
-    push   af
-    sub    c        ; check if decimal position plus digits is too much
-    cp     &F8
-    jr     c,_float_write_exp_small ; restores af
-    pop    af                       ; restores af if didn't jump
-    jr     _float_check_exp_end
-
-_float_write_exp_small:
-    pop    af
-    ld     (ix+0),"E"
-    ld     (ix+1),"-"
+    ld      b,0      ; total number of written digits
+    ld      ix,_float_conv_buffer+5 ; position for E notation
+    ld      a,e
+    add     9        ; restore decimal position
+    cp      &80      ; EXP > 0? is a big number else small one
+    jr      c,_float_check_E_big
+    push    af
+    sub     c        ; check if decimal position plus digits is too much
+    cp      &F8
+    jr      c,_float_write_E_small ; restores af
+    pop     af                       ; restores af if didn't jump
+    jr      _float_check_exp_end
+_float_write_E_small:
+    pop     af
+    ld      (ix+0),"E"
+    ld      (ix+1),"-"
     neg              ; make exponent positive (it was negative)
+    inc     a
     jr      _float_write_exp
-
-_float_check_exp_big:
-    cp     10         ; EXP > 10? then we need E notation
-    jr     c,_float_check_exp_end
-    ld     (ix+0),"E"
-    ld     (ix+1),"+" ; continue directly into _float_write_exp
-
+_float_check_E_big:
+    cp      10         ; EXP > 10? then we need E notation
+    jr      c,_float_check_exp_end
+    ld      (ix+0),"E"
+    ld      (ix+1),"+" ; continue directly into _float_write_exp
+    dec     a
 _float_write_exp:
     ; At this point we have written E+ or E- in the buffer
-    ld     d,a       ; save exponent in d
-    ld     e,10      ; divide by 10 to get first digit
-    call   div8
-    add    "0"
-    ld     (ix+3),a  ; store ones digit
-    ld     a,d
-    add    "0"
-    ld     (ix+2),a  ; store tens digit
-    ld     a,1       ; set decimal position to 1
-    ld     c,1
-    jr     _float_copy_numbers
-
-; Convert exponent to decimal digits. Big numbers
-_float_check_exp_big:
-    cp     10        ; EXP > 10? then we need E notation
-    jr     c,_float_check_exp_end
-    ld     (ix+0),"E"
-    ld     (ix+1),"+"
-    ld     d,a       ; save exponent in d
-    ld     e,10      ; divide by 10 to get first digit
-    call   div8
-    add    "0"
-    ld     (ix+3),a  ; store ones digit
-    ld     a,d
-    add    "0"
-    ld     (ix+2),a  ; store tens digit
-    ld     a,1       ; new decimal position
-    ld     c,1
-    jr     _float_copy_numbers
-
+    ld      e,10      ; divide by 10 to get first digit
+    call    div8
+    add     "0"
+    ld      (ix+3),a  ; store ones digit
+    ld      a,d
+    add     "0"
+    ld      (ix+2),a  ; store tens digit
+    ld      a,1       ; set decimal position to 1
+    ld      c,1
+    jr      _float_copy_numbers ; ends doing a ret
 _float_check_exp_end:
-    ld     c,a      ; keep in C the decimal position + 9
-    
+    ld      c,a      ; keep in C the decimal position + 9
+    call    _float_write_numbers
+    jr      _float_remove_trailing_0s ; ends doing a ret
+
     ; At this point
     ; A and C hold the decimal point position
     ; B number of current written digits
     ; HL text buffer
 _float_write_numbers:
-    cp     1        ; only if A <=0 we need leading 0s
-    jp     p,_float_copy_numbers
-    ld     (hl),"0"
-    inc    hl
-    ld     (hl),"." 
-    inc    hl
+    cp      1        ; only if A <=0 we need leading 0s
+    jp      p,_float_copy_numbers
+    ld      (hl),"0"
+    inc     hl
+    ld      (hl),"." 
+    inc     hl
 _put_leading_0s_loop:
-    or     a
-    jr     z,_float_copy_numbers
-    ld     (hl),"0"
-    inc    hl
-    inc    a
-    inc    b
-    jr     _put_leading_0s_loop
+    or      a
+    jr      z,_float_copy_numbers ; ends doing a ret
+    ld      (hl),"0"
+    inc     hl
+    inc     a
+    inc     b
+    jr      _put_leading_0s_loop
 
     ; HL points to the text buffer next position
     ; In B we have the digits already written
     ; In C we have the decimal position
 _float_copy_numbers:
-    ld     de,_float_conv_buffer
-    ld     a,9 
-    sub    b     
-    ld     b,a      ; B = max number of digits that we can still print
+    ld      de,_float_conv_buffer
+    ld      a,9 
+    sub     b     
+    ld      b,a      ; B = max number of digits that we can still print
 _float_copy_numbers_loop:
-    ld     a,(de)
-    ld     (hl),a
-    inc    hl
-    inc    de
-    dec    b
-    jr     z,_float_remove_trailing_0s
-    dec    c
-    jr     nz,_float_copy_numbers_loop
-    ld     (hl),"."    ; add . in the correct position
-    inc    hl          ; if number is >0
-    jr     _float_copy_numbers_loop
+    ld      a,(de)
+    ld      (hl),a
+    inc     hl
+    inc     de
+    dec     b
+    ret     z
+    dec     c
+    jr      nz,_float_copy_numbers_loop
+    ld      (hl),"."    ; add . in the correct position
+    inc     hl          ; if number is >0
+    jr      _float_copy_numbers_loop
 
     ; At this point
     ; C contains again original decimal point position (biased -9)
     ; HL points to the end of text buffer
 _float_remove_trailing_0s:
-    bit    7,c      ; if A is negative we remove trailing 0s
-    ret    z        ; no traling 0s
-    dec    hl       ; point to the last digit
+    bit     7,c      ; if A is negative we remove trailing 0s
+    ret     z        ; no traling 0s
+    dec     hl       ; point to the last digit
 _float_remove_trailing_loop:
-    ld     a,(hl)
-    cp     "0"
-    jr     z,_float_remove_trailing_char
-    cp     "."
-    jr     z,_float_remove_trailing_char
+    ld      a,(hl)
+    cp      "0"
+    jr      z,_float_remove_trailing_char
+    cp      "."
+    jr      z,_float_remove_trailing_char
     ret    
 _float_remove_trailing_char:
-    ld     (hl), &00
-    dec    hl
-    jr     _float_remove_trailing_loop
+    ld      (hl), &00
+    dec     hl
+    jr      _float_remove_trailing_loop
 
  div_DEHL_by10:
    ;Inputs:
@@ -284,7 +265,22 @@ div8_loop:
 div8_end:
     ret
 
-read "print.asm"
+FW_PRINT_CHAR equ &BB5A
+
+new_line:
+    ld      a, 13
+    call    FW_PRINT_CHAR
+    ld      a, 10
+    jp      FW_PRINT_CHAR
+    ret
+    
+print_string:
+    ld      a, (hl)
+    cp      0
+    ret     z
+    inc     hl
+    call    FW_PRINT_CHAR
+    jr      print_string
 
 _float_acum:
     db  &00, &00, &00, &28, &00    ;0.0

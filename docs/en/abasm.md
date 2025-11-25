@@ -1199,6 +1199,11 @@ FD AE hh    	XOR   (IY+d)    5 Exclusive OR value at location in IY+d and accumu
 
 # Changelog
 
+- Versión 1.2.0 - 25/11/2025
+  * Better handle of multiple ORG occurrences.
+  * Only import once a given ASM file if it referenced by multiple READ directives.
+  * Some other minor fixes and improvements.
+
 - Version 1.1.3 - 16/04/2025
   * Utility bindiff added to the set.
   * ELSEIF directive fixed.

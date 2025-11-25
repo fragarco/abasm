@@ -448,7 +448,7 @@ LD A,&FF      ; esta linea causará un error
 
 - READ "fichero de código fuente"
 
-Esta directiva inserta el contenido del fichero especificado entre comillas dobles y lo ensambla. La ruta del fichero debe ser relativa a la ubicación del fichero que lo incluye. Todos los símbolos definidos en el fichero insertado son globales, por lo que deben ser únicos y no repetirse en el fichero principal ni en ningún otro fichero incluido mediante este método.
+Esta directiva inserta el contenido del fichero especificado entre comillas dobles o siemples y lo ensambla. La ruta del fichero debe ser relativa a la ubicación del fichero que lo incluye. Todos los símbolos definidos en el fichero insertado son globales, por lo que deben ser únicos y no repetirse en el fichero principal ni en ningún otro fichero incluido mediante este método. Si un mismo fichero se incluye varias veces, ABASM lo detectará y solo lo incluirá una vez.
 
 ```
 READ "./lib/keyboard.asm"
@@ -481,7 +481,7 @@ Especifica la dirección de memoria que debe considerarse como la actual a parti
 ORG 0x4000
 ```
 
-Nada impide incluir más de una ocurrencia de esta directiva en el código fuente, aunque hay que tener presente que cualquier zona de memoria "vacia" que quede entre la dirección de memoria inicial del programa y la dirección más alta será rellenada con 0, aumentando el tamaño del fichero `bin` resultante. Para evitarlo, si un programa necesita tener partes cargadas en diferentes áreas de la memoria, es aconsejable generar un fichero binario independiente para cada área y empaquetarlos todos dentro del mismo DSK o CDT, junto con un cargador programado en BASIC (por ejemplo).
+Nada impide incluir más de una ocurrencia de esta directiva en el código fuente, aunque hay que tener presente que cualquier zona de memoria "vacia" que quede entre la dirección de memoria inicial del programa y la dirección más alta será rellenada con 0s, aumentando el tamaño del fichero `bin` resultante. Para evitarlo, si un programa necesita tener partes cargadas en diferentes áreas de la memoria, es aconsejable generar un fichero binario independiente para cada área y empaquetarlos todos dentro del mismo DSK o CDT, junto con un cargador programado en BASIC (por ejemplo).
 
 ### PRINT
 
@@ -1206,6 +1206,11 @@ FD AE hh    	XOR   (IY+d)    5 Realiza una OR exclusiva entre el valor en (IY+d)
 **[2]** Todas las instrucciones RST del Z80, excepto una, han sido reservadas para uso del sistema. De RST 1 a RST 5 (&08-&28) se utilizan para extender el conjunto de instrucciones añadiendo instrucciones específicas de llamada y salto que habilitan y deshabilitan los ROMs. RST 6 (&30) está disponible para el usuario. Se puede obtener más información sobre el uso de la instrucción RST aquí: [ROMs. RAM and Restart Instructions.](https://www.cpcwiki.eu/imgs/f/f6/S968se02.pdf)
 
 # Historial de cambios
+
+- Versión 1.2.0 - 25/11/2025
+  * Mejora en la gestión de múltiples directivas ORG
+  * Importa solo una vez un mismo fichero .ASM referenciado multiples veces por READ o INCLUDE
+  * Otras pequeñas mejoras.
 
 - Version 1.1.3 - 16/04/2025
   * Se ha añadido la utilidad bindiff para comparar binarios.
