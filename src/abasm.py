@@ -457,8 +457,10 @@ class AsmContext:
 
     def read_srcfile(self, inputfile):
         try:
-            fd = open(inputfile, 'r', encoding='utf-8')
-            content = fd.readlines()
+            fd = open(inputfile, 'rb')
+            content = []
+            for line in fd.readlines():
+                content.append(line.decode('utf-8', 'ignore'))
             content.insert(0, '') # prepend blank so line numbers are 1-based
             fd.close()
             return content
