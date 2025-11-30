@@ -1804,7 +1804,10 @@ def main():
     global g_context
     args = process_args()
     g_context.verbose = args.verbose
-    assemble(args.inputfile, args.output, args.define, args.start, args.tolerance)
+    libpath = os.path.dirname(os.path.abspath(__file__))
+    libpath = os.path.join(libpath, "lib")
+    print("AAA", libpath)
+    assemble(args.inputfile, args.output, args.define, args.start, args.tolerance, libpaths=[libpath])
     sys.exit(0)
 
 if __name__ == "__main__":
