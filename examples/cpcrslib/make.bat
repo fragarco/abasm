@@ -10,24 +10,20 @@ REM * USAGE: make [clear]
 
 set ASM=python3 ../../src/abasm.py
 set DSK=python3 ../../src/dsk.py
-set CDT=python3 ../../src/cdt.py
 
 set LOADADDR=0x4000
-set SOURCE=main
 set TARGET=cpcrslib
 
-set RUNASM=%ASM% --start=%LOADADDR% %SOURCE%.asm 
-set RUNDSK=%DSK% %TARGET%.dsk --new --put-bin %SOURCE%.bin --load-addr %LOADADDR% --map-file %SOURCE%.map --start-addr MAIN
-set RUNCDT=%CDT% %TARGET%.cdt --new --name %TARGET% --put-bin %SOURCE%.bin --load-addr %LOADADDR% --map-file %SOURCE%.map --start-addr MAIN 
-
 IF "%1"=="clear" (
-    del %SOURCE%.bin
-    del %SOURCE%.lst
-    del %SOURCE%.map
-    del %TARGET%.dsk
-    del %TARGET%.cdt
+    del *.bin
+    del *.lst
+    del *.map
+    del *.dsk
 ) ELSE (
-    call %RUNASM% && call %RUNDSK% && call %RUNCDT% 
+    call %DSK% %TARGET%.dsk --new
+    for %%x in (example1, example9) do (
+        call %ASM% --start %LOADADDR% %%x.asm && call %DSK% %TARGET%.dsk --put-bin %%x.bin
+    )
 )
 
 @endlocal

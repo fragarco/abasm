@@ -1806,7 +1806,6 @@ def main():
     g_context.verbose = args.verbose
     libpath = os.path.dirname(os.path.abspath(__file__))
     libpath = os.path.join(libpath, "lib")
-    print("AAA", libpath)
     assemble(args.inputfile, args.output, args.define, args.start, args.tolerance, libpaths=[libpath])
     sys.exit(0)
 
