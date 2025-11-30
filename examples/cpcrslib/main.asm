@@ -82,18 +82,19 @@ string5: db "CPCRSLIB (C) 2015",0
 string6: db "-- FONT BY ANJUEL  2009  --",0
 string7: db "ABCDEFGHIJKLMNOPQRSTUVWXYZ",0
 
-read 'cpcrslib/utils/enablefw.asm'
-read 'cpcrslib/utils/disablefw.asm'
+read 'cpcrslib/firmware/enablefw.asm'
+read 'cpcrslib/firmware/disablefw.asm'
+
 read 'cpcrslib/video/clearscr.asm'
 read 'cpcrslib/video/setmode.asm'
 read 'cpcrslib/video/setcolor.asm'
+read 'cpcrslib/video/rri.asm'
+read 'cpcrslib/video/rli.asm'
 
 read 'cpcrslib/gphstrstd/nanako_font.asm'
 read 'cpcrslib/gphstrstd/printstr.asm'
 
 read 'cpcrslib/keyboard/anykeypressed.asm'
-read 'cpcrslib/utils/rri.asm'
-read 'cpcrslib/utils/rli.asm'
 
 ; ORIGINAL EXAMPLE IN C
 ; #include <cpcrslib.h>
