@@ -41,17 +41,17 @@
 ; joystick 1 by pressing the appropiate keys on the keyboard.
 
 ;The position of each key/joystick button in the matrix is shown in the table below:
-;                        		Bit
-; Line 	7		6		5		4		3		2		1		0
-; &40 	F Dot 	ENTER 	F3 		F6 		F9 	 CURDOWN CURRIGHT  CURUP
-; &41 	F0 		F2 		F1 		F5 		F8 		F7 	   COPY    CURLEFT
-; &42 	CONTROL \ ` 	SHIFT 	F4 		] }   RETURN  	[ { 	CLR
+;                        	Bit (hex value)
+; Line 	7 (80)	6 (40)	5 (20)	4 (10)	3 (08)	2 (04)	1 (02)	0 (01)
+; &40 	FDot 	FEnter	F3 		F6 		F9 	    DOWN    RIGHT   UP
+; &41 	F0 		F2 		F1 		F5 		F8 		F7 	    COPY    LEFT
+; &42 	CTRL    \ ` 	SHIFT 	F4 		] }     RETURN  [ { 	CLR
 ; &43 	. > 	/ ? 	: * 	; + 	P 		@ ¦ 	- = 	^ £
 ; &44 	, < 	M 		K 		L 		I 		O 		9 ) 	0 _
 ; &45 	SPACE 	N 		J	 	H 		Y 		U 		7 ' 	8 (
 ; &46**	V 		B  		F  		G		T		R		5 %		6 &
 ; &47 	X 		C 		D 		S 		W 		E 		3 # 	4 $
-; &48 	Z 	CAPSLOCK 	A 		TAB 	Q 		ESC 	2 " 	1 !
+; &48 	Z 	    CAPS 	A 		TAB 	Q 		ESC 	2 " 	1 !
 ; &49 	DEL 	Jfire3 	Jfire2 	Jfire1 	Jright 	Jleft 	Jdown 	Jup 
 ;
 ; ** This line maps the Joy2 keys too:
@@ -87,25 +87,127 @@
 ; Used by the different keyboard routines to save values.
 _cpcrslib_keyline: 	db 0
 _cpcrslib_keybyte:	db 0
-_cpcrslib_keymap:	defs 10
+_cpcrslib_keymap:	defs 10  ; 10 lines of 8 bits each (keyboard matrix)
 
 ; TABLE OF USER DEFINED KEYS (ASSIGMENT TABLE)
 ; Initialized with some default values. FFFF if the assignment is empty.
 ; For each entry: LINE MATRIX VALUE + BYTE MATRIX VALUE
 _cpcrslib_keys_table:
-key_0_x: 	dw &4002
-key_1_x: 	dw &4101
-key_2_x: 	dw &4001
-key_3_x: 	dw &4004
-key_4_x:	dw &4002
-key_5_x:  	dw &4101
-key_6_x:  	dw &4001
-key_7_x:  	dw &4004
-key_8_x:  	dw &4801
-key_9_x:  	dw &4802
-key_10_x:  	dw &4702
-key_11_x:  	dw &4204
-key_12_x:  	dw &FFFF
-key_13_x:  	dw &4204
-key_14_x:  	dw &4001
-key_15_x:  	dw &4004
+key_00_x: 	dw KEY_RIGHT
+key_01_x: 	dw KEY_LEFT
+key_02_x: 	dw KEY_UP
+key_03_x: 	dw KEY_DOWN
+key_04_x:	dw KEY_P
+key_05_x:  	dw KEY_O
+key_06_x:  	dw KEY_Q
+key_07_x:  	dw KEY_A
+key_08_x:  	dw KEY_SPACE
+key_09_x:  	dw KEY_J1RIGHT
+key_10_x:  	dw KEY_J1LEFT
+key_11_x:  	dw KEY_J1UP
+key_12_x:  	dw KEY_J1DOWN
+key_13_x:  	dw KEY_J1FIRE1
+key_14_x:  	dw KEY_J1FIRE2
+key_15_x:  	dw KEY_ESC
+
+; KEY CODE CONSTANTS
+
+KEY_EMPTY   equ &FFFF
+
+KEY_FDOT    equ &4080
+KEY_FENTER  equ &4040
+KEY_F3      equ &4020
+KEY_F6      equ &4010
+KEY_F9      equ &4008
+KEY_DOWN    equ &4004
+KEY_RIGHT   equ &4002
+KEY_UP      equ &4001
+
+KEY_F0      equ &4180
+KEY_F2      equ &4140
+KEY_F1      equ &4120
+KEY_F5      equ &4110
+KEY_F8      equ &4108
+KEY_F7      equ &4104
+KEY_COPY    equ &4102
+KEY_LEFT    equ &4101
+
+KEY_CTRL    equ &4280
+KEY_BSLASH  equ &4240
+KEY_SHIFT   equ &4220
+KEY_F4      equ &4210
+KEY_RSQUARE equ &4208
+KEY_RETURN  equ &4204
+KEY_LSQUARE equ &4202
+KEY_CLR     equ &4201
+
+KEY_DOT     equ &4380
+KEY_FSLASH  equ &4340
+KEY_COLON   equ &4320
+KEY_SCOLON  equ &4310
+KEY_P       equ &4308
+KEY_AT      equ &4304
+KEY_MINUS   equ &4302
+KEY_EXP     equ &4301
+
+KEY_COMMA   equ &4480
+KEY_M       equ &4440
+KEY_K       equ &4420
+KEY_L       equ &4410
+KEY_I       equ &4408
+KEY_O       equ &4404
+KEY_9       equ &4402
+KEY_0       equ &4401
+
+KEY_SPACE   equ &4580
+KEY_N       equ &4540
+KEY_J       equ &4520
+KEY_H       equ &4510
+KEY_Y       equ &4508
+KEY_U       equ &4504
+KEY_7       equ &4502
+KEY_8       equ &4501
+
+KEY_V       equ &4680
+KEY_B       equ &4640
+KEY_F       equ &4620
+KEY_G       equ &4610
+KEY_T       equ &4608
+KEY_R       equ &4604
+KEY_5       equ &4602
+KEY_6       equ &4601
+
+KEY_J2FIRE3 equ &4640
+KEY_J2FIRE2 equ &4620
+KEY_J2FIRE1 equ &4610
+KEY_J2RIGHT equ &4608
+KEY_J2LEFT  equ &4604
+KEY_J2DOWN  equ &4602
+KEY_J2UP    equ &4601
+
+KEY_X       equ &4780
+KEY_C       equ &4740
+KEY_D       equ &4720
+KEY_S       equ &4710
+KEY_W       equ &4708
+KEY_E       equ &4704
+KEY_3       equ &4702
+KEY_4       equ &4701
+
+KEY_Z       equ &4880
+KEY_CAPS    equ &4840
+KEY_A       equ &4820
+KEY_TAB     equ &4810
+KEY_Q       equ &4808
+KEY_ESC     equ &4804
+KEY_2       equ &4802
+KEY_1       equ &4801
+
+KEY_DEL     equ &4980
+KEY_J1FIRE3 equ &4940
+KEY_J1FIRE2 equ &4920
+KEY_J1FIRE1 equ &4910
+KEY_J1RIGHT equ &4908
+KEY_J1LEFT  equ &4904
+KEY_J1DOWN  equ &4902
+KEY_J1UP    equ &4901

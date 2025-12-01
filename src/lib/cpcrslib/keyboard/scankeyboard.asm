@@ -20,21 +20,41 @@
 
 read 'cpcrslib/keyboard/vars.asm'
 
-; CPC_ASSIGNKEY
-; Writes in the key assigment table a new key (Line + Byte matrix values)
+; CPC_SCANKEYBOARD
+; Reads all keyboard matrix lines and leaves the resulting bytes
+; in the keymap table. This routine must be called before trying 
+; to use cpc_CheckKey.
 ; Inputs:
-;     A  Byte value in the keyboard matrix for the desired key
-;     B  Line value in the keyboard matrix for the desired key
-;     E  Entry in the key asignment table (&0-&F)
+;     None
 ; Outputs:
 ;	  None
-;     AF, HL and DE are modified.
-cpc_AssignKey:						
-	ld      hl,_cpcrslib_keys_table
-	sla     e
-	ld      d,0
-	add     hl,de 		; Position in the key assignment table
-	ld		(hl),a 		; Byte value
-	inc 	hl			
-	ld 		(hl),b		; Line value
-	ret
+;     AF, HL, DE and BC are modified.
+cpc_ScanKeyboard:
+    di
+    ld      hl,_cpcrslib_keymap
+    ld      bc,&F782
+    out     (c),c
+    ld      bc,&F40E
+    ld      e,b
+    out     (c),c
+    ld      bc,&F6C0
+    ld      d,b
+    out     (c),c
+    ld      c,0
+    out     (c),c
+    ld      bc,&F792
+    out     (c),c
+    ld      a,&40   ; First line
+    ld      c,&4A   ; 49 is the last line
+__scankeyboard_loop:
+	ld      b,d
+    out     (c),a   ; select line
+    ld      b,e
+    ini             ; read status byte and write it into the keymap
+    inc     a
+    cp      c
+    jr      c,__scankeyboard_loop
+    ld      bc,&F782
+    out     (c),c
+    ei
+    ret

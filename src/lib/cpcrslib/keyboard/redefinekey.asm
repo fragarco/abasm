@@ -22,16 +22,17 @@ read 'cpcrslib/keyboard/testkeyboard.asm'
 read 'cpcrslib/keyboard/vars.asm'
 
 ; CPC_REDEFINEKEY
-; Checks if any key in the keyboard is pressed. If so, it returns -1 (True)
-; in HL, otherwise it returns 0.
+; Waits until a valid key (a key that is not already in the assignment table)
+; is pressed and stores it in the given table index (0..15)
 ; Inputs:
 ;      L  Key assignment table index to redefine (0..15)
 ; Outputs:
-;	  None stores in the table entry the new line + byte values
+;	  None (stores in the table entry the new line + byte values)
 ;     AF, HL, DE, BC and IX are modified.
 cpc_RedefineKey:
 	ld 		de,_cpcrslib_keys_table
 	sla     l		 ; each entry occupies 2 bytes
+	ld      h,0
 	add     hl,de 	
 	ld      (hl),&FF ; erase current entry information
 	inc     hl
@@ -48,8 +49,11 @@ cpc_RedefineKey:
 	ret
 
 ; PRIVATE ROUTINE
-; Captures a keyboard key press
-
+; Captures a keyboard key press looping through the 10 lines of the
+; keyboard matrix.
+; Leaves the first line and byte active in:
+; _cpcrslib_keyline and _cpcrslib_keybyte
+; Pressed key must no appear in the assigment table or it will be descarted.
 _rslib_capture_key:
 	ld      a,&40
 __capturekey_loop:

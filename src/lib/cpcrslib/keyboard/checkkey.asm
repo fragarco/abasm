@@ -20,21 +20,35 @@
 
 read 'cpcrslib/keyboard/vars.asm'
 
-; CPC_ASSIGNKEY
-; Writes in the key assigment table a new key (Line + Byte matrix values)
+; CPC_CHECKKEY
+; Return -1 (True) if the given key in the assignment table
+; is pressed, otherwise it returns 0 (False). This routine uses
+; the matrix state captured by cpc_ScanKeyboard, and as a result,
+; this last routine must be called before any call to cpc_CheckKey.
 ; Inputs:
-;     A  Byte value in the keyboard matrix for the desired key
-;     B  Line value in the keyboard matrix for the desired key
-;     E  Entry in the key asignment table (&0-&F)
+;     L index of the key assignment table
 ; Outputs:
-;	  None
-;     AF, HL and DE are modified.
-cpc_AssignKey:						
-	ld      hl,_cpcrslib_keys_table
-	sla     e
-	ld      d,0
-	add     hl,de 		; Position in the key assignment table
-	ld		(hl),a 		; Byte value
-	inc 	hl			
-	ld 		(hl),b		; Line value
+;	  HL  -1 (True) if the key is pressed, otherwise 0.
+;     AF, HL, DE and BC are modified.
+cpc_CheckKey:
+	sla     l
+	inc 	l
+	ld 		h,0
+	ld 		de,_cpcrslib_keys_table
+	add 	hl,de
+	ld 		a,(hl)  ; assignment line 
+	sub 	&40		; from 40-49 to 0-9
+	ex 		de,hl	; DE stores the key assignment data
+	ld		hl,_cpcrslib_keymap	; current keyboard matrix status
+	ld 		c,a
+	ld 		b,0
+	add 	hl,bc
+	ld 		a,(hl)	; current status for the desired line
+	ex 		de,hl
+	dec 	hl		; byte info in the assigment table
+	and 	(hl) 	; let's check if the byte information
+	cp 		(hl)	; matches
+	ld 		hl,0
+	ret 	z
+	dec 	hl
 	ret

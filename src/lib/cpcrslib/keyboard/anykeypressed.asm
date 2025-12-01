@@ -18,14 +18,16 @@
 ; OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 ; DEALINGS IN THE SOFTWARE.
 
+read 'cpcrslib/keyboard/testkeyboard.asm'
+
 ; CPC_ANYKEYPRESSED
 ; Checks if any key in the keyboard is pressed. If so, it returns -1 (True)
 ; in HL, otherwise it returns 0.
 ; Inputs:
 ;     None
 ; Outputs:
-;	  HL -1 if at least one key is pressed, 0 otherwise
-;     AF, HL, DE, BC, IX and IY are modified.
+;	  HL -1 (True) if at least one key is pressed, 0 otherwise (False).
+;     AF, HL and BC are modified.
 cpc_AnyKeyPressed:
     call    _rslib_delay
     call    _rslib_delay
@@ -58,5 +60,3 @@ __rslib_delay_loop:
 	dec     a
 	jr      nz, __rslib_delay_loop
 	ret
-
-read 'cpcrslib/keyboard/testkeyboard.asm'

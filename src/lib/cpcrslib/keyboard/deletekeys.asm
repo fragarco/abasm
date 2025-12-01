@@ -20,21 +20,18 @@
 
 read 'cpcrslib/keyboard/vars.asm'
 
-; CPC_ASSIGNKEY
-; Writes in the key assigment table a new key (Line + Byte matrix values)
+; CPC_DELETEKEY
+; Deletes all entries in the key assignment table leaving their values 
+; set to &FFFF.
 ; Inputs:
-;     A  Byte value in the keyboard matrix for the desired key
-;     B  Line value in the keyboard matrix for the desired key
-;     E  Entry in the key asignment table (&0-&F)
+;     None
 ; Outputs:
 ;	  None
-;     AF, HL and DE are modified.
-cpc_AssignKey:						
+;     HL, DE and BC are modified.
+cpc_DeleteKeys:
 	ld      hl,_cpcrslib_keys_table
-	sla     e
-	ld      d,0
-	add     hl,de 		; Position in the key assignment table
-	ld		(hl),a 		; Byte value
-	inc 	hl			
-	ld 		(hl),b		; Line value
+	ld      de,_cpcrslib_keys_table + 1
+	ld      bc,31
+	ld      (hl),&FF
+	ldir
 	ret
