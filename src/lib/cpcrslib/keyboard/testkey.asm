@@ -18,32 +18,34 @@
 ; OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 ; DEALINGS IN THE SOFTWARE.
 
-; CPC_TESTKEYBOARD
-; Based on the basic routines designed by Kevin Thacker.
-; See vars.asm to read more about how the keys are scanned in an Amstrad CPC.
-; A will contain the byte info for the line passed in A.
+read 'cpcrslib/keyboard/vars.asm'
+read 'cpcrslib/keyboard/testkeyboard.asm'
+
+; CPC_TESTKEY
+; Checks if any key in the keyboard is pressed. If so, it returns -1 (True)
+; in HL, otherwise it returns 0.
 ; Inputs:
-;     A  matrix line to test (&40 .. &49)
+;     HL Key table index to redefine (0..11)
 ; Outputs:
-;	  A  state of the 8 keys in the line (byte value).
-;     AF and BC are modified.
-cpc_TestKeyboard:
-	di
-	ld      bc,&F40E   ; Select PSG's register 14 on PPI Port A 
-	out     (c),c
-	ld      bc,&F6C0   ; Latch PSG register
-	out     (c),c
-	db      &ED,&71    ; OUT (C),0
-	ld      bc,&F792   ; Set PPI's Port A as input and C as output
-	out     (c),c
-	dec     b
-	out     (c),a
-	ld      b,&F4      ; Sample the value on Port A
-	in      a,(c)
-	ld      bc,&F782   ; Set PPI's Port A and C as output
-	out     (c),c
-	dec     b
-	db      &ED,&71   ; OUT (C),0
-	cpl
-	ei
-	ret
+;	  HL -1 if at least one key is pressed, 0 otherwise
+;     AF, HL, DE, BC, IX and IY are modified.
+_cpc_TestKey:
+
+; En L se tiene el valor de la tecla seleccionada a comprobar [0..11]
+	SLA L
+	INC L
+	LD H,#0
+	LD DE,#tabla_teclas
+	ADD HL,DE
+	LD A,(HL)
+	CALL _cpc_TestKeyboard		; esta rutina lee la línea del teclado correspondiente
+	DEC HL						; pero sólo nos interesa una de las teclas.
+	and (HL) 					;para filtrar por el bit de la tecla (puede haber varias pulsadas)
+	CP (HL)						;comprueba si el byte coincide
+	LD H,#0
+	JP Z,pulsado
+	LD L,H
+	RET
+pulsado:
+	LD L,#1
+	RET

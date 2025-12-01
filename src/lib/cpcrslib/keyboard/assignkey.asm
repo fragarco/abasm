@@ -18,32 +18,24 @@
 ; OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 ; DEALINGS IN THE SOFTWARE.
 
-; CPC_TESTKEYBOARD
-; Based on the basic routines designed by Kevin Thacker.
-; See vars.asm to read more about how the keys are scanned in an Amstrad CPC.
-; A will contain the byte info for the line passed in A.
+
+; CPC_ASSIGNKEY
+; Writes in the key assigment table a new key (Line + Byte matrix values)
 ; Inputs:
-;     A  matrix line to test (&40 .. &49)
+;     A  Byte value in the keyboard matrix for the desired key
+;     B  Line value in the keyboard matrix for the desired key
+;     E  Entry in the key asignment table (&0-&F)
 ; Outputs:
-;	  A  state of the 8 keys in the line (byte value).
-;     AF and BC are modified.
-cpc_TestKeyboard:
-	di
-	ld      bc,&F40E   ; Select PSG's register 14 on PPI Port A 
-	out     (c),c
-	ld      bc,&F6C0   ; Latch PSG register
-	out     (c),c
-	db      &ED,&71    ; OUT (C),0
-	ld      bc,&F792   ; Set PPI's Port A as input and C as output
-	out     (c),c
-	dec     b
-	out     (c),a
-	ld      b,&F4      ; Sample the value on Port A
-	in      a,(c)
-	ld      bc,&F782   ; Set PPI's Port A and C as output
-	out     (c),c
-	dec     b
-	db      &ED,&71   ; OUT (C),0
-	cpl
-	ei
+;	  HL -1 if at least one key is pressed, 0 otherwise
+;     AF, HL, DE, BC, IX and IY are modified.
+cpc_AssignKey:						
+	ld      hl,_cpcrslib_keys_table
+	sla     e
+	ld      d,0
+	add     hl,de 		; Position in the key assignment table
+	ld		(hl),a 		; Byte value
+	inc 	hl			
+	ld 		(hl),b		; Line value
 	ret
+
+read 'cpcrslib/keyboard/vars.asm'

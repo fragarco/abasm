@@ -30,15 +30,15 @@ cpc_AnyKeyPressed:
     call    _rslib_delay
     call    _rslib_delay
     call    _rslib_delay
-	ld      a,&40
+	ld      a,&40    	; first matrix line
 __anykey_loop:
 	push    af
 	call    cpc_TestKeyboard
 	or      a
 	jr      nz,__anykey_pressed
 	pop     af
-	inc     a
-	cp      &4A
+	inc     a			; increase matrix line
+	cp      &4A			; to test range &40 .. &49
 	jr      nz,__anykey_loop
 	ld      hl,0
 	ret

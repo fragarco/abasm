@@ -23,20 +23,32 @@
 .main:
     ld      a,1
     call    cpc_SetModeFW
+    ld      e,4             ; table entry index
+    ld      a,4             ; keyboard matrix byte
+    ld      b,&48           ; keyboard matrix line (see vars.asm)
+    call    cpc_AssignKey
 
     ld      hl,string1
-    call    cpc_PrintStrFW
+    call    cpc_PrintStrFW  ; Welcome to cpcrslib keyboard utilities.
     ld      hl,string2
-    call    cpc_PrintStrFW
+    call    cpc_PrintStrFW  ; Press a key to redefine as #1
+
+    ld      l,0
+    call    cpc_RedefineKey
+    ld      hl,string3
+    call    cpc_PrintStrFW  ; Done!
 
 .end_loop: jr end_loop
 
 string1: db "Welcome to cpcrslib keyboard utilities.",0
 string2: db "Press a key to redefine as #1",0
+string3: db "Done!"
 
 read 'cpcrslib/firmware/setmode.asm'
 read 'cpcrslib/firmware/print.asm'
 
+read 'cpcrslib/keyboard/assignkey.asm'
+read 'cpcrslib/keyboard/redefinekey.asm'
 
 .wait:
     ld      b,100
