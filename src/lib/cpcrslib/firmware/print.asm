@@ -28,13 +28,13 @@
 ;     AF and HL get modified.
 cpc_PrintStrFW:
 	ld      a,(hl)
-	or 		a
-	jr		z,_rslib_printnl
-	call 	&BB5A ; TXT_OUTPUT
+	or      a
+	jr      z,_rslib_printnl
+	call    &BB5A ; TXT_OUTPUT
 	inc     hl
-	jr 		cpc_PrintStrFW
+	jr      cpc_PrintStrFW
 _rslib_printnl:
-	ld 		a,&0D
+	ld      a,&0D
 	call    &BB5A ; TXT_OUTPUT
 	ld      a,&0A
-	jp 		&BB5A ; TXT_OUTPUT
+	jp      &BB5A ; TXT_OUTPUT

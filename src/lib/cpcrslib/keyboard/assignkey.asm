@@ -34,7 +34,7 @@ cpc_AssignKey:
 	sla     e
 	ld      d,0
 	add     hl,de 		; Position in the key assignment table
-	ld		(hl),a 		; Byte value
-	inc 	hl			
-	ld 		(hl),b		; Line value
+	ld      (hl),a 		; Byte value
+	inc     hl			
+	ld      (hl),b		; Line value
 	ret

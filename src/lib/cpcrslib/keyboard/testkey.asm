@@ -34,13 +34,13 @@ cpc_TestKey:
 	inc     l
 	ld      h,0
 	ld      de,_cpcrslib_keys_table
-	add 	hl,de
+	add     hl,de
 	ld      a,(hl)  ; Line value in the assignment table
 	call    cpc_TestKeyboard
 	dec     hl	    ; point to byte value in the table
 	and     (hl)	; A contains the value of scanning the keyboard
 	cp      (hl)
-	ld 		hl,0    ; HL = 0 (False)
-	ret 	nz
+	ld      hl,0    ; HL = 0 (False)
+	ret     nz
 	dec     hl      ; HL = -1 (True)
 	ret

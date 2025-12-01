@@ -30,7 +30,7 @@ read 'cpcrslib/keyboard/vars.asm'
 ;	  None (stores in the table entry the new line + byte values)
 ;     AF, HL, DE, BC and IX are modified.
 cpc_RedefineKey:
-	ld 		de,_cpcrslib_keys_table
+	ld      de,_cpcrslib_keys_table
 	sla     l		 ; each entry occupies 2 bytes
 	ld      h,0
 	add     hl,de 	
