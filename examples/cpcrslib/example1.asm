@@ -36,41 +36,41 @@ org &4000
 	ld      a,1
 	ld      de,string1
 	ld      hl,&C050
-	call    cpc_Print
+	call    cpc_Print_M1
 
 	ld      a,2
 	ld      de,string2
 	ld      hl,&C0A0
-	call    cpc_Print
+	call    cpc_Print_M1
 
 	ld      a,3
 	ld      de,string3
 	ld      hl,&C0F0
-	call    cpc_Print
+	call    cpc_Print_M1
 
 	ld      a,3
 	ld      de,string4
 	ld      l,8
 	ld      h,70
-	call    cpc_PrintXY
+	call    cpc_PrintXY_M1
 	
 	ld      a,2
 	ld      de,string5
 	ld      l,19
 	ld      h,80
-	call    cpc_PrintXY
+	call    cpc_PrintXY_M1
 	
 	ld      a,1
 	ld      de,string6
 	ld      l,2
 	ld      h,160
-	call    cpc_PrintXY
+	call    cpc_PrintXY_M1
 	
 	ld      a,1
 	ld      de,string7
 	ld      l,2
 	ld      h,174
-	call    cpc_PrintXY
+	call    cpc_PrintXY_M1
 
 	.scroll_loop:
 		ld      hl,&E000
@@ -113,7 +113,7 @@ read 'cpcrslib/video/rri.asm'
 read 'cpcrslib/video/rli.asm'
 
 read 'cpcrslib/text/font_nanako.asm'
-read 'cpcrslib/text/printstr.asm'
+read 'cpcrslib/text/print_m1.asm'
 
 read 'cpcrslib/keyboard/anykeypressed.asm'
 

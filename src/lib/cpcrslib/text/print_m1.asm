@@ -18,11 +18,13 @@
 ; OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 ; DEALINGS IN THE SOFTWARE.
 
-; CPC_PRINT
+read 'cpcrslib/video/getscraddress.asm'
+
+; CPC_PRINT_M1
 ; Prints a null-terminated string using a custom font and direct
 ; hardware access in the video memory indicated (ONLY MODE 1).
 ; Requires a designed custom font like the example provided in
-; nanako_font.asm
+; font_nanako.asm
 ; Inputs:
 ;     A  pen color (1-4)
 ;     HL video memory address
@@ -30,23 +32,14 @@
 ; Outputs:
 ;	  None
 ;     AF, HL, DE, BC, IX and IY are modified.
-cpc_Print:
+cpc_Print_M1:
 	call    _rslib_setcolor
-	ld      a,(_rslib_printing)
-	cp      1   ; are we already printing?
-	jp      z,_rslib_pushjob
 	ld      (_rslib_memaddr),hl
 	ex      de,hl
-	call    _rslib_printstr
-__cpcprint_popjobs:
-	; lets remove any pending jobs
-	ld      a,(_rslib_queueitems)
-	or      a
-	jp      z,_rslib_printingoff
-	call    _rslib_popjob
-	jr      __cpcprint_popjobs
+	jp    	_rslib_printstr
 
-; CPC_PRINTXY
+
+; CPC_PRINTXY_M1
 ; Prints a null-terminated string using a custom font and direct
 ; hardware access in the video memory indicated by X and Y coords.
 ; (ONLY MODE 1).
@@ -58,15 +51,13 @@ __cpcprint_popjobs:
 ; Outputs:
 ;	  None
 ;     AF, HL, DE, BC, IX and IY are modified.
-cpc_PrintXY:
+cpc_PrintXY_M1:
 	push    af
 	push    de
 	call    cpc_GetScrAddress
 	pop     de
 	pop     af
-	jp      cpc_Print
-
-read 'cpcrslib/video/getscraddress.asm'
+	jp      cpc_Print_M1
 
 ; PRIVATE ROUTINE
 ; Set the PEN color stored in A
@@ -101,56 +92,10 @@ __rslib_applycolor:
 	ld      (cc7_gpstd-1),a
 	ret	
 
-; PRIVATE ROUTINE
-; Adds a printing job to the queue
-_rslib_pushjob:
-	di
-	ld      ix,(_rslib_queuepos)
-	ld      (ix+0),l
-	ld      (ix+1),h
-	ld      (ix+2),e
-	ld      (ix+3),d
-	inc     ix
-	inc     ix
-	inc     ix
-	inc     ix
-	ld      (_rslib_queuepos),ix
-	ld      hl,_rslib_queueitems
-	inc     (hl)
-	ei
-	ret
-
-; PRIVATE ROUTINE
-; Removes a printing job from the queue
-_rslib_popjob:
-	di
-	ld      ix,(_rslib_queuepos)
-	ld      l,(ix+0)
-	ld      h,(ix+1)
-	ld      e,(ix+2)
-	ld      d,(ix+3)
-	dec     ix
-	dec     ix
-	dec     ix
-	dec     ix
-	ld      (_rslib_queuepos),ix
-	ld      hl,_rslib_queueitems
-	dec     (hl)
-	ei
-	ret
-
 ; AUXILIAR ROUTINE
-; Set the printing flag to 0 (False)
-_rslib_printingoff:
-	xor     a
-	ld      (_rslib_printing),a
-	ret
-
-; AUXILIAR ROUTINE
-; Prints the string
+; Prints a null-terminated string in MODE 1
+; HL points to the string.
 _rslib_printstr:
-	ld      a,1
-	ld      (_rslib_printing),a
 	ld      a,(cpc_charfont_first)
 	ld      b,a	   ; lets substract the first char in the table
 	ld      a,(hl) ; to find the character index in the
@@ -176,12 +121,6 @@ _rslib_printstr:
 	pop     hl
 	inc     hl
 	jr      _rslib_printstr
-
-_rslib_queueitems: dw 0
-_rslib_queuepos:   dw _rslib_queue
-_rslib_queue:	   defs 12
-_rslib_printing:   db 0   ; Print flag
-_rslib_memaddr:    dw 0   ; Address where to print a string
 
 ; PRIVATE ROUTINE
 ; Draws the char shape
@@ -261,4 +200,5 @@ cc7_gpstd:
 	djnz    __printch_loop
 	ret
 
-_rslib_charshape: defs 16
+_rslib_charshape: 	defs 16
+_rslib_memaddr:    	dw 0   ; Address where to print a string
