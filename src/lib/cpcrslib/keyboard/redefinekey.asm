@@ -41,10 +41,10 @@ cpc_RedefineKey:
 	push    hl
 	call    _rslib_capture_key
 	pop     hl
-	ld      a,(_cpcrslib_keyline)
+	ld      a,(_cpcrslib_keybyte)
 	ld      (hl),a
 	inc     hl
-	ld      a,(_cpcrslib_keybyte)
+	ld      a,(_cpcrslib_keyline)
 	ld      (hl),a
 	ret
 
