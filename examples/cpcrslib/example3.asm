@@ -27,9 +27,33 @@
     ld      de,string1
     ld      l,0     ; X
     ld      h,8*23  ; Y
-    call    cpc_PrintXY_M1
+    call    cpc_DrawStrXY_M1
+    ld      de,string2
+    ld      l,0     ; X
+    ld      h,8*24  ; Y
+    call    cpc_DrawStrXY_M1
+    call    wait_key
 
-    call wait_key
+    ld      de,string3
+    ld      l,0     ; X
+    ld      h,8*23  ; Y
+    call    cpc_DrawStrXY_M1
+    ld      de,string2
+    ld      l,0     ; X
+    ld      h,8*24  ; Y
+    call    cpc_DrawStrXY_M1
+    call    wait_key
+
+    ld      de,string4
+    ld      l,0     ; X
+    ld      h,8*23  ; Y
+    call    cpc_DrawStrXY_M1
+    ld      de,string2
+    ld      l,0     ; X
+    ld      h,8*24  ; Y
+    call    cpc_DrawStrXY_M1
+    call    wait_key
+
     call 0
 
 wait_key:
@@ -69,10 +93,10 @@ _sprite:
 
 _buffer: defs 8*6 
 
-read 'cpcrslib/text/font_nanako.asm'
 read 'cpcrslib/firmware/setmode.asm'
 read 'cpcrslib/keyboard/anykeypressed.asm'
-read 'cpcrslib/text/print_m1.asm'
+read 'cpcrslib/text/font_color.asm'
+read 'cpcrslib/text/drawstr_m1.asm'
 
 ; ORIGINAL EXAMPLE IN C
 ; #include "cpcrslib.h"
