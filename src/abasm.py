@@ -471,7 +471,8 @@ class AsmContext:
     @staticmethod
     def split_line(instr, sep):
         # Here we deal with splitting a text line by a separator symbol but
-        # we ignore that symbol if it is between quoted colons
+        # we ignore ':' symbol if it is between quoted colons
+        # the same happens if we find the comment symbol ';'
         result = []
         start = 0
         current = 0
@@ -482,14 +483,17 @@ class AsmContext:
                 start = current + 1
             elif instr[current] == '"':
                 quoted = not quoted
+            elif instr[current] == ';' and not quoted:
+                # we found a comment
+                result.append(instr[start: current])
+                return result
             current = current + 1
         # add trail
         result.append(instr[start:])
         return result
 
     def get_statements(self, codeline):
-        # remove comments
-        codeline = codeline.strip().split(';')[0]
+        codeline = codeline.strip()
         # basic sanity checks
         statements = []
         index = 0
