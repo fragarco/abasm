@@ -112,8 +112,8 @@ read 'cpcrslib/video/setcolor.asm'
 read 'cpcrslib/video/rri.asm'
 read 'cpcrslib/video/rli.asm'
 
-read 'cpcrslib/gphstrstd/nanako_font.asm'
-read 'cpcrslib/gphstrstd/printstr.asm'
+read 'cpcrslib/text/font_nanako.asm'
+read 'cpcrslib/text/printstr.asm'
 
 read 'cpcrslib/keyboard/anykeypressed.asm'
 
