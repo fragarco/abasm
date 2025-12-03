@@ -20,10 +20,11 @@
 
 ; CPCRSLIB COLOR FONT
 ; Each pixel is defined using two bits to code the colour
-
-_colorfont_ch_decoded: defs 16
+; This font can be used with with cpc_DrawStr routines but
+; NOT with cpc_Print_M1 and cpc_PrintXY_M1.
 
 cpc_colorfont_first: db 47	;first defined char number (ASCII)
+
 cpc_colorchars:
 ;/
 db 0b00000001

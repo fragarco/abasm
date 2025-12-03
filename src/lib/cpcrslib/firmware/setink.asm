@@ -22,11 +22,10 @@
 ; Sets the color of a PEN using the Firmware.
 ; Inputs:
 ;     A  PEN number (0-15)
-;     HL Fiwmware colors (same value in both if not flash is needed)
+;     B  First  firmware color
+;     C  Second firmware color
 ; Outputs:
 ;	  None
 ;     AF, HL, DE and BC are modified.
 cpc_SetInkFW:
-	ld      b,h
-	ld      c,l
 	jp      &BC32 ; SCR SET INK

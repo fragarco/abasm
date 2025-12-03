@@ -61,7 +61,7 @@
         djnz wait_loop:
     ld      a,1
     call    cpc_SetModeFW
-    ld      hl,&0303
+    ld      bc,&0303
     call    cpc_SetBorderFW
 
     ld      hl,string6

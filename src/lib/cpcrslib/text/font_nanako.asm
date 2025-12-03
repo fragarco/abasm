@@ -21,6 +21,8 @@
 ; CPCRSLIB FONT
 ; This font is based on the one used by NANAKO CPC GAME
 ; programmed by ANJUEL and NA_TH_AN.
+; Can be used with cpc_Print_M1 and cpc_PrintXY_M1 but
+; NOT with cpc_DrawStr routines.
 
 ; First defined char number (ASCII)
 cpc_charfont_first: db 32	

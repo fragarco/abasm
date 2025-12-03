@@ -34,27 +34,69 @@
     call    cpc_DrawStrXY_M1
     call    wait_key
 
+    ld      hl,&C19B
+    ld      de,_sprite
+    ld      b,3   ; sprite width
+    ld      c,16  ; sprite height
+    call    cpc_PutSp
+
     ld      de,string3
     ld      l,0     ; X
     ld      h,8*23  ; Y
     call    cpc_DrawStrXY_M1
-    ld      de,string2
-    ld      l,0     ; X
-    ld      h,8*24  ; Y
-    call    cpc_DrawStrXY_M1
     call    wait_key
+
+    ld      hl,&C19B
+    ld      de,_buffer
+    ld      b,3   ; area width
+    ld      c,16  ; area height
+    call    cpc_GetSp
 
     ld      de,string4
     ld      l,0     ; X
     ld      h,8*23  ; Y
     call    cpc_DrawStrXY_M1
-    ld      de,string2
+    call    wait_key
+
+    ld      hl,&C19F
+    ld      de,_buffer
+    ld      b,3   ; sprite width
+    ld      c,16  ; sprite height
+    call    cpc_PutSp
+    call    wait_key
+
+    ld      de,string5
     ld      l,0     ; X
-    ld      h,8*24  ; Y
+    ld      h,8*23  ; Y
     call    cpc_DrawStrXY_M1
     call    wait_key
 
-    call 0
+    ld      l,100 ; X
+    ld      h,50  ; Y
+    ld      de,_sprite
+    ld      b,3   ; sprite width
+    ld      c,16  ; sprite height
+    call    cpc_PutSpXY_XOR
+
+    ld      de,string6
+    ld      l,0     ; X
+    ld      h,8*23  ; Y
+    call    cpc_DrawStrXY_M1
+    call    wait_key
+
+    ld      l,100 ; X
+    ld      h,50  ; Y
+    ld      de,_sprite
+    ld      b,3   ; sprite width
+    ld      c,16  ; sprite height
+    call    cpc_PutSpXY_XOR
+
+    ld      de,string7
+    ld      l,0     ; X
+    ld      h,8*23  ; Y
+    call    cpc_DrawStrXY_M1
+    call    wait_key
+    call    0
 
 wait_key:
     .wait_loop
@@ -64,11 +106,13 @@ wait_key:
 	jr      z,wait_loop
     ret
 
+; Not all characters are defined in font_color.asm
+; for example, the space is defined in the place of the symbol ';'
 string1: db "1;PUTS;A;SPRITE;IN;THE;SCREEN",0
 string2: db "PRESS;ANY;KEY",0
 string3: db "2;CAPTURES;A;SCREEN;AREA;;;;;",0
-string4: db "3;PRINTS;CAPTURED;AREA",0
-string5: db "4;PUTS;A SPRITE;IN;XOR;MODE",0
+string4: db "3;PRINTS;CAPTURED;AREA;;;;;;;",0
+string5: db "4;PUTS;A SPRITE;IN;XOR;MODE;;",0
 string6: db "5;SPRITE;PRINTED;AGAIN;IN;XOR;MODE",0
 string7: db ";;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;",0
 string8: db "THE;END;;;;;;",0
@@ -91,12 +135,16 @@ _sprite:
     db &0E,&0B,&0D
     db &05,&09,&0A
 
-_buffer: defs 8*6 
+_buffer: defs 3*16 
 
 read 'cpcrslib/firmware/setmode.asm'
 read 'cpcrslib/keyboard/anykeypressed.asm'
 read 'cpcrslib/text/font_color.asm'
 read 'cpcrslib/text/drawstr_m1.asm'
+
+read 'cpcrslib/sprite/cpc_PutSp.s'
+read 'cpcrslib/sprite/cpc_GetSp.s'
+read 'cpcrslib/sprite/cpc_PutSpXOR.s'
 
 ; ORIGINAL EXAMPLE IN C
 ; #include "cpcrslib.h"

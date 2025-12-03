@@ -25,6 +25,7 @@ read 'cpcrslib/video/getscraddress.asm'
 ; hardware access in the video memory indicated (ONLY MODE 1).
 ; Requires a designed custom font like the example provided in
 ; font_color.asm
+; The text is drawn using 4 colours as described in cpc_SetTextColors_M0
 ; Inputs:
 ;     HL video memory address
 ;     DE address to the null-terminated string 
@@ -51,16 +52,16 @@ __drawstr_m1loop:
 	add     hl,bc  ; HL ends pointing to the start of our letter
 	call    _rslib_decodech_m1
 	ld      hl,(_rslib_drawm1_dest)
-	ld      de,_colorfont_ch_decoded
-	db      &FD
-	ld      h,8
+	ld      de,_colorfont_chm1_decoded
+	db      &FD	   ; Extended opcode IY
+	ld      h,8    ; ld iyh,8
 	call    cpc_DrawChar_M1
 	ld      hl,(_rslib_drawm1_dest)
 	inc     hl
 	ld      (_rslib_drawm1_dest),hl
 	pop     hl
 	inc     hl
-	jp      __drawstr_m1loop:
+	jr      __drawstr_m1loop:
 
 ; CPC_DRAWSTRXY_M1
 ; Prints a null-terminated string using a custom font and direct
@@ -80,31 +81,59 @@ cpc_DrawStrXY_M1:
 	pop     de
 	jp      cpc_DrawStr_M1
 
+TXT1_PEN0 equ &00
+TXT1_PEN1 equ &80
+TXT1_PEN2 equ &08
+TXT1_PEN3 equ &88
+
+; CPC_SETTEXTCOLOR_M1
+; Replaces the four bytes with color codes used by 
+; cpc_DrawStr_M1 and cpc_DrawStrXY_M1 routines.
+; The values are coded in a special maner:
+; &00 = 0, &80 = 1, &08 = 2, &88 = 3.
+; The four values are used as follows:
+;    byte 0 is the background color.
+;    byte 1 is color for the character top area.
+;    byte 2 is color for the character middle area.
+;    byte 3 is color for the character bottom area.
+; Inputs:
+;     HL address with the new four bytes
+; Outputs:
+;	  None
+;     HL, BC and DE are modified.
+cpc_SetTextColors_M1:
+	ld      de,_rslib_drawm1_colors
+	ld      bc,4
+	ldir
+	ret
+
 ; PRIVATE ROUTINE
 ; Draws a char, DE points to the memory with the decoded char
-; HL is the height in lines
+; IYH is the height in lines, HL is de video memory destination.
 cpc_DrawChar_M1:
 	ld      b,7
 	ld      c,b
-__drawchm1_height:
-__drawchm1_width:
+__drawchm1_loop:
 	ex      de,hl
 	ldi
-	db      &FD
-	dec     h
+	db      &FD		; Extended opcode IY
+	dec     h		; dec iyh
 	ret     z
 	ex      de,hl
-	ld      c,&FF
+	ld      c,&FF	; line jump
 	add     hl,bc
-	jr      nc,__drawchm1_height
+	jr      nc,__drawchm1_loop
 	ld      bc,&C050
 	add     hl,bc
 	ld      b,7
-	jr      __drawchm1_height
+	jr      __drawchm1_loop
 
 ; PRIVATE ROUTINE
+; Gets the font char representation and decodes it
+; to create the letter sprite.
+; Based on code created by Kevin Thacker.
 _rslib_decodech_m1:
-	ld      iy,_colorfont_ch_decoded
+	ld      iy,_colorfont_chm1_decoded
 	ld      b,8
 	ld      ix,_rslib_drawm1_temp
 __decodech_loop:
@@ -159,3 +188,4 @@ _rslib_drawm1_colors: 	db 	 &00,&88,&80,&08
 _rslib_drawm1_dest: 	dw   0
 _rslib_drawm1_bytedata: db 	 0b00011011
 _rslib_drawm1_temp:		defs 3
+_colorfont_chm1_decoded:defs 16
