@@ -142,9 +142,9 @@ read 'cpcrslib/keyboard/anykeypressed.asm'
 read 'cpcrslib/text/font_color.asm'
 read 'cpcrslib/text/drawstr_m1.asm'
 
-read 'cpcrslib/sprite/cpc_PutSp.s'
-read 'cpcrslib/sprite/cpc_GetSp.s'
-read 'cpcrslib/sprite/cpc_PutSpXOR.s'
+read 'cpcrslib/sprite/putsp.asm'
+read 'cpcrslib/sprite/getsp.asm'
+read 'cpcrslib/sprite/putspxor.asm'
 
 ; ORIGINAL EXAMPLE IN C
 ; #include "cpcrslib.h"
