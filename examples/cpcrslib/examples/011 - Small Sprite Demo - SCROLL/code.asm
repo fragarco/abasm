@@ -3742,9 +3742,9 @@ _drawColumnI::
 	ADD HL,HL
 	ADD HL,HL
 	ADD HL,HL ; X16
-	LD bc,#_tiles
+	LD bc,#cpc_tiles
 	ADD HL,bc
-; _posiciones_super_buffer + ancho * y + x
+; tiles_composition_buffer + ancho * y + x
 	ldi ;5
 	ldi ;de<-hl ;5
 	ex de,hl ;1
@@ -3792,54 +3792,54 @@ _drawColumnI::
 	ldi
 	ret
 	datos_scroll_CD:
-	.dw #_pantalla_juego+28*1+26,#0x100+52+56*1*8
-	.dw #_pantalla_juego+28*0+26,#0x100+52+56*0*8
+	.dw #tiles_game_screen+28*1+26,#0x100+52+56*1*8
+	.dw #tiles_game_screen+28*0+26,#0x100+52+56*0*8
 	.dw #240*0
-	.dw #_pantalla_juego+28*3+26,#0x100+52+56*3*8
-	.dw #_pantalla_juego+28*2+26,#0x100+52+56*2*8
+	.dw #tiles_game_screen+28*3+26,#0x100+52+56*3*8
+	.dw #tiles_game_screen+28*2+26,#0x100+52+56*2*8
 	.dw #240*1
-	.dw #_pantalla_juego+28*5+26,#0x100+52+56*5*8
-	.dw #_pantalla_juego+28*4+26,#0x100+52+56*4*8
+	.dw #tiles_game_screen+28*5+26,#0x100+52+56*5*8
+	.dw #tiles_game_screen+28*4+26,#0x100+52+56*4*8
 	.dw #240*2
-	.dw #_pantalla_juego+28*7+26,#0x100+52+56*7*8
-	.dw #_pantalla_juego+28*6+26,#0x100+52+56*6*8
+	.dw #tiles_game_screen+28*7+26,#0x100+52+56*7*8
+	.dw #tiles_game_screen+28*6+26,#0x100+52+56*6*8
 	.dw #240*3
-	.dw #_pantalla_juego+28*9+26,#0x100+52+56*9*8
-	.dw #_pantalla_juego+28*8+26,#0x100+52+56*8*8
+	.dw #tiles_game_screen+28*9+26,#0x100+52+56*9*8
+	.dw #tiles_game_screen+28*8+26,#0x100+52+56*8*8
 	.dw #240*4
-	.dw #_pantalla_juego+28*11+26,#0x100+52+56*11*8
-	.dw #_pantalla_juego+28*10+26,#0x100+52+56*10*8
+	.dw #tiles_game_screen+28*11+26,#0x100+52+56*11*8
+	.dw #tiles_game_screen+28*10+26,#0x100+52+56*10*8
 	.dw #240*5
-	.dw #_pantalla_juego+28*13+26,#0x100+52+56*13*8
-	.dw #_pantalla_juego+28*12+26,#0x100+52+56*12*8
+	.dw #tiles_game_screen+28*13+26,#0x100+52+56*13*8
+	.dw #tiles_game_screen+28*12+26,#0x100+52+56*12*8
 	.dw #240*6
-	.dw #_pantalla_juego+28*15+26,#0x100+52+56*15*8
-	.dw #_pantalla_juego+28*14+26,#0x100+52+56*14*8
+	.dw #tiles_game_screen+28*15+26,#0x100+52+56*15*8
+	.dw #tiles_game_screen+28*14+26,#0x100+52+56*14*8
 	.dw #240*7
 	datos_scroll_CI:
-	.dw #_pantalla_juego+28*1,#0x100+56*1*8
-	.dw #_pantalla_juego+28*0,#0x100+56*0*8
+	.dw #tiles_game_screen+28*1,#0x100+56*1*8
+	.dw #tiles_game_screen+28*0,#0x100+56*0*8
 	.dw #240*0
-	.dw #_pantalla_juego+28*3,#0x100+56*3*8
-	.dw #_pantalla_juego+28*2,#0x100+56*2*8
+	.dw #tiles_game_screen+28*3,#0x100+56*3*8
+	.dw #tiles_game_screen+28*2,#0x100+56*2*8
 	.dw #240*1
-	.dw #_pantalla_juego+28*5,#0x100+56*5*8
-	.dw #_pantalla_juego+28*4,#0x100+56*4*8
+	.dw #tiles_game_screen+28*5,#0x100+56*5*8
+	.dw #tiles_game_screen+28*4,#0x100+56*4*8
 	.dw #240*2
-	.dw #_pantalla_juego+28*7,#0x100+56*7*8
-	.dw #_pantalla_juego+28*6,#0x100+56*6*8
+	.dw #tiles_game_screen+28*7,#0x100+56*7*8
+	.dw #tiles_game_screen+28*6,#0x100+56*6*8
 	.dw #240*3
-	.dw #_pantalla_juego+28*9,#0x100+56*9*8
-	.dw #_pantalla_juego+28*8,#0x100+56*8*8
+	.dw #tiles_game_screen+28*9,#0x100+56*9*8
+	.dw #tiles_game_screen+28*8,#0x100+56*8*8
 	.dw #240*4
-	.dw #_pantalla_juego+28*11,#0x100+56*11*8
-	.dw #_pantalla_juego+28*10,#0x100+56*10*8
+	.dw #tiles_game_screen+28*11,#0x100+56*11*8
+	.dw #tiles_game_screen+28*10,#0x100+56*10*8
 	.dw #240*5
-	.dw #_pantalla_juego+28*13,#0x100+56*13*8
-	.dw #_pantalla_juego+28*12,#0x100+56*12*8
+	.dw #tiles_game_screen+28*13,#0x100+56*13*8
+	.dw #tiles_game_screen+28*12,#0x100+56*12*8
 	.dw #240*6
-	.dw #_pantalla_juego+28*15,#0x100+56*15*8
-	.dw #_pantalla_juego+28*14,#0x100+56*14*8
+	.dw #tiles_game_screen+28*15,#0x100+56*15*8
+	.dw #tiles_game_screen+28*14,#0x100+56*14*8
 	.dw #240*7
 	ret
 ;code.c:39: void initPointers()
@@ -4535,7 +4535,7 @@ _actualizaPantalla::
 	ld	hl,#(_sprite01 + 0x000c)
 	ld	(hl),#0x03
 	ret
-;code.c:373: void act_visible(void)              // dependiendo del scroll y de la posición del sprite, se activa o desactiva
+;code.c:373: void act_visible(void)              // dependiendo del scroll y de la posiciï¿½n del sprite, se activa o desactiva
 ;	---------------------------------
 ; Function act_visible
 ; ---------------------------------
@@ -4883,7 +4883,7 @@ _main::
 ;code.c:514: sprite00.frame=0;
 	ld	hl,#_sprite00 + 19
 	ld	(hl),#0x00
-;code.c:515: sprite00.num=1; // num=0 mosca, num=1 ratón
+;code.c:515: sprite00.num=1; // num=0 mosca, num=1 ratï¿½n
 	ld	hl,#_sprite00 + 20
 	ld	(hl),#0x01
 ;code.c:516: sprite00.dir=0;
@@ -4924,7 +4924,7 @@ _main::
 ;code.c:530: sprite01.frame=0;
 	ld	hl,#_sprite01 + 19
 	ld	(hl),#0x00
-;code.c:531: sprite01.num=1; // num=0 mosca, num=1 ratón
+;code.c:531: sprite01.num=1; // num=0 mosca, num=1 ratï¿½n
 	ld	hl,#_sprite01 + 20
 	ld	(hl),#0x01
 ;code.c:532: sprite01.dir=0;
@@ -4981,7 +4981,7 @@ _main::
 	ld	a,(#_col + 1)
 	sbc	a, d
 	jr	NC,00109$
-;code.c:568: if (nave.cx>=(40+e))  // se comprueba para ver si hay que hacer scroll al cambiar la dirección
+;code.c:568: if (nave.cx>=(40+e))  // se comprueba para ver si hay que hacer scroll al cambiar la direcciï¿½n
 	ld	hl, #(_nave + 0x0008) + 0
 	ld	d,(hl)
 	ld	iy,#_e
@@ -5057,7 +5057,7 @@ _main::
 	ld	iy,#_col
 	sbc	a, 1 (iy)
 	jr	NC,00119$
-;code.c:595: if (nave.cx<=(10-f))  // se comprueba para ver si hay que hacer scroll al cambiar la dirección
+;code.c:595: if (nave.cx<=(10-f))  // se comprueba para ver si hay que hacer scroll al cambiar la direcciï¿½n
 	ld	hl, #(_nave + 0x0008) + 0
 	ld	e,(hl)
 	ld	iy,#_f
@@ -5088,7 +5088,7 @@ _main::
 	ld	iy,#_sc
 	ld	0 (iy),#0x01
 00119$:
-;code.c:607: if (sc!=0)  	// Tipo de scroll que se realizará (medio=solo se cambia el punto de lectura de pantalla o total=cambio de coordenadas)
+;code.c:607: if (sc!=0)  	// Tipo de scroll que se realizarï¿½ (medio=solo se cambia el punto de lectura de pantalla o total=cambio de coordenadas)
 	ld	a,(#_sc + 0)
 	or	a, a
 	jp	Z,00146$
