@@ -75,13 +75,13 @@ tiles_mask2 equ 0
 ; Other parameters (internal use)
 ;----------------------------------------------------------------------------------------
 
-tiles_hidden_width0:     equ T_WH
-tiles_hidden_height0:    equ T_HH
-tiles_hidden_width1:     equ T_WIDTH - T_WH - 1
-tiles_hidden_height1:    equ T_HEIGHT - T_HH - 1
-tiles_scrwidth_bytes:    equ 2 * T_WIDTH 	
-tiles_scrheight_bytes:   equ 8 * T_HEIGHT
-tiles_scrwidth_visible_bytes: equ 2 * T_WIDTH 
+tiles_hidden_width0     equ T_WH
+tiles_hidden_height0    equ T_HH
+tiles_hidden_width1     equ T_WIDTH - T_WH - 1
+tiles_hidden_height1    equ T_HEIGHT - T_HH - 1
+tiles_scrwidth_bytes    equ 2 * T_WIDTH 	
+tiles_scrheight_bytes   equ 8 * T_HEIGHT
+tiles_scrwidth_visible_bytes equ 2 * T_WIDTH 
 
 ;------------------------------------------------------------------------------------
 ; Table for the screen position of the tiles (Left Column)

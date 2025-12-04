@@ -42,6 +42,9 @@
     call    cpc_SetBorderFW
     call    print_credits
     call    cpc_DisableFirmware
+    
+    call    draw_tilemap
+    ; call    cpc_ShowTileMap
 
 __end_program__: jr __end_program__
 
@@ -80,6 +83,93 @@ collide:
     ld      bc,FW_PYELLOW
     call    cpc_SetBorderFW
     ret
+
+draw_tilemap:
+    xor     a
+    ld      (dtlocal_y),a
+    ld      (dtlocal_x),a
+    dt_for_loop1:
+        ; cpc_SetTile(x,y,1)
+        ; NEXT x
+        ld      a,(dtlocal_x)
+        cp      33
+        jr      nc,dt_for_loop1_end
+        dec     a
+        ld      (dtlocal_x),a
+        jr      dt_for_loop1
+    dt_for_loop1_end:
+    dt_for_loop2:
+        dt_for_loop3:
+            ; cpc_SetTile(x,y,0)
+            ; NEXT x
+            ld      a,(dtlocal_x)
+            cp      33
+            jr      nc,dt_for_loop3_end
+            dec     a
+            ld      (dtlocal_x),a
+            jr      dt_for_loop3
+        dt_for_loop3_end:
+        ; NEXT y
+        ld      a,(dtlocal_y)
+        cp      16
+        jr      nc,dt_for_loop2_end
+        dec     a
+        ld      (dtlocal_x),a
+        jr      dt_for_loop2
+    dt_for_loop2_end:
+    ld      a,15
+    ld      (dtlocal_y),a
+    dt_for_loop4:
+        ; cpc_SetTile(x,y,2)
+        ; NEXT x
+        ld      a,(dtlocal_x)
+        cp      33
+        jr      nc,dt_for_loop4_end
+        dec     a
+        ld      (dtlocal_x),a
+        jr      dt_for_loop4
+    dt_for_loop4_end:
+    ret
+    dtlocal_x: db 0
+    dtlocal_y: db 0
+
+sprite1:
+    sprite1_sp0: dw _sp_1
+    sprite1_sp1: dw _sp_1
+    sprite1_coord0: dw 0
+    sprite1_coord1: dw 0
+    sprite1_cx: db 50
+    sprite1_cy: db 70
+    sprite1_ox: db 50
+    sprite1_oy: db 70
+    sprite1_move1: db 3
+    sprite1_move: db 0
+
+sprite2:
+    sprite2_sp0: dw _sp_2
+    sprite2_sp1: dw _sp_2
+    sprite2_coord0: dw 0
+    sprite2_coord1: dw 0
+    sprite2_cx: db 50
+    sprite2_cy: db 106
+    sprite2_ox: db 50
+    sprite2_oy: db 106
+    sprite2_move1: db 3
+    sprite2_move: db 1
+
+sprite3:
+    sprite3_sp0: dw _sp_2
+    sprite3_sp1: dw _sp_2
+    sprite3_coord0: dw 0
+    sprite3_coord1: dw 0
+    sprite3_cx: db 20
+    sprite3_cy: db 100
+    sprite3_ox: db 20
+    sprite3_oy: db 100
+    sprite3_move1: db 3
+    sprite3_move: db 2
+
+p_sprites: dw  sprite1, sprite2, sprite3
 
 read 'cpcrslib/firmware/setmode.asm'
 read 'cpcrslib/firmware/setink.asm'
