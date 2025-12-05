@@ -20,6 +20,8 @@
 
 ; EXAMPLE 003 - Small Sprite Demo (Tile Map)
 
+read 'tilemap_config/tilemap_def.asm'
+
 .main
     ; Set colors and video mode
     ld      a,0
@@ -40,11 +42,34 @@
     djnz    __setink_loop
     ld      bc,0
     call    cpc_SetBorderFW
+
     call    print_credits
+    
     call    cpc_DisableFirmware
     
+    ; Init sprite structures
+    ld      a,(sprite1_cx)
+    ld      h,a
+    ld      a,(sprite1_cy)
+    ld      l,a
+    call    cpc_GetDoubleBufferAddress
+    ld      (sprite1_coord0),hl
+    ld      a,(sprite2_cx)
+    ld      h,a
+    ld      a,(sprite2_cy)
+    ld      l,a
+    call    cpc_GetDoubleBufferAddress
+    ld      (sprite2_coord0),hl
+    ld      a,(sprite3_cx)
+    ld      h,a
+    ld      a,(sprite3_cy)
+    ld      l,a
+    call    cpc_GetDoubleBufferAddress
+    ld      (sprite3_coord0),hl
+
+
     call    draw_tilemap
-    ; call    cpc_ShowTileMap
+    call    cpc_ShowTileMap
 
 __end_program__: jr __end_program__
 
@@ -89,7 +114,12 @@ draw_tilemap:
     ld      (dtlocal_y),a
     ld      (dtlocal_x),a
     dt_for_loop1:
-        ; cpc_SetTile(x,y,1)
+        ld      a,(dtlocal_x)
+        ld      h,a
+        ld      a,(dtlocal_y)
+        ld      l,a
+        ld      c,1
+        call    cpc_SetTile
         ; NEXT x
         ld      a,(dtlocal_x)
         cp      33
@@ -100,6 +130,12 @@ draw_tilemap:
     dt_for_loop1_end:
     dt_for_loop2:
         dt_for_loop3:
+            ld      a,(dtlocal_x)
+            ld      h,a
+            ld      a,(dtlocal_y)
+            ld      l,a
+            ld      c,0
+            call    cpc_SetTile
             ; cpc_SetTile(x,y,0)
             ; NEXT x
             ld      a,(dtlocal_x)
@@ -120,7 +156,12 @@ draw_tilemap:
     ld      a,15
     ld      (dtlocal_y),a
     dt_for_loop4:
-        ; cpc_SetTile(x,y,2)
+        ld      a,(dtlocal_x)
+        ld      h,a
+        ld      a,(dtlocal_y)
+        ld      l,a
+        ld      c,2
+        call    cpc_SetTile
         ; NEXT x
         ld      a,(dtlocal_x)
         cp      33
@@ -174,10 +215,13 @@ p_sprites: dw  sprite1, sprite2, sprite3
 read 'cpcrslib/firmware/setmode.asm'
 read 'cpcrslib/firmware/setink.asm'
 read 'cpcrslib/firmware/setborder.asm'
+read 'cpcrslib/firmware/disablefw.asm'
 read 'cpcrslib/text/font_color.asm'
 read 'cpcrslib/text/drawstr_m0.asm'
 read 'cpcrslib/video/setcolor.asm'
-read 'cpcrslib/firmware/disablefw.asm'
+read 'cpcrslib/tilemap/getdblbufferaddress.asm'
+read 'cpcrslib/tilemap/settile.asm'
+read 'cpcrslib/tilemap/showtilemap.asm'
 
 string1: db "SMALL;SPRITE;DEMO",0
 string2: db "SDCC;;;CPCRSLIB",0

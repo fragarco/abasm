@@ -24,28 +24,31 @@
 ; SCREEN AND BUFFER ADDRESSES
 ;----------------------------------------------------------------------------------------
 
-tiles_inipos_visible_area      equ &C0A4    ; Top-Left screen value. Where Tile Map is drawn.
-tiles_composition_buffer_addr  equ &0100	; Memory location where the superbuffer starts. 
-											; superbuffer size= T_WIDTH * 2 + T_HEIGHT * 8
+; Top-Left screen value where Tile Map will be shown.
+T_VIDEOMEMORY_ADDR   equ &C0A4
+; Memory location where the double buffer (aka superbuffer) that composes the
+; Tile Map (or superbuffer) starts. This buffer consumes T_WIDTH * 2 + T_HEIGHT * 8 bytes.
+T_DOUBLEBUFFER_ADDR  equ &0100
 
 ;----------------------------------------------------------------------------------------
 ; TILE MAP DIMENSIONS
 ;----------------------------------------------------------------------------------------
-
-T_WIDTH  equ 32 	; Width of screen in Tiles. Max = 40
-T_HEIGHT equ 16		; Heigh of screen in Tiles. Max = 20
+; Video memory 640x200 bits arreged depending on video mode.
+T_WIDTH  equ 32 	; Width of screen in Tiles. Max = 40 (40*2 = 80 * 8 = 640 bits)
+T_HEIGHT equ 16		; Heigh of screen in Tiles. Max = 20 (20*8 = 160 bits + 40 bits of margin)
 
 ; Invisible tile margins (in tiles). 
 ; This area is not shown on the screen. It can be used to make the sprites appear or disappear
 ; of the screen.
 
-T_WH equ 2			; Number of vertical hidden tiles 		
-T_HH equ 0			; Number of horizontal hidden tiles 
+T_HIDDENW equ 2		; Number of horizontal hidden tiles 		
+T_HIDDENH equ 0		; Number of vertical hidden tiles 
 
 ;----------------------------------------------------------------------------------------
 ; Transparent colour for cpc_PutTrSpTileMap2b routine
-; for printing sprites using transparent color (mode 0) transparent color selection is 
-; requiered. Both masks are required.
+; for printing sprites using transparent color a mask color selection is 
+; requiered. The color is defined through two bytes using the screen mode
+; arrangement.
 ;----------------------------------------------------------------------------------------
 ; Example colour number 7:
 ; mask1	= 	&54 
@@ -68,111 +71,14 @@ T_HH equ 0			; Number of horizontal hidden tiles
 ; 14: &15, &2A
 ; 15: &55, &AA
 
-tiles_mask1 equ 0
-tiles_mask2 equ 0
-
-;----------------------------------------------------------------------------------------
-; Other parameters (internal use)
-;----------------------------------------------------------------------------------------
-
-tiles_hidden_width0     equ T_WH
-tiles_hidden_height0    equ T_HH
-tiles_hidden_width1     equ T_WIDTH - T_WH - 1
-tiles_hidden_height1    equ T_HEIGHT - T_HH - 1
-tiles_scrwidth_bytes    equ 2 * T_WIDTH 	
-tiles_scrheight_bytes   equ 8 * T_HEIGHT
-tiles_scrwidth_visible_bytes equ 2 * T_WIDTH 
-
-;------------------------------------------------------------------------------------
-; Table for the screen position of the tiles (Left Column)
-;------------------------------------------------------------------------------------
-
-tiles_screen_positions:
-    dw tiles_inipos_visible_area + &50 * 0
-    dw tiles_inipos_visible_area + &50 * 1
-    dw tiles_inipos_visible_area + &50 * 2
-    dw tiles_inipos_visible_area + &50 * 3
-    dw tiles_inipos_visible_area + &50 * 4
-    dw tiles_inipos_visible_area + &50 * 5
-    dw tiles_inipos_visible_area + &50 * 6
-    dw tiles_inipos_visible_area + &50 * 7
-    dw tiles_inipos_visible_area + &50 * 8
-    dw tiles_inipos_visible_area + &50 * 9
-    dw tiles_inipos_visible_area + &50 * 10
-    dw tiles_inipos_visible_area + &50 * 11
-    dw tiles_inipos_visible_area + &50 * 12
-    dw tiles_inipos_visible_area + &50 * 13
-    dw tiles_inipos_visible_area + &50 * 14
-    dw tiles_inipos_visible_area + &50 * 15
-    dw tiles_inipos_visible_area + &50 * 16
-    dw tiles_inipos_visible_area + &50 * 17
-    dw tiles_inipos_visible_area + &50 * 18
-    dw tiles_inipos_visible_area + &50 * 19
-
-;------------------------------------------------------------------------------------
-; Table for the Supperbuffer position of the tiles (Left Column)
-;------------------------------------------------------------------------------------
-
-tiles_composition_buffer:			
-    dw tiles_composition_buffer_addr + 8 * tiles_scrwidth_bytes * 0
-    dw tiles_composition_buffer_addr + 8 * tiles_scrwidth_bytes * 1
-    dw tiles_composition_buffer_addr + 8 * tiles_scrwidth_bytes * 2
-    dw tiles_composition_buffer_addr + 8 * tiles_scrwidth_bytes * 3
-    dw tiles_composition_buffer_addr + 8 * tiles_scrwidth_bytes * 4
-    dw tiles_composition_buffer_addr + 8 * tiles_scrwidth_bytes * 5
-    dw tiles_composition_buffer_addr + 8 * tiles_scrwidth_bytes * 6
-    dw tiles_composition_buffer_addr + 8 * tiles_scrwidth_bytes * 7
-    dw tiles_composition_buffer_addr + 8 * tiles_scrwidth_bytes * 8
-    dw tiles_composition_buffer_addr + 8 * tiles_scrwidth_bytes * 9
-    dw tiles_composition_buffer_addr + 8 * tiles_scrwidth_bytes * 10
-    dw tiles_composition_buffer_addr + 8 * tiles_scrwidth_bytes * 11
-    dw tiles_composition_buffer_addr + 8 * tiles_scrwidth_bytes * 12
-    dw tiles_composition_buffer_addr + 8 * tiles_scrwidth_bytes * 13
-    dw tiles_composition_buffer_addr + 8 * tiles_scrwidth_bytes * 14
-    dw tiles_composition_buffer_addr + 8 * tiles_scrwidth_bytes * 15
-    dw tiles_composition_buffer_addr + 8 * tiles_scrwidth_bytes * 16
-    dw tiles_composition_buffer_addr + 8 * tiles_scrwidth_bytes * 17
-    dw tiles_composition_buffer_addr + 8 * tiles_scrwidth_bytes * 18
-    dw tiles_composition_buffer_addr + 8 * tiles_scrwidth_bytes * 19
-
-;------------------------------------------------------------------------------------
-
-tiles_current_screen:  dw 0
-tiles_game_screen:
-    defs T_WIDTH * T_HEIGHT
-    db   &FF	    ; Este byte es importante, marca el fin de la pantalla.
-tiles_dirty:	    ; This table controls the tiles to be redrawn in the screen.
-    defs 150	    ; It requires 2 bytes per tile
-
-;------------------------------------------------------------------------------------
-
-tiles_screen_widths:	; lookup table to speed up calculations
-    dw tiles_game_screen + 0
-    dw tiles_game_screen + 1 * T_WIDTH
-    dw tiles_game_screen + 2 * T_WIDTH
-    dw tiles_game_screen + 3 * T_WIDTH
-    dw tiles_game_screen + 4 * T_WIDTH
-    dw tiles_game_screen + 5 * T_WIDTH
-    dw tiles_game_screen + 6 * T_WIDTH
-    dw tiles_game_screen + 7 * T_WIDTH
-    dw tiles_game_screen + 8 * T_WIDTH
-    dw tiles_game_screen + 9 * T_WIDTH
-    dw tiles_game_screen + 10 * T_WIDTH
-    dw tiles_game_screen + 11 * T_WIDTH
-    dw tiles_game_screen + 12 * T_WIDTH
-    dw tiles_game_screen + 13 * T_WIDTH
-    dw tiles_game_screen + 14 * T_WIDTH
-    dw tiles_game_screen + 15 * T_WIDTH
-    dw tiles_game_screen + 16 * T_WIDTH
-    dw tiles_game_screen + 17 * T_WIDTH
-    dw tiles_game_screen + 18 * T_WIDTH
-    dw tiles_game_screen + 19 * T_WIDTH
+T_MASK1 equ 0
+T_MASK2 equ 0
 
 ;------------------------------------------------------------------------------------
 ; TILE DATA. TILES MUST BE DEFINED HERE!
 ;------------------------------------------------------------------------------------
 
-cpc_tiles: ; Each tile is 2 x 8 bytes
+tiles_tilearray: ; Each tile is 2 x 8 bytes
 ; tile 0
     db &00,&00
     db &40,&00
