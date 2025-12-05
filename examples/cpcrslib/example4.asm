@@ -20,8 +20,6 @@
 
 ; EXAMPLE 003 - Small Sprite Demo (Tile Map)
 
-read 'tilemap_config/tilemap_def.asm'
-
 .main
     ; Set colors and video mode
     ld      a,0
@@ -124,7 +122,7 @@ draw_tilemap:
         ld      a,(dtlocal_x)
         cp      33
         jr      nc,dt_for_loop1_end
-        dec     a
+        inc     a
         ld      (dtlocal_x),a
         jr      dt_for_loop1
     dt_for_loop1_end:
@@ -141,7 +139,7 @@ draw_tilemap:
             ld      a,(dtlocal_x)
             cp      33
             jr      nc,dt_for_loop3_end
-            dec     a
+            inc     a
             ld      (dtlocal_x),a
             jr      dt_for_loop3
         dt_for_loop3_end:
@@ -149,7 +147,7 @@ draw_tilemap:
         ld      a,(dtlocal_y)
         cp      16
         jr      nc,dt_for_loop2_end
-        dec     a
+        inc     a
         ld      (dtlocal_x),a
         jr      dt_for_loop2
     dt_for_loop2_end:
@@ -166,7 +164,7 @@ draw_tilemap:
         ld      a,(dtlocal_x)
         cp      33
         jr      nc,dt_for_loop4_end
-        dec     a
+        inc     a
         ld      (dtlocal_x),a
         jr      dt_for_loop4
     dt_for_loop4_end:
@@ -211,6 +209,8 @@ sprite3:
     sprite3_move: db 2
 
 p_sprites: dw  sprite1, sprite2, sprite3
+
+read 'tilemap_config/tilemap_def.asm'
 
 read 'cpcrslib/firmware/setmode.asm'
 read 'cpcrslib/firmware/setink.asm'
