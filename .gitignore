@@ -167,6 +167,7 @@ cython_debug/
 *.bin
 *.lst
 *.map
+*.s
 
 # ABASM markdown to HTML documents
 *.html

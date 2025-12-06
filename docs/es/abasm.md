@@ -70,6 +70,7 @@ Este comando ensamblará el archivo `program.asm` y generará un fichero binario
 - `-d` o `--define`: Permite definir pares `SÍMBOLO=VALOR`. Dichos símbolos pueden utilizarse en el código como constantes o etiquetas. Esta opción se puede emplear múltiples veces para definir varios símbolos.
 - `--start`: Define la dirección de memoria que se tomará como punto de inicio para la carga del programa. Por defecto, esta dirección es `0x4000`, aunque también puede establecerse directamente dentro del código usando la directiva `ORG`.
 - `-t` o `--tolerance`: Fija el nivel de tolerancia ante alternativas a los opcodes soportados y ante otros pequeños errores. WinApe es bastante laxo en la comprobación de la sintaxis, así que puede ser necesario utilizar esta opción si se está trabajando con código proveniente de este programa. Por defecto, su valor es 0, el modo más estricto y menos permisivo. Los valores 1 y 2 incrementan progresivamente el nivel de tolerancia.
+- `s` o `--sfile`: Genera un único fichero .s con todo el código ensablado, incluyendo el código importado de otros ficheros.
 - `-o` o `--output`: Especifica el nombre del archivo binario de salida. Si no se utiliza esta opción, se empleará el nombre del archivo de entrada cambiando su extensión por `.bin`.
 - `-v` o `--version`: Muestra el número de versión de ABASM.
 - `--verbose`: Imprime mucha más información por consola durante el proceso de ensamblado. 
@@ -1208,6 +1209,9 @@ FD AE hh    	XOR   (IY+d)    5 Realiza una OR exclusiva entre el valor en (IY+d)
 # Historial de cambios
 
 - Versión 1.2.0 - 25/11/2025
+  * Soporte para el uso de liberías, ficheros .asm situados dentro del directorio `lib` a ABASM.
+  * Port de la librería CPCRSLIB como ejemplo del nuevo soporte a librerías.
+  * Nuevo flag `-s` `--sfile` que genera un único fichero .s con todo el código ensamblado, incluyendo el código importando de otros ficheros.
   * Mejora en la gestión de múltiples directivas ORG
   * Importa solo una vez un mismo fichero .ASM referenciado multiples veces por READ o INCLUDE
   * Otras pequeñas mejoras.

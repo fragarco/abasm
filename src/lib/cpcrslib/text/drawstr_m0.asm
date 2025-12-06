@@ -154,10 +154,10 @@ __decodech0_loop:
 	push    hl
 	ld      e,(hl)
 	call    apply_draw0_colors
-	ld      (iy),d
+	ld      (iy+0),d
 	inc     iy
 	call    apply_draw0_colors
-	ld      (iy),d
+	ld      (iy+0),d
 	inc     iy
 	pop     hl
 	inc     hl

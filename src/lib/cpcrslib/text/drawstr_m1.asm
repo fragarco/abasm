@@ -142,7 +142,7 @@ __decodech_loop:
 	ld      a,(hl)
 	ld      hl,_rslib_drawm1_bytedata
 	ld      (hl),a
-	ld      (ix),0
+	ld      (ix+0),0
 	ld      b,4
 __decodech_colorsloop:
 	push    hl
@@ -151,8 +151,8 @@ __decodech_colorsloop:
 	srl     (hl)
 	srl     (hl)
 	djnz    __decodech_colorsloop
-	ld      a,(ix)
-	ld      (iy),a
+	ld      a,(ix+0)
+	ld      (iy+0),a
 	inc     iy
 	pop     hl
 	inc     hl
@@ -180,8 +180,8 @@ __applym1_loop:
 	jr      nz,__applym1_loop
 __apply_no_rotate:
 	ld      a,c
-	or      (ix)
-	ld      (ix),a
+	or      (ix+0)
+	ld      (ix+0),a
 	ret
 
 _rslib_drawm1_colors: 	db 	 &00,&88,&80,&08

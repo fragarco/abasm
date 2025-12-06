@@ -70,6 +70,7 @@ This command will assemble the `program.asm` file and generate a binary file wit
 - `-d` or `--define`: Allows defining `SYMBOL=VALUE` pairs. These symbols can be used in the code as constants or labels. This option can be used multiple times to define several symbols.
 - `--start`: Defines the memory address that will be used as the starting point for loading the program. By default, this address is `0x4000`, but it can also be set directly in the code using the `ORG` directive.
 - `--tolerance`: Sets the tolerance level for deviations from strictly correct syntax (WinApe performs relatively lenient syntax checks). Accepted values: 0, 1, and 2. The default value is 0, indicating the strictest level of syntax enforcement.
+- `-s` or `--sfile`: Generates a new .s file with all assembled code in one file, including the code imported from other files.
 - `-o` or `--output`: Specifies the name of the output binary file. If this option is not used, the name of the input file will be used, with its extension changed to `.bin`.
 - `v` or `--output`: Shows program's version and exits.
 - `--verbose`: Prints more information in the console as the assemble progresses.
@@ -1200,8 +1201,11 @@ FD AE hh    	XOR   (IY+d)    5 Exclusive OR value at location in IY+d and accumu
 # Changelog
 
 - Versión 1.2.0 - 25/11/2025
+  * Support for libraries, asm files that can be placed inside the `lib` directory.
+  * Port of CPCRSLIB as an example of libraries in ABASM.
+  * new flag `-s` `--sfile` that generated a new .s file with all assembled code in one file, including the code imported from other files.
   * Better handle of multiple ORG occurrences.
-  * Only import once a given ASM file if it referenced by multiple READ directives.
+  * Only import once a given ASM file if it's referenced by multiple READ directives.
   * Some other minor fixes and improvements.
 
 - Version 1.1.3 - 16/04/2025

@@ -19,7 +19,7 @@
 ; DEALINGS IN THE SOFTWARE.
 
 ; EXAMPLE 003 - Small Sprite Demo (Tile Map)
-
+org &4000
 .main
     ; Set colors and video mode
     ld      a,0
@@ -29,7 +29,7 @@
     ld      a,&FF
     __setink_loop:
         push    bc
-        ld      b,(ix)
+        ld      b,(ix+0)
         ld      c,b
         inc     a
         push    af

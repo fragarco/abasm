@@ -8,7 +8,7 @@ REM * USAGE: make [clear]
 
 @setlocal
 
-set ASM=python3 ../../src/abasm.py
+set ASM=python3 ../../src/abasm.py %*
 set DSK=python3 ../../src/dsk.py
 set CDT=python3 ../../src/cdt.py
 
@@ -21,11 +21,12 @@ set RUNDSK=%DSK% %TARGET%.dsk --new --put-bin %SOURCE%.bin --load-addr %LOADADDR
 set RUNCDT=%CDT% %TARGET%.cdt --new --name %TARGET% --put-bin %SOURCE%.bin --load-addr %LOADADDR% --map-file %SOURCE%.map --start-addr MAIN 
 
 IF "%1"=="clear" (
-    del %SOURCE%.bin
-    del %SOURCE%.lst
-    del %SOURCE%.map
-    del %TARGET%.dsk
-    del %TARGET%.cdt
+    del *.s
+    del *.bin
+    del *.lst
+    del *.map
+    del *.dsk
+    del *.cdt
 ) ELSE (
     call %RUNASM% && call %RUNDSK% && call %RUNCDT% 
 )
