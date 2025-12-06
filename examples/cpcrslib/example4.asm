@@ -73,7 +73,7 @@ __end_program__: jr __end_program__
 
 pause:
     ld      b,80
-    .pause_loop:
+    pause_loop:
         halt
     djnz pause_loop
     ret
