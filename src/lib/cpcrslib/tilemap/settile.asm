@@ -33,9 +33,9 @@ read 'cpcrslib/tilemap/constants.asm'
 cpc_SetTile:
 	ld      a,h
     ld      e,l
-    ld	    hl,T_WSIZE_BYTES * 256
-    ld      d,l
-	ld		b,8
+    ld	    hl,T_WIDTH * 256 ; h = 40, l = 0
+    ld      d,l              ; de = Y
+	ld		b,8              ; a  = X
 __settile_loop:
 	add     hl,hl
     jr      nc,__settile_next
@@ -43,8 +43,8 @@ __settile_loop:
 __settile_next:
 	djnz    __settile_loop
 	ld      e,a
-	add     hl,de
-	ld      de,tiles_game_screen
+	add     hl,de				  ; add X
+	ld      de,tiles_bgmap
 	add     hl,de
 	ld      (hl),c
     ret

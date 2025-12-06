@@ -114,13 +114,16 @@ draw_tilemap:
     dt_for_loop1:
         ld      a,(dtlocal_x)
         ld      h,a
-        ld      a,(dtlocal_y)
-        ld      l,a
+        ld      l,0
         ld      c,1
+        call    cpc_SetTile
+        ld      h,a
+        ld      l,15
+        ld      c,2
         call    cpc_SetTile
         ; NEXT x
         ld      a,(dtlocal_x)
-        cp      32
+        cp      31
         jr      nc,dt_for_loop1_end
         inc     a
         ld      (dtlocal_x),a
@@ -141,7 +144,7 @@ draw_tilemap:
             ; cpc_SetTile(x,y,0)
             ; NEXT x
             ld      a,(dtlocal_x)
-            cp      32
+            cp      31
             jr      nc,dt_for_loop3_end
             inc     a
             ld      (dtlocal_x),a
@@ -149,31 +152,12 @@ draw_tilemap:
         dt_for_loop3_end:
         ; NEXT y
         ld      a,(dtlocal_y)
-        cp      15
+        cp      14
         jr      nc,dt_for_loop2_end
         inc     a
         ld      (dtlocal_y),a
         jr      dt_for_loop2
     dt_for_loop2_end:
-    ld      a,15
-    ld      (dtlocal_y),a
-    xor     a
-    ld      (dtlocal_x),a
-    dt_for_loop4:
-        ld      a,(dtlocal_x)
-        ld      h,a
-        ld      a,(dtlocal_y)
-        ld      l,a
-        ld      c,2
-        call    cpc_SetTile
-        ; NEXT x
-        ld      a,(dtlocal_x)
-        cp      33
-        jr      nc,dt_for_loop4_end
-        inc     a
-        ld      (dtlocal_x),a
-        jr      dt_for_loop4
-    dt_for_loop4_end:
     ret
     dtlocal_x: db 0
     dtlocal_y: db 0

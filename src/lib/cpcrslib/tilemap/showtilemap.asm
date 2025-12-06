@@ -35,7 +35,7 @@ IF (T_HIDDENW + T_HIDDENW) == 0
 	ld      (_showt_counter),a
 	ld      hl,(_showt_ntiles)
 	ld      (_showt_counter2),hl
-	ld      hl,tiles_game_screen
+	ld      hl,tiles_bgmap
 	call    _showt_fill_doublebuffer
 	; now that we have the doublebuffer ready
 	; we move the image to the video memory
@@ -57,7 +57,7 @@ ELSE
 	ld      (_showt_counter),a
 	ld      hl,(_showt_ntiles)
 	ld      (_showt_counter2),hl
-	ld      hl,tiles_game_screen
+	ld      hl,tiles_bgmap
 	call    _showt_fill_doublebuffer
 	; now that we have the doublebuffer ready
 	; we move the image to the video memory
