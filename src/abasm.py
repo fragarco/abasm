@@ -536,6 +536,7 @@ class AsmContext:
         self.currentfile = ""
         self.currentline = ""
         self.linenumber = 0
+        self.list_instruction = False
         srccode = self.read_srcfile(inputfile)
         while self.linenumber < len(srccode):
             self.currentline = srccode[self.linenumber].replace("\t", "  ")
@@ -1052,6 +1053,7 @@ def op_READ(p, opargs):
         abort("wrong path specified in the READ directive")
     filename = g_context.resolve_include(path.group(0))
     if filename in g_context.include_files:
+        g_context.list_instruction = False
         return 0
     g_context.include_stack.append((g_context.currentfile, g_context.linenumber))
     if not os.path.exists(filename):
