@@ -69,7 +69,11 @@ org &4000
     call    draw_tilemap
     call    cpc_RenderTileMap
     call    cpc_ShowTileMap
-__end_program__: jr __end_program__
+
+__endless_mainloop:
+    call    cpc_ResetTouchedTiles
+    call    cpc_ShowTileMap
+jp __endless_mainloop
 
 pause:
     ld      b,80
@@ -206,12 +210,16 @@ read 'cpcrslib/firmware/setmode.asm'
 read 'cpcrslib/firmware/setink.asm'
 read 'cpcrslib/firmware/setborder.asm'
 read 'cpcrslib/firmware/disablefw.asm'
+
 read 'cpcrslib/text/font_color.asm'
 read 'cpcrslib/text/drawstr_m0.asm'
+
 read 'cpcrslib/video/setcolor.asm'
+
 read 'cpcrslib/tilemap/getdblbufferaddress.asm'
 read 'cpcrslib/tilemap/settile.asm'
 read 'cpcrslib/tilemap/rendertilemap.asm'
+read 'cpcrslib/tilemap/resettouchedtiles.asm'
 
 string1: db "SMALL;SPRITE;DEMO",0
 string2: db "SDCC;;;CPCRSLIB",0
