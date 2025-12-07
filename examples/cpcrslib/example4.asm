@@ -72,13 +72,15 @@ org &4000
 
 __endless_mainloop:
     call    cpc_ResetTouchedTiles
+    ; Mark as dirty current sprite positions, so these tiles
+    ; can be restored (deleting the sprite in the process)
     ld      hl,sprite1
     call    cpc_PutSpTileMap
     ld      hl,sprite2
     call    cpc_PutSpTileMap
     ld      hl,sprite3
     call    cpc_PutSpTileMap
-;         cpc_UpdScr(); //Update the screen to new situatio (show the touched tiles)
+    call    cpc_RestoreTileMap ; restore original background
     call    cpc_ShowTileMap
 jp __endless_mainloop
 
@@ -228,6 +230,7 @@ read 'cpcrslib/tilemap/settile.asm'
 read 'cpcrslib/tilemap/rendertilemap.asm'
 read 'cpcrslib/tilemap/resettouchedtiles.asm'
 read 'cpcrslib/tilemap/putsptilemap.asm'
+read 'cpcrslib/tilemap/restoretilemap.asm'
 
 string1: db "SMALL;SPRITE;DEMO",0
 string2: db "SDCC;;;CPCRSLIB",0
