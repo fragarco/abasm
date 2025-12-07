@@ -32,8 +32,8 @@
 ;    sprite1_move:  db 0
 ;
 ; Where _spritedata is the actual sprite pixels as follows:
-;   sprite dimensions in bytes withd, height
-;   list of data: mask, sprite, mask, sprite...
+;   list of data: mask, color, mask, color... (for masked sprites)
+;   list of color bytes (for non masked sprites)
 ; There is a tool called Sprot that allows to generate masked sprites for z88dk.
 
 read 'cpcrslib/tilemap/constants.asm'

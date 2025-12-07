@@ -239,6 +239,7 @@ read 'cpcrslib/tilemap/resettouchedtiles.asm'
 read 'cpcrslib/tilemap/putsptilemap.asm'
 read 'cpcrslib/tilemap/restoretilemap.asm'
 read 'cpcrslib/tilemap/drawmasksptilemap.asm'
+read 'cpcrslib/tilemap/drawsptilemap.asm'
 
 string1: db "SMALL;SPRITE;DEMO",0
 string2: db "SDCC;;;CPCRSLIB",0
@@ -249,8 +250,8 @@ _font_color: db TXT0_PEN0,TXT0_PEN4,TXT0_PEN5,TXT0_PEN6
 
 _buffer: db 30
 ; Sprite data structure:
-;   sprite dimensions in bytes withd, height
-;   data: mask, sprite, mask, sprite...
+;   list of data: mask, color, mask, color... (for masked sprites)
+;   list of color bytes (for non masked sprites)
 ; There is a tool called Sprot that allows to generate masked sprites for z88dk.
 ; ask for it: www.amstrad.es/forum/
 _sp_1:
