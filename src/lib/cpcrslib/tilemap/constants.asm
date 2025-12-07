@@ -112,7 +112,7 @@ tiles_bgmap:               ; background configuration, array of tile indexes
     defs T_WIDTH * T_HEIGHT ; indicating what tile drawn as background for each
     db   &FF	            ; "coordinate"
 tiles_dirty:	            ; This table controls the tiles "touched", those that
-    defs 140	            ; must be redrawn. Each tile consumes 2 bytes.
+    defs 140	            ; must be redrawn. Each tile consumes 2 bytes (its x and y position).
 
 ;------------------------------------------------------------------------------------
 
