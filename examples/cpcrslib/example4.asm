@@ -125,6 +125,64 @@ print_credits:
     ret
  
 update_enemypos:
+    ld      a,(sprite2_move)  ; 0 left, 1 right
+    cp      0
+    jr      nz,__movsp2_right
+    ld      a,(sprite2_cx)
+    cp      1
+    jr      c,__change_sp2dir
+    dec     a
+    ld      (sprite2_cx),a
+    jr      __update_sp3pos
+__change_sp2dir:
+    ld      a,1
+    ld      (sprite2_move),a
+    jr      __update_sp3pos    
+__movsp2_right:
+    ld      a,(sprite2_move)  ; 0 left, 1 right
+    cp      1
+    jr      nz,__update_sp3pos
+    ld      a,(sprite2_cx)
+    cp      60
+    jr      nc,__change_sp2rdir
+    inc     a
+    ld      (sprite2_cx),a
+    jr      __update_sp3pos
+__change_sp2rdir:
+    xor     a
+    ld      (sprite2_move),a
+    jr      __update_sp3pos 
+
+__update_sp3pos:
+    ld      a,(sprite3_move)  ; 2 up, 3 down
+    cp      2
+    jr      nz,__movsp3_down
+    ld      a,(sprite3_cy)
+    cp      1
+    jr      c,__change_sp3dir
+    dec     a
+    dec     a
+    ld      (sprite3_cy),a
+    jr      __update_end
+__change_sp3dir:
+    ld      a,3
+    ld      (sprite3_move),a
+    jr      __update_end    
+__movsp3_down:
+    ld      a,(sprite3_move)  ; 2 up, 3 down
+    cp      3
+    jr      nz,__update_end
+    ld      a,(sprite3_cy)
+    cp      106
+    jr      nc,__change_sp3updir
+    inc     a
+    inc     a
+    ld      (sprite3_cy),a
+    jr      __update_end
+__change_sp3updir:
+    ld      a,2
+    ld      (sprite3_move),a
+__update_end:
     ret
 
 update_playerpos:
