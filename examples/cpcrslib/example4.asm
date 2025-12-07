@@ -67,8 +67,8 @@ org &4000
 
 
     call    draw_tilemap
+    call    cpc_RenderTileMap
     call    cpc_ShowTileMap
-
 __end_program__: jr __end_program__
 
 pause:
@@ -211,7 +211,7 @@ read 'cpcrslib/text/drawstr_m0.asm'
 read 'cpcrslib/video/setcolor.asm'
 read 'cpcrslib/tilemap/getdblbufferaddress.asm'
 read 'cpcrslib/tilemap/settile.asm'
-read 'cpcrslib/tilemap/showtilemap.asm'
+read 'cpcrslib/tilemap/rendertilemap.asm'
 
 string1: db "SMALL;SPRITE;DEMO",0
 string2: db "SDCC;;;CPCRSLIB",0

@@ -19,148 +19,292 @@
 ; DEALINGS IN THE SOFTWARE.
 
 read 'cpcrslib/tilemap/constants.asm'
-read 'cpcrslib/tilemap/showtilemap2.asm'
 
 ; CPC_SHOWTILEMAP
-; Renders the image in the double buffer and
-; transfers it to the video memory.
+; Transfers the tilemap image from the double buffer to the video memory.
+; cpc_RenderTilemap must be called first to fill the double buffer and to
+; create the lookup table used by this routine to transfer the image to
+; video memory.
 ; Inputs:
 ;     None
 ; Outputs:
 ;	  None
 ;     AF, HL, DE, BC, IX and IY are modified.
 cpc_ShowTileMap:
-IF (T_HIDDENW + T_HIDDENW) == 0
-	xor     a
-	ld      (_showt_counter),a
-	ld      hl,(_showt_ntiles)
-	ld      (_showt_counter2),hl
-	ld      hl,tiles_bgmap
-	call    _showt_fill_doublebuffer
-	; now that we have the doublebuffer ready
-	; we move the image to the video memory
-	ld      hl,T_DOUBLEBUFFER_ADDR
-	push    hl
-	ld      (__showt_visiblescr_start_sb+1),HL
-	ld      b,T_WSIZE_BYTES - 4 * T_HIDDEN_W0
-	ld      c,T_HSIZE_BYTES - 16 * T_HIDDEN_H0
-	ld      hl,tiles_videomemory_lines
-	ld      e,(hl)
-	inc     hl
-	ld      d,(hl)
-	ex      de,hl
-	ld      (__showt_visiblescr_start2+1),hl
-	pop     de
-	jp      _showt_create_scans
-ELSE
-	xor     a
-	ld      (_showt_counter),a
-	ld      hl,(_showt_ntiles)
-	ld      (_showt_counter2),hl
-	ld      hl,tiles_bgmap
-	call    _showt_fill_doublebuffer
-	; now that we have the doublebuffer ready
-	; we move the image to the video memory
-	ld      de,T_DOUBLEBUFFER_ADDR
-	ld      hl,T_HIDDEN_W0 * 2
-	add     hl,de
-	ld      de,T_WSIZE_BYTES
-	ld      b,T_HIDDEN_H0 * 8
-	xor     a
-	cp      b
-	jr      z,__showt_skip_loop
-__showt_visibleh_loop:
-	add     hl,de
-	djnz    __showt_visibleh_loop
-__showt_skip_loop:
-	push    hl
-	ld      (__showt_visiblescr_start_sb+1),hl
-	ld      b,T_WSIZE_BYTES - 4 * T_HIDDEN_W0
-	ld      c,T_HSIZE_BYTES - 16 * T_HIDDEN_H0
-	ld      de,T_HIDDEN_H0 * 2
-	ld      hl,tiles_videomemory_lines
-	add     hl,de
-	ld      e,(hl)
-	inc     hl
-	ld      d,(hl)
-	ld      hl,2 * T_HIDDEN_W0
-	add     hl,de
-	ld      (__showt_visiblescr_start2+1),hl
-	pop     de
-	jp      _showt_create_scans
-ENDIF
+	IF (T_HIDDENW + T_HIDDENW) == 0
+		ld      bc,256 * (T_WSIZE_BYTES - 4 * T_HIDDEN_W0) + T_HSIZE_BYTES - 16 * T_HIDDEN_H0
+	__showt2_videomem_ini:
+		ld      hl,0  ; self modifying code 
+	__showt2_doublubuffer_ini:
+		ld      hl,0  ; self modifying code
+		di
+		ld	    (__showt_spbkp),sp
+		ld	    sp,_showtiles_scantable
+		ld	    a,T_HSIZE_BYTES
+	__showt_ppv0:
+		pop	    de    ; extract next lookup scan table value (vmem address)
+	__showt_ldi_jumpstart:
+		ldi
+		ldi
+		ldi
+		ldi
+		ldi
+		ldi
+		ldi
+		ldi
+		ldi
+		ldi
+		ldi
+		ldi
+		ldi
+		ldi
+		ldi
+		ldi
+		ldi
+		ldi
+		ldi
+		ldi
+		ldi
+		ldi
+		ldi
+		ldi
+		ldi
+		ldi
+		ldi
+		ldi
+		ldi
+		ldi
+		ldi
+		ldi
+		ldi
+		ldi
+		ldi
+		ldi
+		ldi
+		ldi
+		ldi
+		ldi
+		ldi
+		ldi
+		ldi
+		ldi
+		ldi
+		ldi
+		ldi
+		ldi
+		ldi
+		ldi
+		ldi
+		ldi
+		ldi
+		ldi
+		ldi
+		ldi
+		ldi
+		ldi
+		ldi
+		ldi
+		ldi
+		ldi
+		ldi
+		ldi
+		ldi
+		ldi
+		ldi
+		ldi
+		ldi
+		ldi
+		ldi
+		ldi
+	__showt_ldi_next:
+		dec     a
+		jp      nz, __showt_ppv0
+		ld	    sp,(__showt_spbkp)
+		ei
+		ret
 
+	; PRIVATE ROUTINE
+	; HL gets modified and the start address of the videomemory is written
+	; Fills a lookup table with video memory positions
+	_showt_create_scans:
+		ld	     ix,_showtiles_scantable
+	__scans_videomem_ini:
+		ld	     hl,0       ; self modifying code
+		ld	     b,T_HEIGHT	; number of files
+	__cts0_loop:
+		push	 bc
+		push	 hl
+		ld	     b,8
+		ld	     de,2048
+	__cts1_loop:
+		ld	     (ix+0),l
+		inc	     ix
+		ld	     (ix+0),h
+		inc	     ix
+		add	     hl,de
+		djnz	 __cts1_loop
+		pop	     hl
+		ld	     bc,80
+		add	     hl,bc
+		pop	     bc
+		djnz	 __cts0_loop
+	__scan_preapre_ldijump:
+		; depending on the width of our tilemap we must finish
+		; in a different position in our list of ldi opcodes
+		; so we overwrite a section of them to put a jump
+		; to __showt_ldi_next (3 bytes)
+		ld       hl,T_WSIZE_BYTES
+		ld       de,__showt_ldi_jumpstart
+		add      hl,hl
+		add      hl,de
+		ld       (hl),&C3
+		inc      hl
+		ld       de,__showt_ldi_next
+		ld       (hl),e
+		inc      hl
+		ld       (hl),d
+		ret
+		
+	ELSE
 
-; PRIVATE ROUTINE
-;
-_showt_fill_doublebuffer:
-	push    hl
-	pop     ix
-	ld      de,(tiles_doblebuffer_lines)
-__fillbkg_loop:
-	ld      l,(ix+0)
-	ld      h,0
-	add     hl,hl
-	add     hl,hl
-	add     hl,hl
-	add     hl,hl   ; x16
-	ld      bc,tiles_tilearray
-	add     hl,bc	; HL points to the tile to transfer
-	ex      de,hl   ; DE points to source
-	push    hl		; HL point to line in the doublebuffer
-	call    _showt_moveto_doublebuffer 
+	; cpc_ShowTileMap2:
+		ld      bc,256 * (T_WSIZE_BYTES - 4 * T_HIDDEN_W0) + T_HSIZE_BYTES - 16 * T_HIDDEN_H0
+	__showt2_videomem_ini:
+		ld      hl,0    ; self modifying code
+	__showt2_doublubuffer_ini:
+		ld      hl,0    ; self modifying code
+		di
+		ld	    (__showt_spbkp),sp
+		ld	    sp,_showtiles_scantable
+		ld	    a,T_HSIZE_BYTES - 16 * (T_HIDDEN_H0)
+	__showt_ppv0:
+		pop	    de      ; extract next lookup scan table value
+	__showt_ldi_jumpstart:
+		ldi
+		ldi
+		ldi
+		ldi
+		ldi
+		ldi
+		ldi
+		ldi
+		ldi
+		ldi
+		ldi
+		ldi
+		ldi
+		ldi
+		ldi
+		ldi
+		ldi
+		ldi
+		ldi
+		ldi
+		ldi
+		ldi
+		ldi
+		ldi
+		ldi
+		ldi
+		ldi
+		ldi
+		ldi
+		ldi
+		ldi
+		ldi
+		ldi
+		ldi
+		ldi
+		ldi
+		ldi
+		ldi
+		ldi
+		ldi
+		ldi
+		ldi
+		ldi
+		ldi
+		ldi
+		ldi
+		ldi
+		ldi
+		ldi
+		ldi
+		ldi
+		ldi
+		ldi
+		ldi
+		ldi
+		ldi
+		ldi
+		ldi
+		ldi
+		ldi
+		ldi
+		ldi
+		ldi
+		ldi
+		ldi
+		ldi
+		ldi
+		ldi
+		ldi
+		ldi
+		ldi
+		ldi
+	__showt_ldi_next:
+		ld      de,4 * T_HIDDEN_W0
+		add	    hl,de
+	__showt_ldi_next1:
+		dec     a
+		jp      nz,__showt_ppv0
+		ld      sp,(__showt_spbkp)
+		ei
+		ret
 
-	ld      hl,(_showt_counter2)
-	dec     hl
-	ld      (_showt_counter2),hl
-	ld      a,h
-	or      l
-	jr      z,__showt_filldb_return
-	pop     hl
-	inc     ix	     ; next byte
-	ex      de,hl
-	ld      a,(_showt_counter)
-	cp      T_WIDTH-1 
-	jr      z,__showt_filldb_inc
-	inc     a
-	ld      (_showt_counter),a
-	inc     de        ; next position
-	inc     de	      
-	jr      __fillbkg_loop
-__showt_filldb_inc:
-	xor     a
-	ld      (_showt_counter),a
-	ld      bc,7 * T_WSIZE_BYTES + 2 
-	ex      de,hl
-	add     hl,bc
-	ex      de,hl
-	jr      __fillbkg_loop
-__showt_filldb_return:
-	pop     hl
-	ret
+	; PRIVATE ROUTINE
+	; HL gets modified and the start address of the videomemory is written
+	; Fills a lookup table with video memory positions
+	_showt_create_scans:
+		ld      ix,_showtiles_scantable
+	__scans_videomem_ini:
+		ld      hl,0    ; self modifying code
+		ld      b,T_HEIGHT - 2 * T_HIDDEN_H0
+	__cts0_loop:
+		push	bc
+		push	hl
+		ld	    b,8
+		ld	    de,2048
+	__cts1_loop:
+		ld	    (ix+0),l
+		inc	    ix
+		ld	    (ix+0),h
+		inc	    ix
+		add	    hl,de
+		djnz    __cts1_loop
+		pop	    hl
+		ld      bc,80
+		add	    hl,bc
+		pop	    bc
+		djnz    __cts0_loop
+	__scan_preapre_ldijump:
+		; depending on the width of our tilemap we must finish
+		; in a different position in our list of ldi opcodes
+		; so we overwrite a section of them to put a jump
+		; to __showt_ldi_next (3 bytes)
+		ld      hl,T_WSIZE_BYTES - 4 * T_HIDDEN_W0
+		ld      de,__showt_ldi_jumpstart
+		add     hl,hl
+		add     hl,de
+		ld      (hl),&C3
+		inc     hl
+		ld      de,__showt_ldi_next
+		ld      (hl),e
+		inc     hl
+		ld      (hl),d
+		ret
 
-_showt_counter:  db 0
-_showt_counter2: dw 0
-_showt_ntiles:   dw T_HEIGHT * T_WIDTH
+	ENDIF
 
-; PRIVATE ROUTINE
-;
-_showt_moveto_doublebuffer:
-	ld      bc,T_WSIZE_BYTES - 1 
-	db      &FD     ; Extended IY opcode
-   	ld      h,8
-__moveto_height_loop:
-__moveto_width_loop:
-	ld      a,(de)
-	ld      (hl),a
-	inc     de
-	inc     hl
-	ld      a,(de)
-	ld      (hl),a
-	inc     de
-	db      &FD     ; Extended IY opcode
-	dec     h
-	ret     z
-	; We add the screen width in bytes to jump to the next line
-	add     hl,bc
-	jr      __moveto_height_loop
+__showt_spbkp: dw	0
+_showtiles_scantable: defs 20*16
