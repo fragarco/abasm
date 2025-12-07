@@ -76,7 +76,7 @@ __putmasksp_next:
 	ld      e,(ix+0)
     ld      d,(ix+1)   ; DE points to the sprite data
     ld      a,(de)     ; A = width
-    ld      (__putmasksp_hloop+2),a
+    ld      (__putmasksp_hloop+2),a ; self modifying code
     ld      b,a
     ld      a,T_WSIZE_BYTES
     sub     b
@@ -84,6 +84,7 @@ __putmasksp_next:
 	inc     de
 	ld      a,(de)
 	inc     de
+__putmasksp_maskv:    ; mark for self modifying code
 	ld      b,0
 	db      &DD       ; IX extended opcodes
 	ld      h,a		  ; IXH = A
@@ -93,9 +94,9 @@ __putmasksp_hloop:
 	ex      de,hl
 __putmasksp_wloop:
 	ld      a,(de)	  ; background byte
-	add     (hl)	  ; apply mask
+	and     (hl)	  ; apply mask
 	inc     hl
-	or      (hl)	  ; apply mask with background to actual sprite byte
+	or      (hl)	  ; add sprite byte
 	ld      (de),a	  ; write the result
 	inc     de
 	inc     hl
