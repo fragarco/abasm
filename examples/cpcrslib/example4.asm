@@ -88,6 +88,11 @@ __endless_mainloop:
     call    cpc_DrawMaskSpTileMap
     ld      hl,sprite3
     call    cpc_DrawMaskSpTileMap
+
+    call    update_enemypos
+    call    update_playerpos
+    call    check_collision
+
     call    cpc_ShowTileMap
 jp __endless_mainloop
 
@@ -119,6 +124,15 @@ print_credits:
     call    cpc_DrawStrXY_M0
     ret
  
+update_enemypos:
+    ret
+
+update_playerpos:
+    ret
+
+check_collision:
+    ret
+
 collide:
     ld      bc,FW_WHITE
     call    cpc_SetBorderFW
@@ -239,6 +253,8 @@ read 'cpcrslib/tilemap/resettouchedtiles.asm'
 read 'cpcrslib/tilemap/putsptilemap.asm'
 read 'cpcrslib/tilemap/restoretilemap.asm'
 read 'cpcrslib/tilemap/drawmasksptilemap.asm'
+
+read 'cpcrslib/sprite/collidesp.asm'
 
 string1: db "SMALL;SPRITE;DEMO",0
 string2: db "SDCC;;;CPCRSLIB",0
