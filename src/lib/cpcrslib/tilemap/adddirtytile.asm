@@ -19,7 +19,6 @@
 ; DEALINGS IN THE SOFTWARE.
 
 ; cpc_PutSpTileMap assumes that HL points to a structure that defines a sprite as follows:
-
 ; sprite:
 ;    sprite1_sp0: dw _spritedata
 ;    sprite1_sp1: dw _spritedata

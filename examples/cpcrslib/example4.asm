@@ -81,6 +81,13 @@ __endless_mainloop:
     ld      hl,sprite3
     call    cpc_PutSpTileMap
     call    cpc_RestoreTileMap ; restore original background
+    
+    ld      hl,sprite1
+    call    cpc_DrawMaskSpTileMap
+    ld      hl,sprite2
+    call    cpc_DrawMaskSpTileMap
+    ld      hl,sprite3
+    call    cpc_DrawMaskSpTileMap
     call    cpc_ShowTileMap
 jp __endless_mainloop
 
@@ -231,6 +238,7 @@ read 'cpcrslib/tilemap/rendertilemap.asm'
 read 'cpcrslib/tilemap/resettouchedtiles.asm'
 read 'cpcrslib/tilemap/putsptilemap.asm'
 read 'cpcrslib/tilemap/restoretilemap.asm'
+read 'cpcrslib/tilemap/drawmasksptilemap.asm'
 
 string1: db "SMALL;SPRITE;DEMO",0
 string2: db "SDCC;;;CPCRSLIB",0
