@@ -22,9 +22,72 @@
 org &4000
 
 .main
+    ; Set colors and video mode
+    ld      a,0
+    call    cpc_SetModeFW
+    call    set_colors
+    call    print_credits
+    ; Disable firmware interruption callback routine
+    call    cpc_DisableFirmware
+
 
 __endless_mainloop:
     jr __endless_mainloop
+
+_inks: db 0,22,11,2,1,3,6,9,23,14,15,24,25,17,13,26
+_font_color: db TXT0_PEN0,TXT0_PEN8,TXT0_PEN9,TXT0_PEN14
+
+set_colors:
+    ld      ix,_inks
+    ld      b,16
+    ld      a,&FF
+    __setink_loop:
+        push    bc
+        ld      b,(ix+0)
+        ld      c,b
+        inc     a
+        push    af
+        call    cpc_SetInkFW
+        pop     af
+        inc     ix
+        pop     bc
+    djnz    __setink_loop
+    ld      bc,0
+    jp      cpc_SetBorderFW
+
+string1: db "SMALL;SCROLL;SPRITE;DEMO",0
+string2: db "SDCC;;;CPCRSLIB",0
+string3: db "BY;ARTABURU;2015",0
+string4: db "ESPSOFT<AMSTRAD<ES",0
+
+print_credits:
+    ld      hl,_font_color
+    call    cpc_SetTextColors_M0
+    ld      de,string1
+    ld      l,7*2+3 ; X
+    ld      h,20*8  ; Y
+    call    cpc_DrawStrXY_M0
+    ld      de,string2
+    ld      l,12*2+1; X
+    ld      h,21*8  ; Y
+    call    cpc_DrawStrXY_M0
+    ld      de,string3
+    ld      l,12*2  ; X
+    ld      h,22*8  ; Y
+    call    cpc_DrawStrXY_M0
+    ld      de,string4
+    ld      l,12*2-2; X
+    ld      h,24*8  ; Y
+    call    cpc_DrawStrXY_M0
+    ret
+
+read 'cpcrslib/firmware/setmode.asm'
+read 'cpcrslib/firmware/setink.asm'
+read 'cpcrslib/firmware/setborder.asm'
+read 'cpcrslib/firmware/disablefw.asm'
+
+read 'cpcrslib/text/font_color.asm'
+read 'cpcrslib/text/drawstr_m0.asm'
 
 ; ORIGINAL EXAMPLE IN C
 ; #include "cpcrslib.h"
@@ -65,38 +128,12 @@ __endless_mainloop:
 ;     p_sprites[2] = &sprite02;
 ; }
 ; 
-; void ScrClr(void) {
-;     __asm
-;     ld hl,#0xc000
-;     ld de,#0xc001
-;     ld bc,#0x3fff
-;     xor a
-;     ld (hl),a
-;     ldir
-;     __endasm;
-; }
-; 
 ; void set_colours(void) {
 ;     unsigned char i;
 ;     for (i=0; i<17; i++)
 ;         cpc_SetColour(i,paleta[i]);
 ; }
-; 
-; void pause(void){
-;     __asm
-;     ld b,#80
-; pause_loop:
-;     halt
-;     djnz pause_loop
-;     __endasm;
-; }
-; 
-; void collide(void) {
-;     cpc_SetColour(16,1);
-;     pause();
-;     cpc_SetColour(16,9);
-; }
-; 
+;  
 ; void draw_bloque(unsigned char x, unsigned char y, unsigned char b) {
 ;     unsigned char tx, ty;
 ;     int tb;
@@ -301,7 +338,6 @@ __endless_mainloop:
 ;     cpc_DisableFirmware();
 ; 
 ;     cpc_SetMode(0);
-;     ScrClr();
 ;     initPointers();
 ; 	
 ;     cpc_SetInkGphStr(0,0);

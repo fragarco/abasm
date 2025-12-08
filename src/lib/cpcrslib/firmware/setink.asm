@@ -18,8 +18,38 @@
 ; OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 ; DEALINGS IN THE SOFTWARE.
 
+; CPC PALETTE (taken from https://www.cpcwiki.eu/index.php/CPC_Palette)
+; FW	HW		Color
+; 0 	&54 	Black
+; 1 	&44 	Blue
+; 2 	&55 	Bright Blue
+; 3 	&5C 	Red
+; 4 	&58 	Magenta
+; 5 	&5D 	Mauve
+; 6 	&4C 	Bright Red
+; 7 	&45 	Purple
+; 8 	&4D 	Bright Magenta
+; 9 	&56 	Green
+; 10 	&46 	Cyan
+; 11 	&57 	Sky Blue
+; 12 	&5E 	Yellow
+; 13 	&40 	White
+; 14 	&5F 	Pastel Blue
+; 15 	&4E 	Orange
+; 16 	&47 	Pink
+; 17 	&4F 	Pastel Magenta
+; 18 	&52 	Bright Green
+; 19 	&42 	Sea Green
+; 20 	&53 	Bright Cyan
+; 21 	&5A 	Lime
+; 22 	&59 	Pastel Green
+; 23 	&5B 	Pastel Cyan
+; 24 	&4A 	Bright Yellow
+; 25 	&43 	Pastel Yellow
+; 26 	&4B 	Bright White
+
 ; CPC_SETINKFW
-; Sets the color of a PEN using the Firmware.
+; Sets the color of a PEN using the Firmware values.
 ; Inputs:
 ;     A  PEN number (0-15)
 ;     B  First  firmware color
