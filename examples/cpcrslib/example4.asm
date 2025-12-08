@@ -186,9 +186,71 @@ __update_end:
     ret
 
 update_playerpos:
+    ; by default, the key assignment table used by cpc_TestKey
+    ; has the four first entries assigned to cursor keys
+__test_cursor_right:
+    xor     a
+    ld      l,a
+    call    cpc_TestKey
+    ld      a,h
+    or      l
+    jr      z,__test_cursor_left
+    ld      a,(sprite1_cx)
+    cp      60  ; only if cx < 60
+    jr      nc,__test_cursor_left
+    inc     a
+    ld      (sprite1_cx),a
+__test_cursor_left:
+    ld      l,1
+    call    cpc_TestKey
+    ld      a,h
+    or      l
+    jr      z,__test_cursor_up
+    ld      a,(sprite1_cx)
+    cp      1   ; only if cx > 0
+    jr      c,__test_cursor_up
+    dec     a
+    ld      (sprite1_cx),a
+__test_cursor_up:
+    ld      l,2
+    call    cpc_TestKey
+    ld      a,h
+    or      l
+    jr      z,__test_cursor_down
+    ld      a,(sprite1_cy)
+    cp      1  ; only if cy > 0
+    jr      c,__test_cursor_down
+    dec     a
+    dec     a
+    ld      (sprite1_cy),a
+__test_cursor_down:
+    ld      l,3
+    call    cpc_TestKey
+    ld      a,h
+    or      l
+    jr      z,__test_cursor_end
+    ld      a,(sprite1_cy)
+    cp      112  ; only if cy < 112
+    jr      nc,__test_cursor_end
+    inc     a
+    inc     a
+    ld      (sprite1_cy),a
+__test_cursor_end:
     ret
 
 check_collision:
+    ret     ; AAA
+    ld      hl,sprite1
+    ld      de,sprite2
+    call    cpc_CollideSp
+    ld      a,h
+    or      a
+    jr      nz,collide    ; does a return
+
+    ld      hl,sprite1
+    ld      de,sprite3
+    call    cpc_CollideSp
+    jr      nz,collide    ; does a return
     ret
 
 collide:
@@ -313,6 +375,8 @@ read 'cpcrslib/tilemap/restoretilemap.asm'
 read 'cpcrslib/tilemap/drawmasksptilemap.asm'
 
 read 'cpcrslib/sprite/collidesp.asm'
+
+read 'cpcrslib/keyboard/testkey.asm'
 
 string1: db "SMALL;SPRITE;DEMO",0
 string2: db "SDCC;;;CPCRSLIB",0
