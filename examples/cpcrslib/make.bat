@@ -22,7 +22,7 @@ IF "%1"=="clear" (
     del *.s
 ) ELSE (
     call %DSK% %TARGET%.dsk --new
-    for %%x in (example1, example2, example3, example4) do (
+    for %%x in (example1, example2, example3, example4, example5) do (
         call %ASM% --start %LOADADDR% %%x.asm && call %DSK% %TARGET%.dsk --put-bin %%x.bin
     )
 )
