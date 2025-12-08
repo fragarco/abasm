@@ -239,7 +239,6 @@ __test_cursor_end:
     ret
 
 check_collision:
-    ret     ; AAA
     ld      hl,sprite1
     ld      de,sprite2
     call    cpc_CollideSp
@@ -250,15 +249,21 @@ check_collision:
     ld      hl,sprite1
     ld      de,sprite3
     call    cpc_CollideSp
+    ld      a,h
+    or      a
     jr      nz,collide    ; does a return
     ret
 
 collide:
-    ld      bc,FW_WHITE
-    call    cpc_SetBorderFW
+    ; we cannot use cpc_SetBorderFW because
+    ; the firmware interrupt routine is disabled
+    ; by cpc_DisableFirmware
+    ld      h,16
+    ld      l,&40 ; white
+    call    cpc_SetColor
     call    pause
-    ld      bc,FW_PYELLOW
-    call    cpc_SetBorderFW
+    ld      l,&43 ; pastel yellow
+    call    cpc_SetColor
     ret
 
 draw_tilemap:
@@ -352,7 +357,6 @@ sprite3:
     sprite3_move1: db 3
     sprite3_move: db 2
 
-p_sprites: dw  sprite1, sprite2, sprite3
 
 read 'tilemap_config/tilemap_def.asm'
 

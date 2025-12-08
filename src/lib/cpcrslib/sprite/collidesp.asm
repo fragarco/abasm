@@ -53,20 +53,21 @@ cpc_CollideSp:
 	pop     iy
 	ld      l,(ix+0)
 	ld      h,(ix+1)
-	ld      b,(hl)	 ; width sprite1
+	ld      b,(hl)	 
 	inc     hl
-	ld      c,(hl)	 ; height sprite1
+	ld      c,(hl)
 	ld      l,(iy+0)
 	ld      h,(iy+1)
-	ld      d,(hl)	 ; width sprite2
-	inc     hl
-	ld      e,(hl)	 ; height sprite2
+	ld      d,(hl)	 
+	inc     hl		 ; BC = width, height sprite 1
+	ld      e,(hl)	 ; DE = width, height sprite 2
+
 	ld      a,(ix+8) ; current X sprite1
 	sub     d		 ; minus width sprite2
-	cp      (iy+8)	 ; compared with current X sprite2
+	cp      (iy+8)	 ; (xsp1 - wsp2) < ysp2 ?
 	jr      nc,__collide_false
-	add     b				
 	add     d
+	add     b				
 	dec     a
 	cp      (iy+8)
 	jr      c,__collide_false
