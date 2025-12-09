@@ -30,8 +30,13 @@ org &4000
     ; Disable firmware interruption callback routine
     call    cpc_DisableFirmware
 
-
+    call    _draw_tilemap
+    call    cpc_RenderTileMap
+    call    cpc_ShowTileMap
 __endless_mainloop:
+    ;call    cpc_ResetTouchedTiles
+    ;call    cpc_RestoreTileMap ; restore original background
+    ;call    cpc_ShowTileMap
     jr __endless_mainloop
 
 _inks: db 0,22,11,2,1,3,6,9,23,14,15,24,25,17,13,26
@@ -81,6 +86,105 @@ print_credits:
     call    cpc_DrawStrXY_M0
     ret
 
+_draw_bloque:
+	push    ix
+	ld      ix,0
+	add     ix,sp
+	ld	    l,(ix+6)
+	ld      h,&00
+	add     hl,hl
+	add     hl,hl
+	ex      de,hl
+	ld	    hl,_blocks
+	add     hl,de
+	ld      c,(hl)
+    ld      a,(ix+4)
+	add     a
+	ld      h,a
+	ld      a,(ix+5)
+	add     a
+	ld      l,a
+	push    hl       ; X Y
+    push    de       ; blocks[]
+	call    cpc_SetTile
+	pop     de
+    pop     hl
+    inc     de
+    ex      de,hl
+    ld      c,(hl)
+    ex      de,hl
+    inc     h
+    push    hl
+    push    de
+	call	cpc_SetTile
+	pop     de
+    pop     hl
+    inc     de
+    ex      de,hl
+    ld      c,(hl)
+    ex      de,hl
+    dec     h
+    inc     l
+    push    hl
+    push    de
+    call	cpc_SetTile
+	pop     de
+    pop     hl
+    inc     de
+    ex      de,hl
+    ld      c,(hl)
+    ex      de,hl
+    inc     h
+	call	cpc_SetTile
+	pop     ix
+	ret
+
+_draw_tilemap:
+	ld      e,&00
+__draw_for_y:
+	ld      d,&00
+__draw_for_x:
+	ld      hl,_TILES_TOT_WIDTH + 0
+	ld      h, (hl)
+	push    de
+	ld      l,&00
+	ld      d,l
+	ld      b,&08
+__draw_test_item_loop:
+	add     hl,hl
+	jr      nc,__draw_test_item_next
+	add     hl,de
+__draw_test_item_next:
+	djnz    __draw_test_item_loop
+	pop     de
+	ld      c,d
+	ld      b,&00
+	add     hl,bc
+	ld      bc,_test_map2
+	add     hl,bc
+	ld      h,(hl)
+	push    de
+	push    hl
+	inc     sp
+	ld      a,e
+	push    af
+	inc     sp
+	push    de
+	inc     sp
+	call    _draw_bloque
+	pop     af
+	inc     sp
+	pop     de
+	inc     d
+	ld      a,d
+	sub     &0E
+	jr      c,__draw_for_x
+	inc     e
+	ld      a,e
+	sub     &07
+	jr      c,__draw_for_y
+	ret
+
 read 'tilemap_config/example5_def.asm'
 
 read 'cpcrslib/firmware/setmode.asm'
@@ -90,6 +194,17 @@ read 'cpcrslib/firmware/disablefw.asm'
 
 read 'cpcrslib/text/font_color.asm'
 read 'cpcrslib/text/drawstr_m0.asm'
+
+read 'cpcrslib/tilemap/getdblbufferaddress.asm'
+read 'cpcrslib/tilemap/settile.asm'
+read 'cpcrslib/tilemap/rendertilemap.asm'
+read 'cpcrslib/tilemap/resettouchedtiles.asm'
+read 'cpcrslib/tilemap/putsptilemap.asm'
+read 'cpcrslib/tilemap/restoretilemap.asm'
+read 'cpcrslib/tilemap/drawmasksptilemap.asm'
+
+_SCREEN_WIDTH:      dw &384
+_TILES_TOT_WIDTH:   db &F0	; 240
 
 struct_bullet:
     bullet_sp0 equ 0
