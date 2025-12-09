@@ -86,7 +86,7 @@ print_credits:
     call    cpc_DrawStrXY_M0
     ret
 
-_draw_bloque:
+_draw_block:
 	push    ix
 	ld      ix,0
 	add     ix,sp
@@ -144,8 +144,8 @@ _draw_tilemap:
 __draw_for_y:
 	ld      d,&00
 __draw_for_x:
-	ld      hl,_TILES_TOT_WIDTH + 0
-	ld      h, (hl)
+	ld      hl,_TILES_TOT_WIDTH
+	ld      h,(hl)
 	push    de
 	ld      l,&00
 	ld      d,l
@@ -171,7 +171,7 @@ __draw_test_item_next:
 	inc     sp
 	push    de
 	inc     sp
-	call    _draw_bloque
+	call    _draw_block
 	pop     af
 	inc     sp
 	pop     de
