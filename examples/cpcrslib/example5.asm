@@ -34,9 +34,9 @@ org &4000
     call    cpc_RenderTileMap
     call    cpc_ShowTileMap
 __endless_mainloop:
-    ;call    cpc_ResetTouchedTiles
-    ;call    cpc_RestoreTileMap ; restore original background
-    ;call    cpc_ShowTileMap
+    call    update_actor_positions
+    call    update_actor_states
+    call    update_screen   
     jr __endless_mainloop
 
 _inks: db 0,22,11,2,1,3,6,9,23,14,15,24,25,17,13,26
@@ -86,67 +86,73 @@ print_credits:
     call    cpc_DrawStrXY_M0
     ret
 
+; DE = Block X,Y  (0-13, 0-7)
+; L  = Block index (0-28)
 _draw_block:
-	push    ix
-	ld      ix,0
-	add     ix,sp
-	ld	    l,(ix+6)
+    push    de      ; Store block X,Y parameters
 	ld      h,&00
 	add     hl,hl
-	add     hl,hl
-	ex      de,hl
-	ld	    hl,_blocks
-	add     hl,de
-	ld      c,(hl)
-    ld      a,(ix+4)
+	add     hl,hl   ; HL = block * 4
+	ex      de,hl   ; DE = block * 4
+	ld	    hl,_block_array
+	add     hl,de   ; HL points to the block
+	ld      c,(hl)  ; C = tile index
+    pop     de      ; Pop block X,Y position
+    push    hl      ; Store block starting position
+    ld      a,d 
 	add     a
-	ld      h,a
-	ld      a,(ix+5)
+	ld      h,a     ; H = X * 2 (tile X pos)
+	ld      a,e
 	add     a
-	ld      l,a
-	push    hl       ; X Y
-    push    de       ; blocks[]
+	ld      l,a     ; L = Y * 2 (tile Y pos)
+    push    hl      ; Store current tile position
 	call    cpc_SetTile
-	pop     de
+
     pop     hl
-    inc     de
+    pop     de
+    inc     de      ; next tile index in the block
     ex      de,hl
-    ld      c,(hl)
+    ld      c,(hl)  ; C = tile index
     ex      de,hl
     inc     h
-    push    hl
-    push    de
+    push    de      ; Store curent block tile address
+    push    hl      ; Store current tile position
 	call	cpc_SetTile
-	pop     de
+
     pop     hl
-    inc     de
+	pop     de
+    inc     de      ; next tile index in the block
     ex      de,hl
-    ld      c,(hl)
+    ld      c,(hl)  ; C = tile index
     ex      de,hl
     dec     h
     inc     l
-    push    hl
-    push    de
+    push    de      ; Store curent block tile address
+    push    hl      ; Store current tile position
     call	cpc_SetTile
-	pop     de
+
     pop     hl
-    inc     de
+	pop     de
+    inc     de      ; next tile index in the block
     ex      de,hl
-    ld      c,(hl)
+    ld      c,(hl)  ; C = tile index
     ex      de,hl
     inc     h
 	call	cpc_SetTile
-	pop     ix
 	ret
 
+; Goes through the first 14 blocks of each level map line (7)
+; and draws the tilemap background with them. As every block
+; is 2x2 tiles, the final background is 28x14 tiles which matches
+; the T_WIDTH and T_HEIGHT set in example5_def.asm
 _draw_tilemap:
-	ld      e,&00
+	ld      e,&00  ; y index
 __draw_for_y:
-	ld      d,&00
+	ld      d,&00  ; x index
 __draw_for_x:
-	ld      hl,_TILES_TOT_WIDTH
-	ld      h,(hl)
-	push    de
+    push    de     ; store FOR indexes (x,y)
+	ld      hl,_level_width
+	ld      h,(hl) ; 240
 	ld      l,&00
 	ld      d,l
 	ld      b,&08
@@ -156,25 +162,16 @@ __draw_test_item_loop:
 	add     hl,de
 __draw_test_item_next:
 	djnz    __draw_test_item_loop
-	pop     de
-	ld      c,d
+	pop     de     ; pop FOR indexes
+	ld      c,d    ; C = X
 	ld      b,&00
 	add     hl,bc
-	ld      bc,_test_map2
+	ld      bc,_level_map
 	add     hl,bc
-	ld      h,(hl)
-	push    de
-	push    hl
-	inc     sp
-	ld      a,e
-	push    af
-	inc     sp
-	push    de
-	inc     sp
+	ld      l,(hl) ; L = Block number
+    push    de     ; store FOR indexes (x,y)
 	call    _draw_block
-	pop     af
-	inc     sp
-	pop     de
+	pop     de     ; pop FOR indexes (x,y)
 	inc     d
 	ld      a,d
 	sub     &0E
@@ -184,6 +181,76 @@ __draw_test_item_next:
 	sub     &07
 	jr      c,__draw_for_y
 	ret
+
+update_playerpos:
+    ; by default, the key assignment table used by cpc_TestKey
+    ; has the four first entries assigned to cursor keys
+__test_cursor_right:
+    xor     a
+    ld      l,a
+    call    cpc_TestKey
+    ld      a,h
+    or      l
+    jr      z,__test_cursor_left
+    ld      a,(player_cx)
+    cp      41  ; only if cx <= 40
+    jr      nc,__test_cursor_left
+    inc     a
+    ld      (player_cx),a
+    ld      a,(player_frame)
+    inc     a
+    and     &01
+    cp      0
+    jr      nz,__test_right_f2
+    ld      hl,_spplayerR0
+    jr      $+5
+    __test_right_f2
+    ld      hl,_spplayerR1
+    ld      (player_sp0),hl   ; landing place for $+5
+    ld      (player_frame),a
+__test_cursor_left:
+    ld      l,1
+    call    cpc_TestKey
+    ld      a,h
+    or      l
+    jr      z,__test_cursor_end
+    ld      a,(player_cx)
+    cp      1   ; only if cx > 0
+    jr      c,__test_cursor_end
+    dec     a
+    ld      (player_cx),a
+        ld      a,(player_frame)
+    inc     a
+    and     &01
+    cp      0
+    jr      nz,__test_left_f2
+    ld      hl,_spplayerL0
+    jr      $+5
+    __test_left_f2
+    ld      hl,_spplayerL1
+    ld      (player_sp0),hl   ; landing place for $+5
+    ld      (player_frame),a
+__test_cursor_end:
+    ret
+
+update_actor_positions:
+    call update_playerpos
+    ret
+
+update_actor_states:
+    ret
+
+update_screen:
+    call    cpc_ResetTouchedTiles
+    ; Mark as dirty current sprite positions, so these tiles
+    ; can be restored (deleting the sprite in the process)
+    ld      hl,_player
+    call    cpc_PutSpTileMap
+    call    cpc_RestoreTileMap ; restore original background
+    ld      hl,_player
+    call    cpc_DrawMaskSpTileMap
+    call    cpc_ShowTileMap
+    ret
 
 read 'tilemap_config/example5_def.asm'
 
@@ -195,6 +262,8 @@ read 'cpcrslib/firmware/disablefw.asm'
 read 'cpcrslib/text/font_color.asm'
 read 'cpcrslib/text/drawstr_m0.asm'
 
+read 'cpcrslib/keyboard/testkey.asm'
+
 read 'cpcrslib/tilemap/getdblbufferaddress.asm'
 read 'cpcrslib/tilemap/settile.asm'
 read 'cpcrslib/tilemap/rendertilemap.asm'
@@ -203,169 +272,118 @@ read 'cpcrslib/tilemap/putsptilemap.asm'
 read 'cpcrslib/tilemap/restoretilemap.asm'
 read 'cpcrslib/tilemap/drawmasksptilemap.asm'
 
-_SCREEN_WIDTH:      dw &384
-_TILES_TOT_WIDTH:   db &F0	; 240
-
-struct_bullet:
-    bullet_sp0 equ 0
-	bullet_sp1 equ 2
-	bullet_coord0 equ 4
-	bullet_coord1 equ 6
-	bullet_cx equ 8
-    bullet_cy equ 9
-    bullet_ox equ 10
-    bullet_oy equ 11
-    bullet_visible equ 12
-    bullet_move equ 13
-    bullet_type equ 14
-    bullet_hide equ 15
-    bullet_size equ 16
-
-_bullets_array:  defs 6 * bullet_size
-_ebullets_array: defs 6 * bullet_size
-
 _player:
-    ship_sp0: dw _spplayer
-	ship_sp1: dw _spplayer
-    ship_coord0: dw 0
-    ship_coord1: dw 0
-    ship_cx: db 12
-    ship_cy: db 87
-    ship_ox: db 12
-    ship_oy: db 87
-    ship_visible: db 3
-    ship_move: db 0
-    ship_vx: db 0         ; virtual X
-    ship_pos: db 0
-    ship_mode: db 0
-    ship_hide: db 0
-    ship_type: db 0
-    ship_frame: db 0
-    ship_num: db 0
-    ship_dir: db 0
-    ship_life: db 0
+    player_sp0: dw _spplayerR0
+	player_sp1: dw _spplayerR0
+    player_coord0: dw 0
+    player_coord1: dw 0
+    player_cx: db 12
+    player_cy: db 87
+    player_ox: db 12
+    player_oy: db 87
+    player_visible: db 3
+    player_move: db 0
+    player_vx: db 0         ; virtual X
+    player_pos: db 0
+    player_mode: db 0
+    player_hide: db 0
+    player_type: db 0
+    player_frame: db 0
+    player_num: db 0
+    player_dir: db 0
+    player_life: db 0
 
 _enemy1:
-    sprite0_sp0: dw _spship
-	sprite0_sp1: dw _spship
-    sprite0_coord0: dw 0
-    sprite0_coord1: dw 0
-    sprite0_cx: db 20
-    sprite0_cy: db 40
-    sprite0_ox: db 20
-    sprite0_oy: db 40
-    sprite0_visible: db 0
-    sprite0_move: db 0
-    sprite0_vx: db 20       ; virtual X
-    sprite0_pos: db 0
-    sprite0_mode: db 0
-    sprite0_hide: db 0
-    sprite0_type: db 3
-    sprite0_frame: db 0
-    sprite0_num: db 1       ; num=0 mosca, num=1 raton
-    sprite0_dir: db 0
-    sprite0_life: db 0
+    enemy1_sp0: dw _spenemy
+	enemy1_sp1: dw _spenemy
+    enemy1_coord0: dw 0
+    enemy1_coord1: dw 0
+    enemy1_cx: db 20
+    enemy1_cy: db 40
+    enemy1_ox: db 20
+    enemy1_oy: db 40
+    enemy1_visible: db 0
+    enemy1_move: db 0
+    enemy1_vx: db 20       ; virtual X
+    enemy1_pos: db 0
+    enemy1_mode: db 0
+    enemy1_hide: db 0
+    enemy1_type: db 3
+    enemy1_frame: db 0
+    enemy1_num: db 1       ; num=0 mosca, num=1 raton
+    enemy1_dir: db 0
+    enemy1_life: db 0
 
 _enemy2:
-    sprite1_sp0: dw _spship
-	sprite1_sp1: dw _spship
-    sprite1_coord0: dw 0
-    sprite1_coord1: dw 0
-    sprite1_cx: db 20
-    sprite1_cy: db 45
-    sprite1_ox: db 20
-    sprite1_oy: db 45
-    sprite1_visible: db 0
-    sprite1_move: db 0
-    sprite1_vx: db 120         ; virtual X
-    sprite1_pos: db 0
-    sprite1_mode: db 0
-    sprite1_hide: db 0
-    sprite1_type: db 3
-    sprite1_frame: db 0
-    sprite1_num: db 1
-    sprite1_dir: db 0
-    sprite1_life: db 0
+    enemy2_sp0: dw _spenemy
+	enemy2_sp1: dw _spenemy
+    enemy2_coord0: dw 0
+    enemy2_coord1: dw 0
+    enemy2_cx: db 20
+    enemy2_cy: db 45
+    enemy2_ox: db 20
+    enemy2_oy: db 45
+    enemy2_visible: db 0
+    enemy2_move: db 0
+    enemy2_vx: db 120         ; virtual X
+    enemy2_pos: db 0
+    enemy2_mode: db 0
+    enemy2_hide: db 0
+    enemy2_type: db 3
+    enemy2_frame: db 0
+    enemy2_num: db 1
+    enemy2_dir: db 0
+    enemy2_life: db 0
 
-_test_map2:
-db 11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,14,11,11
-db 11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11
-db 11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11
-db 11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11
-db 11,15,19,18,11,11,11,11,14,11,11,11,11,14,11,11,11,11,14,11,11,11,11,14,11,11,11,11,14,11,11,11,11,14,11,11
-db 11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11
-db 11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,6,6,11,11,11,11,11,11,11,11,11,11,11,11
-db 11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,16,19,17,11,11,11,14,11,11,11,11,11,11,11,11,11
-db 11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11
-db 11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11
-db 11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,14,11,11,11,11,16,19,19,19,17,11,11,16,19,17,11,11
-db 16,19,17,11,11,16,19,17,11,11,16,19,17,11,11,16,19,17,11,11,16,19,17,11,11,11,11,11,11,11,11,11,11,11,11,11
-db 11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11
-db 11,11,11,11,11,11,11,11,11,11,6,6,11,11,11,14,11,11,11,11,11,11,11,11,11,11,11,11,11,11,14,11,11,11,11,11,11
-db 11,11,11,11,11,11,11,15,19,18,11,11,16,19,17,11,11,11,11,11,11,11,11,14,11,11,11,11,11,11,11,11,11,14,11,11
-db 11,11,14,11,11,14,11,11,14,11,11,14,11,11,11,11,11,14,11,11,11,11,11,11,10,7,10,7,8,8,7,8,8,10,7,7,8,7,7,10
-db 10,9,7,10,8,7,9,8,7,10,9,7,10,7,10,9,9,8,7,7,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,16,19,17,11
-db 11,11,15,19,19,19,18,11,11,15,19,18,11,11,15,19,18,11,11,15,19,18,11,11,15,19,18,11,11,15,19,18,11,11,15,19
-db 18,11,11,11,11,11,10,10,7,9,9,7,7,7,9,7,9,10,10,8,10,9,8,9,8,9,10,7,7,10,7,10,10,10,8,10,9,8,9,8,9,10,7,7,10
-db 7,10,10,10,8,10,9,8,9,8,9,10,7,7,10,6,6,11,11,16,19,17,11,11,11,11,11,11,11,11,11,11,11,11,16,19,17,11,11,11
-db 11,11,11,11,11,11,11,11,16,19,19,28,17,11,15,19,18,11,11,11,11,11,11,11,16,19,17,11,11,11,11,11,11,11,16,19
-db 17,11,11,16,19,17,16,19,17,16,19,17,16,19,17,11,11,11,16,19,17,11,11,11,11,10,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3
-db 3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,8,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,15,19,18,11,11,16
-db 19,19,19,19,28,17,16,19,19,19,17,16,19,19,19,17,16,19,19,19,17,16,19,19,19,17,16,19,19,19,17,16,19,19,28,17
-db 11,11,11,10,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3
-db 3,3,3,3,3,3,6,6,11,11,15,19,18,11,11,11,11,11,11,11,11,11,11,11,11,15,19,18,11,11,11,11,11,11,11,11,11,11,11
-db 15,19,19,19,18,16,19,19,19,17,11,11,11,11,11,11,15,19,18,11,11,11,11,11,11,11,15,19,18,11,11,15,19,18,15,19
-db 18,15,19,18,15,19,18,11,11,11,15,19,18,11,11,11,10,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3
-db 3,3,3,3,3,3,3,3,3,8,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,20,11,11,11,15,19,19,19,19,19,18,15,19,19
-db 19,18,15,19,19,19,18,15,19,19,19,18,15,19,19,19,18,15,19,19,19,18,15,19,19,19,18,11,11,10,3,3,3,3,3,3,3,3,3,3
-db 3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,6,6,10,9,7,20,7,8,9
-db 10,9,9,7,9,10,7,10,10,9,7,20,7,8,9,10,9,9,7,9,10,7,10,10,9,7,20,7,8,9,10,20,9,7,9,10,7,10,10,9,7,20,7,8,9,10
-db 9,9,7,9,10,20,10,10,9,7,20,7,8,20,10,9,20,7,9,20,7,10,10,9,7,20,7,8,9,10,3,3,3,3,3,3,3,3,3,3,5,6,3,3,3,3,3,3,3
-db 3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,8,8,8,9,7,8,10,10,8,7,8,7,8,8,10,8,20,8,9,7,8,10,20,20,20,8,7,8,8,20
-db 8,8,8,9,20,8,10,10,8,20,8,7,8,8,20,8,8,8,9,20,8,10,10,8,20,8,7,8,7,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3
-db 3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,6,6,2,2,2,21,2,2,2,2,2,2,2,2,2,2,2,2,2,2,21
-db 2,2,2,2,2,2,2,2,4,4,4,2,2,2,21,2,2,2,2,21,2,2,2,2,2,2,2,2,2,21,2,2,2,2,2,2,2,2,2,21,2,2,2,2,21,2,2,21,2,2,21,2
-db 2,21,2,2,2,2,2,21,2,2,2,2,2,2,2,2,2,2,2,2,2,4,4,4,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2
-db 2,2,2,2,2,2,2,2,2,2,2,4,4,21,2,4,4,2,2,21,21,21,2,2,2,2,21,2,2,2,2,21,2,2,2,2,21,2,2,2,2,21,2,4,4,2,21,2,2,2,2
-db 21,2,2,2,2,4,2,2,2,2,4,2,2,2,2,4,2,2,2,2,4,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,4,2,2,2,2,2,2,2,2,2
-db 2,2,2,2,2,2,6,6,2,2,2,21,2,2,2,2,2,2,2,2,2,2,2,2,2,2,21,2,2,2,2,2,2,2,2,4,4,4,2,2,2,21,2,2,2,2,21,2,2,2,2,2,2
-db 2,2,2,21,2,2,2,2,2,2,2,2,2,21,2,2,2,2,21,2,2,21,2,2,21,2,2,21,2,2,2,2,2,21,2,2,2,2,2,2,2,2,2,2,2,2,2,4,4,4,2,2
-db 2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,4,4,21,2,4,4,2,2,21,21,21,2,2,2
-db 2,21,2,2,2,2,21,2,2,2,2,21,2,2,2,2,21,2,4,4,2,21,2,2,2,2,21,2,2,2,2,4,2,2,2,2,4,2,2,2,2,4,2,2,2,2,4,2,2,2,2,2,2
-db 2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,4,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,6,6
+_level_width:   db 240
 
-_blocks:
-db 1,40,3,40
-db 1,40,3,13
-db 40,40,13,13
-db 40,40,40,40
-db 5,6,13,13
-db 40,40,5,6
-db 0,1,2,3
-db 41,41,40,40
-db 42,41,40,40
-db 42,42,40,40
-db 41,42,40,40
-db 43,43,43,43
-db 32,33,32,33
-db 12,12,40,40
-db 45,44,47,46
-db 45,48,47,48
-db 43,45,43,47
-db 44,43,46,43
-db 48,44,48,46
-db 48,48,48,48
-db 49,49,49,49
-db 49,49,13,13
-db 50,51,53,52
-db 50,51,53,52
-db 50,51,53,52
-db 50,51,53,52
-db 50,51,53,52
-db 50,51,53,52
-db 50,51,53,52
+; The level map is 240 blocks width and 8 blocks hight
+; each byte has the block index
+_level_map:
+db 11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,14,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,15,19,18,11,11,11,11,14,11,11,11,11,14,11,11,11,11,14,11,11,11,11,14,11,11,11,11,14,11,11,11,11,14,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,6,6
+db 11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,16,19,17,11,11,11,14,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,14,11,11,11,11,16,19,19,19,17,11,11,16,19,17,11,11,16,19,17,11,11,16,19,17,11,11,16,19,17,11,11,16,19,17,11,11,16,19,17,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,6,6
+db 11,11,11,14,11,11,11,11,11,11,11,11,11,11,11,11,11,11,14,11,11,11,11,11,11,11,11,11,11,11,11,11,15,19,18,11,11,16,19,17,11,11,11,11,11,11,11,11,14,11,11,11,11,11,11,11,11,11,14,11,11,11,11,14,11,11,14,11,11,14,11,11,14,11,11,11,11,11,14,11,11,11,11,11,11,10,7,10,7,8,8,7,8,8,10,7,7,8,7,7,10,10,9,7,10,8,7,9,8,7,10,9,7,10,7,10,9,9,8,7,7,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,16,19,17,11,11,11,15,19,19,19,18,11,11,15,19,18,11,11,15,19,18,11,11,15,19,18,11,11,15,19,18,11,11,15,19,18,11,11,15,19,18,11,11,11,11,11,10,10,7,9,9,7,7,7,9,7,9,10,10,8,10,9,8,9,8,9,10,7,7,10,7,10,10,10,8,10,9,8,9,8,9,10,7,7,10,7,10,10,10,8,10,9,8,9,8,9,10,7,7,10,6,6
+db 11,11,16,19,17,11,11,11,11,11,11,11,11,11,11,11,11,16,19,17,11,11,11,11,11,11,11,11,11,11,11,16,19,19,28,17,11,15,19,18,11,11,11,11,11,11,11,16,19,17,11,11,11,11,11,11,11,16,19,17,11,11,16,19,17,16,19,17,16,19,17,16,19,17,11,11,11,16,19,17,11,11,11,11,10,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,8,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,15,19,18,11,11,16,19,19,19,19,28,17,16,19,19,19,17,16,19,19,19,17,16,19,19,19,17,16,19,19,19,17,16,19,19,19,17,16,19,19,28,17,11,11,11,10,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,6,6
+db 11,11,15,19,18,11,11,11,11,11,11,11,11,11,11,11,11,15,19,18,11,11,11,11,11,11,11,11,11,11,11,15,19,19,19,18,16,19,19,19,17,11,11,11,11,11,11,15,19,18,11,11,11,11,11,11,11,15,19,18,11,11,15,19,18,15,19,18,15,19,18,15,19,18,11,11,11,15,19,18,11,11,11,10,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,8,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,20,11,11,11,15,19,19,19,19,19,18,15,19,19,19,18,15,19,19,19,18,15,19,19,19,18,15,19,19,19,18,15,19,19,19,18,15,19,19,19,18,11,11,10,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,6,6
+db 10,9,7,20,7,8,9,10,9,9,7,9,10,7,10,10,9,7,20,7,8,9,10,9,9,7,9,10,7,10,10,9,7,20,7,8,9,10,20,9,7,9,10,7,10,10,9,7,20,7,8,9,10,9,9,7,9,10,20,10,10,9,7,20,7,8,20,10,9,20,7,9,20,7,10,10,9,7,20,7,8,9,10,3,3,3,3,3,3,3,3,3,3,5,6,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,8,8,8,9,7,8,10,10,8,7,8,7,8,8,10,8,20,8,9,7,8,10,20,20,20,8,7,8,8,20,8,8,8,9,20,8,10,10,8,20,8,7,8,8,20,8,8,8,9,20,8,10,10,8,20,8,7,8,7,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,6,6
+db 2,2,2,21,2,2,2,2,2,2,2,2,2,2,2,2,2,2,21,2,2,2,2,2,2,2,2,4,4,4,2,2,2,21,2,2,2,2,21,2,2,2,2,2,2,2,2,2,21,2,2,2,2,2,2,2,2,2,21,2,2,2,2,21,2,2,21,2,2,21,2,2,21,2,2,2,2,2,21,2,2,2,2,2,2,2,2,2,2,2,2,2,4,4,4,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,4,4,21,2,4,4,2,2,21,21,21,2,2,2,2,21,2,2,2,2,21,2,2,2,2,21,2,2,2,2,21,2,4,4,2,21,2,2,2,2,21,2,2,2,2,4,2,2,2,2,4,2,2,2,2,4,2,2,2,2,4,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,4,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,6,6
+db 2,2,2,21,2,2,2,2,2,2,2,2,2,2,2,2,2,2,21,2,2,2,2,2,2,2,2,4,4,4,2,2,2,21,2,2,2,2,21,2,2,2,2,2,2,2,2,2,21,2,2,2,2,2,2,2,2,2,21,2,2,2,2,21,2,2,21,2,2,21,2,2,21,2,2,2,2,2,21,2,2,2,2,2,2,2,2,2,2,2,2,2,4,4,4,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,4,4,21,2,4,4,2,2,21,21,21,2,2,2,2,21,2,2,2,2,21,2,2,2,2,21,2,2,2,2,21,2,4,4,2,21,2,2,2,2,21,2,2,2,2,4,2,2,2,2,4,2,2,2,2,4,2,2,2,2,4,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,4,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,6,6
 
-_spship:
+; Each block (4 items) defines a region of 2x2 tiles
+; our tilemap has 24x14 tiles
+; so we can compose the screen with 14x7 blocks
+_block_array:
+db 01,40,03,40  ; block 0
+db 01,40,03,13  ; block 1
+db 40,40,13,13  ; block 2
+db 40,40,40,40  ; block 3
+db 05,06,13,13  ; block 4
+db 40,40,05,06  ; block 5
+db 00,01,02,03  ; block 6
+db 41,41,40,40  ; block 7
+db 42,41,40,40  ; block 8
+db 42,42,40,40  ; block 9
+db 41,42,40,40  ; block 10
+db 43,43,43,43  ; block 11
+db 32,33,32,33  ; block 12
+db 12,12,40,40  ; block 13
+db 45,44,47,46  ; block 14
+db 45,48,47,48  ; block 15
+db 43,45,43,47  ; block 16
+db 44,43,46,43  ; block 17
+db 48,44,48,46  ; block 18
+db 48,48,48,48  ; block 19
+db 49,49,49,49  ; block 20 
+db 49,49,13,13  ; block 21
+db 50,51,53,52  ; block 22
+db 50,51,53,52  ; block 23
+db 50,51,53,52  ; block 24
+db 50,51,53,52  ; block 25
+db 50,51,53,52  ; block 26
+db 50,51,53,52  ; block 27
+db 50,51,53,52  ; block 28
+
+_spenemy:
 db 6,19
 db 0xFF,0x00,0xFF,0x00,0xFF,0x00,0x00,0x25,0x55,0x0A,0xFF,0x00
 db 0xFF,0x00,0xFF,0x00,0xAA,0x10,0x00,0x4B,0x00,0x8D,0xFF,0x00
@@ -387,7 +405,7 @@ db 0xAA,0x10,0x00,0x25,0x00,0x0F,0x00,0x0F,0x00,0x4B,0x00,0x8D
 db 0xFF,0x00,0xAA,0x10,0x00,0x30,0x00,0x0F,0x00,0x0F,0x55,0x0A
 db 0xFF,0x00,0xFF,0x00,0xFF,0x00,0x00,0x30,0x55,0x20,0xFF,0x00
 
-_spplayer
+_spplayerR0:   ; right frame 0
 db 5,17
 db 0xFF,0x00,0x00,0xF0,0x00,0xB4,0xFF,0x00,0xFF,0x00
 db 0xFF,0x00,0x00,0xF0,0x00,0xF0,0x00,0xF0,0xFF,0x00
@@ -407,7 +425,7 @@ db 0xFF,0x00,0x00,0x44,0x00,0x44,0x55,0x00,0xFF,0x00
 db 0xFF,0x00,0x00,0x50,0x00,0x50,0x55,0x00,0xFF,0x00
 db 0xFF,0x00,0x00,0x50,0x00,0x50,0x55,0x00,0xFF,0x00
 
-_spplayer0:
+_spplayerR1:   ; right frame 1
 db 5,17
 db 0xFF,0x00,0xAA,0x50,0x00,0xB4,0x55,0xA0,0xFF,0x00
 db 0xFF,0x00,0x00,0xF0,0x00,0xF0,0xFF,0x00,0xFF,0x00
@@ -427,7 +445,7 @@ db 0xFF,0x00,0x00,0x44,0x00,0x44,0x00,0xD8,0x55,0xA0
 db 0xAA,0x50,0x00,0xA0,0xAA,0x00,0x00,0xF0,0x55,0xA0
 db 0xAA,0x00,0x00,0xF0,0xFF,0x00,0x00,0x00,0xFF,0x00
 
-_spplayeri
+_spplayerL0    ; left frame 0
 db 5,17
 db 0xFF,0x00,0xFF,0x00,0x00,0x78,0x00,0xF0,0xFF,0x00
 db 0xFF,0x00,0x00,0xF0,0x00,0xF0,0x00,0xF0,0xFF,0x00
@@ -447,7 +465,7 @@ db 0xFF,0x00,0xAA,0x00,0x00,0x88,0x00,0x88,0xFF,0x00
 db 0xFF,0x00,0xAA,0x00,0x00,0xA0,0x00,0xA0,0xFF,0x00
 db 0xFF,0x00,0xAA,0x00,0x00,0xA0,0x00,0xA0,0xFF,0x00
 
-_spplayeri0:
+_spplayerL1:    ; left frame 1
 db 5,17
 db 0xFF,0x00,0xAA,0x50,0x00,0x78,0x55,0xA0,0xFF,0x00
 db 0xFF,0x00,0xFF,0x00,0x00,0xF0,0x00,0xF0,0xFF,0x00
@@ -466,55 +484,6 @@ db 0xFF,0x00,0x00,0x44,0x00,0x88,0x00,0x88,0xFF,0x00
 db 0xAA,0x50,0x00,0xE4,0x00,0x88,0x00,0x88,0xFF,0x00
 db 0xAA,0x50,0x00,0xF0,0x55,0x00,0x00,0x50,0x55,0xA0
 db 0xFF,0x00,0x00,0x00,0xFF,0x00,0x00,0xF0,0x55,0x00
-
-_spplayers0:
-db 5,17
-db 0xFF,0x00,0xFF,0x00,0x00,0x78,0x00,0xF0,0xFF,0x00
-db 0xFF,0x00,0x00,0xF0,0x00,0xF0,0x00,0xF0,0xFF,0x00
-db 0xFF,0x00,0xAA,0x00,0x00,0x0A,0x00,0x5A,0xFF,0x00
-db 0xFF,0x00,0x00,0x05,0x00,0x0F,0x00,0x0A,0xFF,0x00
-db 0xFF,0x00,0x00,0x05,0x00,0x0F,0x00,0x0A,0xFF,0x00
-db 0xFF,0x00,0x00,0x05,0x00,0x00,0x00,0x0A,0xFF,0x00
-db 0xFF,0x00,0x00,0x05,0x00,0x0F,0x00,0x0A,0xFF,0x00
-db 0xAA,0x55,0x00,0x00,0x00,0x05,0x00,0x0A,0xFF,0x00
-db 0xAA,0x15,0x00,0x3F,0x00,0x05,0x00,0x05,0x55,0x00
-db 0xFF,0x00,0x00,0x00,0x00,0x0F,0x00,0x0F,0x55,0x00
-db 0xFF,0x00,0x00,0x05,0x00,0x00,0x00,0x0F,0x55,0x00
-db 0xFF,0x00,0xAA,0x00,0x00,0xCC,0x00,0x00,0xFF,0x00
-db 0xFF,0x00,0xAA,0x00,0x00,0x44,0x00,0x88,0xFF,0x00
-db 0xFF,0x00,0xAA,0x00,0x00,0x88,0x00,0x88,0xFF,0x00
-db 0xFF,0x00,0xAA,0x00,0x00,0x88,0x00,0x88,0xFF,0x00
-db 0xFF,0x00,0xAA,0x00,0x00,0xA0,0x00,0xA0,0xFF,0x00
-db 0xFF,0x00,0xAA,0x00,0x00,0xA0,0x00,0xA0,0xFF,0x00
-
-_spplayers1:
-db 5,17
-db 0xFF,0x00,0xFF,0x00,0xFF,0x00,0xFF,0x00,0xFF,0x00,0xFF,0x00
-db 0xFF,0x00,0xFF,0x00,0xAA,0x04,0x00,0x0C,0xFF,0x00,0xFF,0x00
-db 0xFF,0x00,0xFF,0x00,0x00,0x49,0x00,0xC3,0x55,0x08,0xFF,0x00
-db 0xFF,0x00,0xFF,0x00,0x00,0xC3,0x00,0xEB,0x00,0x86,0xFF,0x00
-db 0xFF,0x00,0xAA,0x04,0x00,0xD7,0x00,0xFF,0x00,0x86,0xFF,0x00
-db 0xFF,0x00,0xAA,0x04,0x00,0xD7,0x00,0xFF,0x00,0x86,0xAA,0x50
-db 0xFF,0x00,0x00,0xA4,0x00,0xFF,0x00,0xFF,0x00,0xAE,0x00,0xF0
-db 0xAA,0x50,0xAA,0x04,0x00,0xFF,0x00,0xFF,0x00,0xAE,0xAA,0x50
-db 0xFF,0x00,0x00,0xA4,0x00,0xFF,0x00,0xFF,0x00,0xAE,0xAA,0x50
-db 0xFF,0x00,0x55,0xA0,0x00,0x5D,0x00,0xFF,0x00,0x0C,0x55,0xA0
-db 0xFF,0x00,0x00,0xA4,0x00,0x0C,0x00,0x0C,0x55,0x08,0x55,0xA0
-db 0xFF,0x00,0x00,0xA4,0x00,0x49,0x00,0xC3,0x00,0x0C,0x55,0xA0
-db 0xFF,0x00,0x00,0xF0,0x00,0xD7,0x00,0xFF,0x00,0xD2,0x55,0xA0
-db 0xFF,0x00,0x00,0x58,0x00,0xD7,0x00,0xFF,0x00,0xD2,0xFF,0x00
-db 0xAA,0x04,0x00,0x49,0x00,0xFF,0x00,0xFF,0x00,0xEB,0x55,0x08
-db 0xAA,0x04,0x00,0xD7,0x00,0xFF,0x00,0xFF,0x00,0xEB,0x55,0x08
-db 0xAA,0x04,0x00,0xD7,0x00,0xFF,0x00,0xFF,0x00,0xC3,0x55,0x08
-db 0xAA,0x04,0x00,0xEB,0x00,0xFF,0x00,0xFF,0x00,0xEB,0x55,0x08
-db 0xAA,0x04,0x00,0xD7,0x00,0xFF,0x00,0xFF,0x00,0xEB,0x55,0x08
-db 0xAA,0x04,0x00,0xEB,0x00,0xFF,0x00,0xFF,0x00,0xEB,0x55,0x08
-db 0xAA,0x04,0x00,0xD7,0x00,0xFF,0x00,0xFF,0x00,0xEB,0x55,0x08
-db 0xAA,0x04,0x00,0xEB,0x00,0xFF,0x00,0xFF,0x00,0xEB,0x55,0x08
-db 0xFF,0x00,0x00,0xFF,0x00,0xD7,0x00,0xFF,0x00,0xC3,0x55,0x08
-db 0xAA,0x50,0x00,0xF0,0x00,0xFF,0x00,0xEB,0x00,0x86,0xFF,0x00
-db 0xFF,0x00,0x00,0xF0,0x00,0xA4,0x00,0x0C,0x00,0x58,0xFF,0x00
-db 0xFF,0x00,0xFF,0x00,0xFF,0x00,0xFF,0x00,0x00,0xF0,0x55,0xA0
 
 ; ORIGINAL EXAMPLE IN C
 ; #include "cpcrslib.h"
@@ -547,7 +516,7 @@ db 0xFF,0x00,0xFF,0x00,0xFF,0x00,0xFF,0x00,0x00,0xF0,0x55,0xA0
 ; unsigned char pilaEnemigos[60]; //[4*MAX_PILA_ENEMIGOS];
 ; unsigned char nPila;
 ; 
-; void *p_sprites[7];
+; void *p_sprites[3];
 ; 
 ; void initPointers() {
 ;     p_sprites[0] = &sprite00;

@@ -79,7 +79,7 @@ T_MASK2 equ 0
 ;------------------------------------------------------------------------------------
 
 tiles_tilearray: ; Each tile is 2 x 8 bytes
-; subb000,
+; Tile 000
 db &AB,&03
 db &03,&0C
 db &06,&5D
@@ -88,7 +88,7 @@ db &06,&FF
 db &06,&FF
 db &06,&FF
 db &06,&FF
-; subb001,
+; Tile 001
 db &03,&57
 db &0C,&03
 db &AE,&09
@@ -97,7 +97,7 @@ db &FF,&09
 db &FF,&09
 db &FF,&09
 db &FF,&09
-; subb002,
+; Tile 002
 db &06,&FF
 db &06,&FF
 db &06,&FF
@@ -106,7 +106,7 @@ db &06,&FF
 db &06,&5D
 db &03,&0C
 db &AB,&03
-; subb003,
+; Tile 003
 db &FF,&09
 db &FF,&09
 db &FF,&09
@@ -115,7 +115,7 @@ db &FF,&09
 db &AE,&09
 db &0C,&03
 db &03,&57
-; subb004,
+; Tile 004
 db &AB,&57
 db &06,&09
 db &06,&09
@@ -124,7 +124,7 @@ db &06,&09
 db &06,&09
 db &06,&09
 db &AB,&57
-; subb005,
+; Tile 005
 db &AB,&03
 db &03,&0C
 db &06,&FF
@@ -133,7 +133,7 @@ db &06,&FF
 db &06,&FF
 db &03,&0C
 db &AB,&03
-; subb006,
+; Tile 006
 db &03,&57
 db &0C,&03
 db &FF,&09
@@ -142,7 +142,7 @@ db &FF,&09
 db &FF,&09
 db &0C,&03
 db &03,&57
-; subb007,
+; Tile 007
 db &AB,&57
 db &03,&03
 db &57,&AB
@@ -151,7 +151,7 @@ db &57,&AB
 db &57,&AB
 db &57,&AB
 db &57,&AB
-; subb008,
+; Tile 008
 db &57,&AB
 db &57,&AB
 db &57,&AB
@@ -160,7 +160,7 @@ db &57,&AB
 db &57,&AB
 db &03,&03
 db &AB,&57
-; subb009,
+; Tile 009
 db &03,&03
 db &0C,&0C
 db &FF,&FF
@@ -169,7 +169,7 @@ db &FF,&FF
 db &FF,&FF
 db &0C,&0C
 db &03,&03
-; subb010,
+; Tile 010
 db &57,&AB
 db &57,&AB
 db &57,&AB
@@ -178,7 +178,7 @@ db &57,&AB
 db &57,&AB
 db &57,&AB
 db &57,&AB
-; subb011,
+; Tile 011
 db &03,&03
 db &03,&03
 db &AB,&03
@@ -187,7 +187,7 @@ db &FF,&03
 db &FF,&03
 db &FF,&AB
 db &FF,&AB
-; subb012,
+; Tile 012
 db &03,&03
 db &03,&03
 db &03,&57
@@ -196,7 +196,7 @@ db &03,&FF
 db &03,&FF
 db &57,&FF
 db &57,&FF
-; subb013,
+; Tile 013
 db &03,&03
 db &03,&03
 db &AB,&AB
@@ -205,7 +205,7 @@ db &FF,&FF
 db &FF,&FF
 db &FF,&FF
 db &FF,&FF
-; subb014,
+; Tile 014
 db &03,&03
 db &03,&03
 db &AB,&AB
@@ -214,7 +214,7 @@ db &FF,&FF
 db &FF,&FF
 db &FF,&FF
 db &FF,&FF
-; subb015,
+; Tile 015
 db &03,&03
 db &03,&03
 db &AB,&AB
@@ -223,7 +223,7 @@ db &FF,&FF
 db &FF,&FF
 db &FF,&FF
 db &FF,&FF
-; subb016,
+; Tile 016
 db &3F,&3F
 db &3F,&3F
 db &3F,&3F
@@ -232,7 +232,7 @@ db &3F,&3F
 db &3F,&3F
 db &3F,&3F
 db &3F,&3F
-; subb017,
+; Tile 017
 db &3F,&3F
 db &3F,&3F
 db &3F,&3F
@@ -241,7 +241,7 @@ db &3F,&3F
 db &3F,&3F
 db &3F,&3F
 db &3F,&3F
-; subb018,
+; Tile 018
 db &03,&03
 db &03,&03
 db &AB,&AB
@@ -250,7 +250,7 @@ db &FF,&FF
 db &FF,&FF
 db &FF,&FF
 db &FF,&FF
-; subb019,
+; Tile 019
 db &03,&03
 db &03,&03
 db &AB,&AB
@@ -259,7 +259,7 @@ db &FF,&FF
 db &FF,&FF
 db &FF,&FF
 db &FF,&FF
-; subb020,
+; Tile 020
 db &03,&03
 db &03,&03
 db &AB,&AB
@@ -268,7 +268,7 @@ db &FF,&FF
 db &FF,&FF
 db &FF,&FF
 db &FF,&FF
-; subb021,
+; Tile 021
 db &03,&03
 db &03,&03
 db &AB,&AB
@@ -277,7 +277,7 @@ db &FF,&FF
 db &FF,&FF
 db &FF,&FF
 db &FF,&FF
-; subb022,
+; Tile 022
 db &03,&03
 db &03,&03
 db &AB,&AB
@@ -286,7 +286,7 @@ db &FF,&FF
 db &FF,&FF
 db &FF,&FF
 db &FF,&FF
-; subb023,
+; Tile 023
 db &03,&03
 db &03,&03
 db &AB,&AB
@@ -295,7 +295,7 @@ db &FF,&FF
 db &FF,&FF
 db &FF,&FF
 db &FF,&FF
-; subb024,
+; Tile 024
 db &3F,&3F
 db &3F,&3F
 db &3F,&3F
@@ -304,7 +304,7 @@ db &3F,&3F
 db &3F,&3F
 db &3F,&3F
 db &3F,&3F
-; subb025,
+; Tile 025
 db &3F,&3F
 db &3F,&3F
 db &3F,&3F
@@ -313,7 +313,7 @@ db &3F,&3F
 db &3F,&3F
 db &3F,&3F
 db &3F,&3F
-; subb026,
+; Tile 026
 db &3F,&3F
 db &3F,&3F
 db &3F,&3F
@@ -322,7 +322,7 @@ db &3F,&3F
 db &3F,&3F
 db &3F,&3F
 db &3F,&3F
-; subb027,
+; Tile 027
 db &3F,&3F
 db &3F,&3F
 db &3F,&3F
@@ -331,7 +331,7 @@ db &3F,&3F
 db &3F,&3F
 db &3F,&3F
 db &3F,&3F
-; subb028,
+; Tile 028
 db &03,&03
 db &03,&03
 db &AB,&AB
@@ -340,7 +340,7 @@ db &FF,&FF
 db &FF,&FF
 db &FF,&FF
 db &FF,&FF
-; subb029,
+; Tile 029
 db &03,&03
 db &03,&03
 db &AB,&AB
@@ -349,7 +349,7 @@ db &FF,&FF
 db &FF,&FF
 db &FF,&FF
 db &FF,&FF
-; subb030,
+; Tile 030
 db &03,&03
 db &03,&03
 db &AB,&AB
@@ -358,7 +358,7 @@ db &FF,&FF
 db &FF,&FF
 db &FF,&FF
 db &FF,&FF
-; subb031,
+; Tile 031
 db &03,&03
 db &03,&03
 db &AB,&AB
@@ -367,7 +367,7 @@ db &FF,&FF
 db &FF,&FF
 db &FF,&FF
 db &FF,&FF
-; subb032,
+; Tile 032
 db &30,&FF
 db &30,&30
 db &30,&30
@@ -376,7 +376,7 @@ db &30,&FF
 db &30,&30
 db &30,&30
 db &30,&FF
-; subb033,
+; Tile 033
 db &FF,&30
 db &30,&30
 db &30,&30
@@ -385,7 +385,7 @@ db &FF,&30
 db &30,&30
 db &30,&30
 db &FF,&30
-; subb034,
+; Tile 034
 db &FF,&FF
 db &FF,&FF
 db &FF,&FF
@@ -394,7 +394,7 @@ db &FF,&FF
 db &FF,&FF
 db &FF,&FF
 db &FF,&FF
-; subb035,
+; Tile 035
 db &FF,&FF
 db &FF,&FF
 db &FF,&FF
@@ -403,7 +403,7 @@ db &FF,&FF
 db &FF,&FF
 db &FF,&FF
 db &FF,&FF
-; subb036,
+; Tile 036
 db &FF,&FF
 db &FF,&FF
 db &FF,&FF
@@ -412,7 +412,7 @@ db &FF,&FF
 db &FF,&FF
 db &FF,&FF
 db &FF,&FF
-; subb037,
+; Tile 037
 db &FF,&FF
 db &FF,&FF
 db &FF,&FF
@@ -421,7 +421,7 @@ db &FF,&FF
 db &FF,&FF
 db &FF,&FF
 db &FF,&FF
-; subb038,
+; Tile 038
 db &FF,&FF
 db &FF,&FF
 db &FF,&FF
@@ -430,7 +430,7 @@ db &FF,&FF
 db &FF,&FF
 db &FF,&FF
 db &FF,&FF
-; subb039,
+; Tile 039
 db &FF,&FF
 db &FF,&FF
 db &FF,&FF
@@ -439,7 +439,7 @@ db &FF,&FF
 db &FF,&FF
 db &FF,&FF
 db &FF,&FF
-; subb040,
+; Tile 040
 db &FF,&FF
 db &FF,&FF
 db &FF,&FF
@@ -448,7 +448,7 @@ db &FF,&FF
 db &FF,&FF
 db &FF,&FF
 db &FF,&FF
-; subb041,
+; Tile 041
 db &3F,&3F
 db &3F,&BF
 db &3F,&FF
@@ -457,7 +457,7 @@ db &FF,&FF
 db &FF,&FF
 db &FF,&FF
 db &FF,&FF
-; subb042,
+; Tile 042
 db &3F,&3F
 db &7F,&3F
 db &FF,&7F
@@ -466,7 +466,7 @@ db &FF,&FF
 db &FF,&FF
 db &FF,&FF
 db &FF,&FF
-; subb043,
+; Tile 043
 db &3F,&3F
 db &3F,&3F
 db &3F,&3F
@@ -475,7 +475,7 @@ db &3F,&3F
 db &3F,&3F
 db &3F,&3F
 db &3F,&3F
-; subb044
+; Tile 044
 db &BD,&3F
 db &BD,&3F
 db &BD,&3F
@@ -484,7 +484,7 @@ db &FC,&3F
 db &FC,&3F
 db &FC,&3F
 db &FC,&3F
-; subb045
+; Tile 045
 db &3F,&7E
 db &3F,&7E
 db &3F,&7E
@@ -493,7 +493,7 @@ db &3F,&FC
 db &3F,&FC
 db &3F,&FC
 db &3F,&FC
-; subb046
+; Tile 046
 db &FC,&BD
 db &FC,&BD
 db &FC,&BD
@@ -502,7 +502,7 @@ db &FC,&FC
 db &FC,&FC
 db &FC,&FC
 db &FC,&FC
-; subb047
+; Tile 047
 db &7E,&FC
 db &7E,&FC
 db &7E,&FC
@@ -511,7 +511,7 @@ db &FC,&FC
 db &FC,&FC
 db &FC,&FC
 db &FC,&FC
-; subb048
+; Tile 048
 db &FC,&FC
 db &FC,&FC
 db &FC,&FC
@@ -520,7 +520,7 @@ db &FC,&FC
 db &FC,&FC
 db &FC,&FC
 db &FC,&FC
-; subb049
+; Tile 049
 db &F0,&F0
 db &F0,&F0
 db &F0,&F0
@@ -529,7 +529,7 @@ db &F0,&F0
 db &F0,&F0
 db &F0,&F0
 db &F0,&F0
-; subb050
+; Tile 050
 db &F8,&F0
 db &F0,&F0
 db &A5,&A5
@@ -538,7 +538,7 @@ db &5A,&F0
 db &A5,&A5
 db &F0,&5A
 db &5A,&F0
-
+; Tile 051
 db &F0,&F4
 db &F0,&F0
 db &5A,&5A
@@ -547,7 +547,7 @@ db &F0,&A5
 db &5A,&5A
 db &A5,&F0
 db &F0,&A5
-
+; Tile 052
 db &5A,&F0
 db &F0,&F0
 db &5A,&5A
@@ -556,7 +556,7 @@ db &00,&F4
 db &00,&5E
 db &00,&F4
 db &F0,&F4
-
+; Tile 053
 db &F0,&A5
 db &F0,&F0
 db &A5,&A5
