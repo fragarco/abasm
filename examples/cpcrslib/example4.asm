@@ -358,7 +358,7 @@ sprite3:
     sprite3_move: db 2
 
 
-read 'tilemap_config/tilemap_def.asm'
+read 'tilemap_config/example4_def.asm'
 
 read 'cpcrslib/firmware/setmode.asm'
 read 'cpcrslib/firmware/setink.asm'
