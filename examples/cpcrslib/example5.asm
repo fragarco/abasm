@@ -183,39 +183,28 @@ __draw_test_item_next:
 	ret
 
 check_rightscroll:
-    ld      hl,_scroll_col
-    ld      e,(hl)             ; _scroll_col < _level_scroll_width ?
-    inc     hl
-    ld      d,(hl)
-    ld      hl,_level_scroll_width
-    ld      c,(hl)
-    inc     hl
-    ld      b,(hl)
-    ex      de,hl
+    ld      hl,(_scroll_col)  ; _scroll_col < _level_scroll_width ?
+    ld      bc,(_level_scroll_width)
     xor     a
     sbc     hl,bc
-    ret     p     
+    ret     nc
     ld      a,(_scroll_roff)   ; player.cx >= 40 + _scroll_roff ?
     add     40
     ld      b,a
     ld      a,(player_cx)
     sub     b
-    ret     nc
+    ret     c
     ld      a,1
     ld      (_scroll_mode),a
     ld      (_scroll_vs2),a
     jp      update_scrollmode
 
 check_leftscroll:
-    ld      hl,_scroll_col
-    ld      b,(hl)             ; _scroll_col > 4 ?
-    inc     hl
-    ld      c,(hl)
+    ld      bc,(_scroll_col)   ; _scroll_col > 4 ?
     ld      hl,4
     xor     a
     sbc     hl,bc
-    ret     p
-    ret     z
+    ret     nc
     ld      a,(player_cx)
     ld      b,a
     ld      a,(_scroll_loff)   ; player.cx <= 10 - _scroll_loff ?
@@ -402,6 +391,8 @@ read 'cpcrslib/tilemap/drawmasksptilemap.asm'
 read 'cpcrslib/tilemap/cpcscrollright.asm'
 read 'cpcrslib/tilemap/cpcscrollleft.asm'
 
+read 'cpcrslib/video/setcolor.asm' ; AAA
+
 _player:
     player_sp0: dw _spplayerR0
 	player_sp1: dw _spplayerR0
@@ -466,6 +457,8 @@ _enemy2:
     enemy2_life: db 0
 
 ; Scroll control variables
+; CAUTION: _scroll_mode is used initially to set if there is scroll (=1) or not (=0).
+; After that, depending on vs1 and vs2 its value is changed to the propper scroll mode 1-4
 _scroll_mode:   db 0 ; Defines current scroll state 0=off, 1-4 scroll type
 _scroll_vs1:    db 0 ; vs1 and vs2 define if we should perform a total or half scroll
 _scroll_vs2:    db 0 ; I couldn't figure out what vsX stands for so I had to keep
