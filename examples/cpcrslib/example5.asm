@@ -151,7 +151,7 @@ __draw_for_y:
 	ld      d,&00  ; x index
 __draw_for_x:
     push    de     ; store FOR indexes (x,y)
-	ld      hl,_level_width
+	ld      hl,_level_block_width
 	ld      h,(hl) ; 240
 	ld      l,&00
 	ld      d,l
@@ -182,6 +182,94 @@ __draw_test_item_next:
 	jr      c,__draw_for_y
 	ret
 
+check_rightscroll:
+    ld      hl,_scroll_col
+    ld      e,(hl)             ; _scroll_col < _level_scroll_width ?
+    inc     hl
+    ld      d,(hl)
+    ld      hl,_level_scroll_width
+    ld      c,(hl)
+    inc     hl
+    ld      b,(hl)
+    ex      de,hl
+    xor     a
+    sbc     hl,bc
+    ret     p     
+    ld      a,(_scroll_roff)   ; player.cx >= 40 + _scroll_roff ?
+    add     40
+    ld      b,a
+    ld      a,(player_cx)
+    sub     b
+    ret     nc
+    ld      a,1
+    ld      (_scroll_mode),a
+    ld      (_scroll_vs2),a
+    jp      update_scrollmode
+
+check_leftscroll:
+    ld      hl,_scroll_col
+    ld      b,(hl)             ; _scroll_col > 4 ?
+    inc     hl
+    ld      c,(hl)
+    ld      hl,4
+    xor     a
+    sbc     hl,bc
+    ret     p
+    ret     z
+    ld      a,(player_cx)
+    ld      b,a
+    ld      a,(_scroll_loff)   ; player.cx <= 10 - _scroll_loff ?
+    ld      c,a
+    ld      a,10
+    sub     c
+    sub     b
+    ret     c
+    ld      a,1
+    ld      (_scroll_mode),a   ; _scroll_mode = 1
+    inc     a
+    ld      (_scroll_vs2),a    ; _scroll_vs2  = 2
+    jr      update_scrollmode
+
+update_scrollmode:
+    ; The scroll mode is adjusted depending on the values of _scroll_vs1 and
+    ; _scroll_vs2 BUT only if _scroll_mode is already <> 0 and vs1 and vs2 <> 0
+    ; _scroll_mode = 1   1/2 scroll
+    ; _scroll_mode = 2   1/2 scroll
+    ; _scroll_mode = 3   full scroll
+    ; _scroll_mode = 4   full scroll
+    ld      a,(_scroll_mode)
+    or      a
+    ret     z
+    ld      a,(_scroll_vs2)
+    or      a
+    ret     z
+    ld      b,a
+    ld      a,(_scroll_vs1)
+    or      a
+    ret     z
+    ld      c,a
+    ; BC = vs2,vs1
+    cp      1  ; vs1 == 1?
+    jr      z,__vs1_1_or_4
+    cp      2
+    jr      z,__vs1_2_or_3
+    cp      3
+    jr      z,__vs1_2_or_3
+    cp      4
+    ret     nz
+__vs1_1_or_4:
+    ld      a,4
+    sub     b  ; scroll = 2 if vs2 == 2 else scroll = 3
+    ld      (_scroll_mode),a
+    ret
+__vs1_2_or_3:
+    ld      a,b
+    cp      1  ; vs2 == 1?
+    jr      z,$+4
+    sla     a  ; a = 4
+    ld      (_scroll_mode),a
+    ret
+
 update_playerpos:
     ; by default, the key assignment table used by cpc_TestKey
     ; has the four first entries assigned to cursor keys
@@ -196,18 +284,21 @@ __test_cursor_right:
     cp      41  ; only if cx <= 40
     jr      nc,__test_cursor_left
     inc     a
-    ld      (player_cx),a
-    ld      a,(player_frame)
+    ld      (player_cx),a       ; player.cx = player.cx + 1
+    xor     a
+    ld      (player_move),a     ; player.move = 0
+    ld      a,(player_frame)    ; player.frame = !player.frame
     inc     a
     and     &01
     cp      0
-    jr      nz,__test_right_f2
+    jr      nz,__test_right_f2  ; change sprite according to frame [0,1]
     ld      hl,_spplayerR0
     jr      $+5
     __test_right_f2
     ld      hl,_spplayerR1
-    ld      (player_sp0),hl   ; landing place for $+5
+    ld      (player_sp0),hl     ; landing place for $+5
     ld      (player_frame),a
+    jp      check_rightscroll
 __test_cursor_left:
     ld      l,1
     call    cpc_TestKey
@@ -218,23 +309,29 @@ __test_cursor_left:
     cp      1   ; only if cx > 0
     jr      c,__test_cursor_end
     dec     a
-    ld      (player_cx),a
-        ld      a,(player_frame)
+    ld      (player_cx),a       ; player.cx = player.cx - 1
+    xor     a                 
     inc     a
+    ld      (player_move),a     ; player.move = 1
+    ld      a,(player_frame)    ; player.frame = !player.frame
+    inc     a              
     and     &01
     cp      0
-    jr      nz,__test_left_f2
+    jr      nz,__test_left_f2   ; change sprite according to frame [0,1]
     ld      hl,_spplayerL0
     jr      $+5
     __test_left_f2
     ld      hl,_spplayerL1
-    ld      (player_sp0),hl   ; landing place for $+5
+    ld      (player_sp0),hl     ; landing place for $+5
     ld      (player_frame),a
+    jp      check_leftscroll
 __test_cursor_end:
     ret
 
 update_actor_positions:
-    call update_playerpos
+    xor     a
+    ld      (_scroll_mode),a    ; reset scroll mode to no-scroll 
+    call    update_playerpos
     ret
 
 update_actor_states:
@@ -244,6 +341,36 @@ update_screen:
     call    cpc_ResetTouchedTiles
     ; Mark as dirty current sprite positions, so these tiles
     ; can be restored (deleting the sprite in the process)
+    ld      a,(_scroll_mode)
+    cp      1
+    jr      nz,__update_scroll_no_1:
+    ; PSEUDO SCROLL --> SCREEN START POSITION -1
+    call    cpc_ScrollLeft00
+    xor     a
+    ld      (_scroll_loff),a
+    inc     a
+    ld      (_scroll_roff),a
+    ld      (_scroll_vs1),a
+    jr      __update_draw_screen
+__update_scroll_no_1:
+    cp      2
+    jr      nz,__update_scroll_no_2:
+    ; PSEUDO SCROLL --> SCREEN START POSITION +1
+    call    cpc_ScrollRight00
+    xor     a
+    ld      (_scroll_roff),a
+    inc     a
+    ld      (_scroll_loff),a
+    inc     a
+    ld      (_scroll_vs1),a
+    jr      __update_draw_screen
+__update_scroll_no_2:
+    cp      3
+    jr      nz,__update_scroll_no_3:
+__update_scroll_no_3:
+    cp      4
+    jr      nz,__update_draw_screen:
+__update_draw_screen:
     ld      hl,_player
     call    cpc_PutSpTileMap
     call    cpc_RestoreTileMap ; restore original background
@@ -271,6 +398,9 @@ read 'cpcrslib/tilemap/resettouchedtiles.asm'
 read 'cpcrslib/tilemap/putsptilemap.asm'
 read 'cpcrslib/tilemap/restoretilemap.asm'
 read 'cpcrslib/tilemap/drawmasksptilemap.asm'
+
+read 'cpcrslib/tilemap/cpc_ScrollRight00.s'
+read 'cpcrslib/tilemap/cpc_ScrollLeft00.s'
 
 _player:
     player_sp0: dw _spplayerR0
@@ -335,10 +465,23 @@ _enemy2:
     enemy2_dir: db 0
     enemy2_life: db 0
 
-_level_width:   db 240
+; Scroll control variables
+_scroll_mode:   db 0 ; Defines current scroll state 0=off, 1-4 scroll type
+_scroll_vs1:    db 0 ; vs1 and vs2 define if we should perform a total or half scroll
+_scroll_vs2:    db 0 ; I couldn't figure out what vsX stands for so I had to keep
+                     ; original names :(
+_scroll_roff:   db 0 ; Modifies the point (column) when the right scroll starts
+_scroll_loff:   db 0 ; Modifies the point (column) when the left scroll starts
+_scroll_col:    dw 0 ; Current "scroll position" or column
+_scroll_colmax: dw 0 ; 
 
-; The level map is 240 blocks width and 8 blocks hight
-; each byte has the block index
+; The level map is 240 blocks width and 8 blocks hight.
+; Each byte has the block index.
+; Each block defines an area of 2x2 tiles
+; Each tile is 2x8 bytes (in mode 0, 4x8 pixeles).
+_level_block_width:  db 240
+_level_block_hight:  db 8
+_level_scroll_width: dw 900 ; max "byte" aligned positions or "virtual columns"
 _level_map:
 db 11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,14,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,15,19,18,11,11,11,11,14,11,11,11,11,14,11,11,11,11,14,11,11,11,11,14,11,11,11,11,14,11,11,11,11,14,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,6,6
 db 11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,16,19,17,11,11,11,14,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,14,11,11,11,11,16,19,19,19,17,11,11,16,19,17,11,11,16,19,17,11,11,16,19,17,11,11,16,19,17,11,11,16,19,17,11,11,16,19,17,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,6,6
