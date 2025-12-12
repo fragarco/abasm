@@ -20,22 +20,53 @@
 
 read 'cpcrslib/tilemap/constants.asm'
 
-; CPC_SCROLLRIGHT00
+; CPC_SCROLLLEFT00
 ; 
 ; Inputs:
 ;     None
 ; Outputs:
 ;	  None
 ;     Flags, HL B are modified.
-cpc_ScrollRight00:
+cpc_ScrollLeft00:
 	ld      hl,tiles_videomemory_lines
 	ld      b,20
-__scrollr00_addloop:
+__scrolll00_addloop:
+	dec     (hl)
+	inc     hl
+	inc     hl
+	djnz    __scrolll00_addloop
+	ld      hl,(__showt2_doublubuffer_ini+1) ; self modifying code
+	inc     hl
+	ld      (__showt2_doublubuffer_ini+1),hl
+	ret
+
+
+; CPC_SCROLLLEFT01
+; 
+; Inputs:
+;     None
+; Outputs:
+;	  None
+;     Flags, HL B are modified.
+cpc_ScrollLeft01:
+	ld      hl,tiles_videomemory_lines
+	ld      b,20
+__scrolll01_addloop:
 	inc     (hl)
 	inc     hl
 	inc     hl
-	djnz    __scrollr00_addloop
+	djnz    __scrolll01_addloop
 	ld      hl,(__showt2_doublubuffer_ini+1) ; self modifying code
 	dec     hl
 	ld      (__showt2_doublubuffer_ini+1),hl
+
+	ld      hl,tiles_bgmap+1
+	ld      de,tiles_bgmap
+	ld      bc,(T_HSIZE_BYTES*T_WSIZE_BYTES)/16 - 1
+	ldir
+
+	ld     hl,T_DOUBLEBUFFER_ADDR+2
+	ld     de,T_DOUBLEBUFFER_ADDR
+	ld     bc,(T_HSIZE_BYTES*T_WSIZE_BYTES) - 1
+	ldir
 	ret

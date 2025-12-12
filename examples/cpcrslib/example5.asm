@@ -399,8 +399,8 @@ read 'cpcrslib/tilemap/putsptilemap.asm'
 read 'cpcrslib/tilemap/restoretilemap.asm'
 read 'cpcrslib/tilemap/drawmasksptilemap.asm'
 
-read 'cpcrslib/tilemap/cpc_ScrollRight00.s'
-read 'cpcrslib/tilemap/cpc_ScrollLeft00.s'
+read 'cpcrslib/tilemap/cpcscrollright.asm'
+read 'cpcrslib/tilemap/cpcscrollleft.asm'
 
 _player:
     player_sp0: dw _spplayerR0

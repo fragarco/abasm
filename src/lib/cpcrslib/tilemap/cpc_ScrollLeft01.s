@@ -1,35 +1,51 @@
-.module tilemap
+; Code adapted to ABASM syntax by Javier "Dwayne Hicks" Garcia
+; Based on CPCRSLIB:
+; Copyright (c) 2008-2015 Raúl Simarro <artaburu@hotmail.com>
+;
+; Permission is hereby granted, free of charge, to any person obtaining a copy of
+; this software and associated documentation files (the "Software"), to deal in the
+; Software without restriction, including without limitation the rights to use, copy,
+; modify, merge, publish, distribute, sublicense, and/or sell copies of the Software,
+; and to permit persons to whom the Software is furnished to do so, subject to the
+; following conditions:
+;
+; The above copyright notice and this permission notice shall be included in all copies
+; or substantial portions of the Software.
+; THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED,
+; INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR
+; PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE
+; FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR
+; OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
+; DEALINGS IN THE SOFTWARE.
 
-.include "TileMap.s"
-.include "TileMapC.h"
+read 'cpcrslib/tilemap/constants.asm'
 
-.globl _cpc_ScrollLeft01
+; CPC_SCROLLLEFT01
+; 
+; Inputs:
+;     None
+; Outputs:
+;	  None
+;     Flags, HL B are modified.
+cpc_ScrollLeft01:
+	ld      hl,tiles_videomemory_lines
+	ld      b,20
+__scrolll00_addloop:
+	inc     (hl)
+	inc     hl
+	inc     hl
+	djnz    __scrolll00_addloop
+	ld      hl,(__showt2_doublubuffer_ini+1) ; self modifying code
+	dec     hl
+	ld      (__showt2_doublubuffer_ini+1),hl
 
-_cpc_ScrollLeft01::
+	ld      hl,#_pantalla_juego+1
+	ld      de,#_pantalla_juego
+	ld      bc,#alto_pantalla_bytes*ancho_pantalla_bytes/16 -1
+	ldir
 
-	;se incrementa cada posiciones_pantalla
-	LD HL,#_posiciones_pantalla
-	ld b,#20
-	buc_suma14:
-	INC (HL)
-	INC HL
-	INC HL
-	djnz buc_suma14
-
-
-	ld hl,(#posicion_inicio_pantalla_visible_sb+1)
-	dec HL
-	ld (#posicion_inicio_pantalla_visible_sb+1),HL
-
-
-	ld hl,#_pantalla_juego+1
-	ld de,#_pantalla_juego
-	ld bc,#alto_pantalla_bytes*ancho_pantalla_bytes/16 -1
-	LDIR
-
-	ld hl,#posicion_inicial_superbuffer+2
-	ld de,#posicion_inicial_superbuffer
-	ld bc,#alto_pantalla_bytes*ancho_pantalla_bytes -1
-	LDIR
-
-	RET
+	ld     hl,#posicion_inicial_superbuffer+2
+	ld     de,#posicion_inicial_superbuffer
+	ld     bc,#alto_pantalla_bytes*ancho_pantalla_bytes -1
+	ldir
+	ret

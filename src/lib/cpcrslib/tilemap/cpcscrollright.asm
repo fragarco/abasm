@@ -20,22 +20,53 @@
 
 read 'cpcrslib/tilemap/constants.asm'
 
-; CPC_SCROLLLEFT00
+; CPC_SCROLLRIGHT00
 ; 
 ; Inputs:
 ;     None
 ; Outputs:
 ;	  None
 ;     Flags, HL B are modified.
-cpc_ScrollLeft00:
+cpc_ScrollRight00:
 	ld      hl,tiles_videomemory_lines
 	ld      b,20
-__scrolll00_addloop:
+__scrollr00_addloop:
+	inc     (hl)
+	inc     hl
+	inc     hl
+	djnz    __scrollr00_addloop
+	ld      hl,(__showt2_doublubuffer_ini+1) ; self modifying code
+	dec     hl
+	ld      (__showt2_doublubuffer_ini+1),hl
+	ret
+
+
+; CPC_SCROLLRIGHT01
+; 
+; Inputs:
+;     None
+; Outputs:
+;	  None
+;     Flags, HL B are modified.
+cpc_ScrollRight01:
+	ld      hl,tiles_videomemory_lines
+	ld      b,20
+__scrollr01_addloop:
 	dec     (hl)
 	inc     hl
 	inc     hl
-	djnz    __scrolll00_addloop
+	djnz    __scrollr01_addloop
 	ld      hl,(__showt2_doublubuffer_ini+1) ; self modifying code
-	inc     hl
+	dec     hl
 	ld      (__showt2_doublubuffer_ini+1),hl
+
+	ld      hl,tiles_bgmap + ((T_HSIZE_BYTES*T_WSIZE_BYTES)/16 - 1)
+	ld      de,tiles_bgmap + ((T_HSIZE_BYTES*T_WSIZE_BYTES)/16)
+	ld      bc,(T_HSIZE_BYTES*T_WSIZE_BYTES)/16 - 1
+	lddr
+
+	ld     hl,T_DOUBLEBUFFER_ADDR + (T_HSIZE_BYTES*T_WSIZE_BYTES) - 2
+	ld     de,T_DOUBLEBUFFER_ADDR + (T_HSIZE_BYTES*T_WSIZE_BYTES)
+	ld     bc,(T_HSIZE_BYTES*T_WSIZE_BYTES) - 1
+	lddr
 	ret
