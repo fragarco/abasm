@@ -332,8 +332,8 @@ update_screen:
     ; can be restored (deleting the sprite in the process)
     ld      a,(_scroll_mode)
     cp      1
-    jr      nz,__update_scroll_no_1:
-    ; PSEUDO SCROLL --> SCREEN START POSITION -1
+    jr      nz,__update_scroll_no_1
+    ; SCROLL LEFT (PLAYER MOVES RIGHT) -> FIRST STAGE
     call    cpc_ScrollLeft00
     xor     a
     ld      (_scroll_loff),a
@@ -343,8 +343,8 @@ update_screen:
     jr      __update_draw_screen
 __update_scroll_no_1:
     cp      2
-    jr      nz,__update_scroll_no_2:
-    ; PSEUDO SCROLL --> SCREEN START POSITION +1
+    jr      nz,__update_scroll_no_2
+    ; SCROLL RIGHT (PLAYER MOVES LEFT) -> STAGE 1
     call    cpc_ScrollRight00
     xor     a
     ld      (_scroll_roff),a
@@ -355,10 +355,48 @@ __update_scroll_no_1:
     jr      __update_draw_screen
 __update_scroll_no_2:
     cp      3
-    jr      nz,__update_scroll_no_3:
+    jr      nz,__update_scroll_no_3
+    ; SCROLL LEFT (PLAYER MOVES RIGHT) -> SECOND STAGE
+    ld      a,(player_cx)
+    dec     a
+    dec     a
+    ld      (player_cx),a    ; cx = cx - 2
+    ld      a,(player_ox)
+    dec     a
+    dec     a
+    ld      (player_ox),a    ; ox = ox - 2
+    ld      a,3
+    ld      (_scroll_vs1),a  ; vs1 = 3
+    xor     a
+    ld      (_scroll_roff),a ; e = 0
+    ld      a,(_scroll_col)
+    inc     a
+    inc     a
+    ld      (_scroll_col),a  ; col = col + 2
+    call    cpc_ScrollLeft01
+    call    draw_column_D
 __update_scroll_no_3:
     cp      4
-    jr      nz,__update_draw_screen:
+    jr      nz,__update_draw_screen
+    ; SCROLL RIGHT (PLAYER MOVES LEFT) -> STAGE 2
+    ld      a,(player_cx)
+    inc     a
+    inc     a
+    ld      (player_cx),a    ; cx = cx + 2
+    ld      a,(player_ox)
+    inc     a
+    inc     a
+    ld      (player_ox),a    ; ox = ox + 2
+    ld      a,4
+    ld      (_scroll_vs1),a  ; vs1 = 4
+    xor     a
+    ld      (_scroll_loff),a ; f = 0
+    ld      a,(_scroll_col)
+    dec     a
+    dec     a
+    ld      (_scroll_col),a  ; col = col - 2
+    call    cpc_ScrollRight01
+    call    draw_column_I
 __update_draw_screen:
     ld      hl,_player
     call    cpc_PutSpTileMap
@@ -620,6 +658,227 @@ db 0xFF,0x00,0x00,0x44,0x00,0x88,0x00,0x88,0xFF,0x00
 db 0xAA,0x50,0x00,0xE4,0x00,0x88,0x00,0x88,0xFF,0x00
 db 0xAA,0x50,0x00,0xF0,0x55,0x00,0x00,0x50,0x55,0xA0
 db 0xFF,0x00,0x00,0x00,0xFF,0x00,0x00,0xF0,0x55,0x00
+
+draw_column_D:
+    xor     a
+    ld      (paresI),a
+    ld      hl,(_pointerH)
+    push    hl
+    bit     0,l
+    call    nz,setParesI
+    ld      bc,28         ; ancho tiles
+    add     hl,bc
+    srl     h
+    rr      l
+    ld      (print_tileA+1),hl
+    pop     hl
+    inc     hl
+    ld      (_pointerH),hl
+    ld      iy,datos_scroll_CD     ; tiles 1 y 3
+	push    iy
+	push    ix
+    call    vetiles
+	pop     ix
+	pop     iy
+
+draw_column_I:
+    xor     a
+    ld      (paresI),a
+    ld      hl,(_pointerH)
+    bit     0,l
+    call    nz,setParesI
+    push    hl
+    srl     h
+    rr      l
+    ld      (print_tileA+1),hl
+    pop     hl
+    dec     hl
+    ld      (_pointerH),hl
+    ld      iy,datos_scroll_CI      ; tiles 1 y 3
+	push    iy
+	push    ix
+    call    vetiles
+	pop     ix
+	pop     iy
+	ret
+	
+vetiles:            ; correspendiendo a pantalla juego y superbuffer
+    ld      a,7
+bucle_ciA:
+    push    af
+    ld      l,(iy+0)
+    ld      h,(iy+1)
+    ld      (tile3A+1),hl
+    ld      l,(iy+4)
+    ld      h,(iy+5)
+    ld      (tile1A+1),hl
+    ld      l,(iy+2)
+    ld      h,(iy+3)
+    ld      (tile3deA+1),hl
+    ld      l,(iy+6)
+    ld      h,(iy+7)
+    ld      (tile1deA+1),hl
+    ld      l,(iy+8)
+    ld      h,(iy+9)         ; inicio datos en línea pantalla total
+    call    print_tileA
+    ld      de,10
+    add     iy,de
+    pop     af
+    dec     a
+    jp      nz,bucle_ciA
+    ret
+
+setParesI:
+    ld      a,&23          ; PONER UN inC HL
+    ld      (paresI),A
+    ret
+    ; HL línea correspondiente a los datos origen del mapa global
+    ; BC tiene el número de columna a buscar
+print_tileA:
+    ld      bc,0
+    ld      de,_level_map
+    add     hl,de
+    add     hl,bc
+    ld      l,(hl)   ; bloque
+    ld      h,0
+    add     hl,hl
+    add     hl,hl
+    ld      de,_block_array
+    add     hl,de           ; EN HL están los datos del bloque
+paresI:
+    nop     ; INC HL = #0x23
+    push    hl
+    pop     ix ; apunta al bloque
+    ld      a,(hl)
+tile1A:
+    ld      hl,0
+    ld      (hl),a
+    ; Y ahora se dibujan esos tiles en el buffer
+tile1deA:
+    ld      de, 0
+    call    dibuja_tile
+tile3A:
+    ld      hl,0
+    ld      a,(ix+2)
+    ld      (hl),a
+tile3deA:
+    ld      de,0
+
+db 0,1,2,7
+
+dibuja_tile:
+    ; HL datos tile
+    ; DE destino
+    ;   push bc
+    ld      l,a
+    ld      h,0
+    add     hl,hl
+    add     hl,hl
+    add     hl,hl
+    add     hl,hl	; X16
+    ld      bc,tiles_tilearray
+    add     hl,bc
+    ; tiles_composition_buffer + ancho * y + x
+	ldi
+	ldi		;de<-hl
+	ex      de,hl
+	ld      bc,54	; ancho - 2  (bytes)
+	ld      a,c
+	add     hl,bc
+	ex      de,hl
+	ldi
+	ldi
+	ex      de,hl
+	ld      c,a
+	add     hl,bc
+	ex      de,hl
+	ldi
+	ldi
+	ex      de,hl
+	ld      c,a
+	add     hl,bc
+	ex      de,hl
+	ldi
+	ldi
+	ex      de,hl
+	ld      c,a
+	add     hl,bc
+	ex      de,hl
+	ldi
+	ldi
+	ex      de,hl
+	ld      c,a
+	add     hl,bc
+	ex      de,hl
+	ldi
+	ldi
+	ex      de,hl
+	ld      c,a
+	add     hl,bc
+	ex      de,hl
+	ldi
+	ldi
+	ex      de,hl
+	ld      c,a
+	add     hl,bc
+	ex      de,hl
+	ldi
+	ldi
+    ret
+
+datos_scroll_CD:
+    dw tiles_bgmap + 28 * 1 + 26, 0x100 + 52 + 56 * 1 * 8
+    dw tiles_bgmap + 28 * 0 + 26, 0x100 + 52 + 56 * 0 * 8
+    dw 240 * 0
+    dw tiles_bgmap + 28 * 3 + 26, 0x100 + 52 + 56 * 3 * 8
+    dw tiles_bgmap + 28 * 2 + 26, 0x100 + 52 + 56 * 2 * 8
+    dw 240 * 1
+    dw tiles_bgmap + 28 * 5 + 26, 0x100 + 52 + 56 * 5 * 8
+    dw tiles_bgmap + 28 * 4 + 26, 0x100 + 52 + 56 * 4 * 8
+    dw 240 * 2
+    dw tiles_bgmap + 28 * 7 + 26, 0x100 + 52 + 56 * 7 * 8
+    dw tiles_bgmap + 28 * 6 + 26, 0x100 + 52 + 56 * 6 * 8
+    dw 240 * 3
+    dw tiles_bgmap + 28 * 9 + 26, 0x100 + 52 + 56 * 9 * 8
+    dw tiles_bgmap + 28 * 8 + 26, 0x100 + 52 + 56 * 8 * 8
+    dw 240 * 4
+    dw tiles_bgmap + 28 * 11 + 26, 0x100 +52 + 56 * 11 * 8
+    dw tiles_bgmap + 28 * 10 + 26, 0x100 +52 + 56 * 10 * 8
+    dw 240 * 5
+    dw tiles_bgmap + 28 * 13 + 26, 0x100 + 52 + 56 * 13 * 8
+    dw tiles_bgmap + 28 * 12 + 26, 0x100 + 52 + 56 * 12 * 8
+    dw 240 * 6
+    dw tiles_bgmap + 28 * 15 + 26, 0x100 + 52 + 56 * 15 * 8
+    dw tiles_bgmap + 28 * 14 + 26, 0x100 + 52 + 56 * 14 * 8
+    dw 240 * 7
+
+datos_scroll_CI:
+    dw tiles_bgmap+28*1, 0x100+56*1*8
+    dw tiles_bgmap+28*0, 0x100+56*0*8
+    dw 240*0
+    dw tiles_bgmap+28*3, 0x100+56*3*8
+    dw tiles_bgmap+28*2, 0x100+56*2*8
+    dw 240*1
+    dw tiles_bgmap+28*5, 0x100+56*5*8
+    dw tiles_bgmap+28*4, 0x100+56*4*8
+    dw 240*2
+    dw tiles_bgmap+28*7, 0x100+56*7*8
+    dw tiles_bgmap+28*6, 0x100+56*6*8
+    dw 240*3
+    dw tiles_bgmap+28*9, 0x100+56*9*8
+    dw tiles_bgmap+28*8, 0x100+56*8*8
+    dw 240*4
+    dw tiles_bgmap+28*11, 0x100+56*11*8
+    dw tiles_bgmap+28*10, 0x100+56*10*8
+    dw 240*5
+    dw tiles_bgmap+28*13, 0x100+56*13*8
+    dw tiles_bgmap+28*12, 0x100+56*12*8
+    dw 240*6
+    dw tiles_bgmap+28*15, 0x100+56*15*8
+    dw tiles_bgmap+28*14, 0x100+56*14*8
+    dw 240*7 
+
+_pointerH: dw 0
 
 ; ORIGINAL EXAMPLE IN C
 ; #include "cpcrslib.h"
