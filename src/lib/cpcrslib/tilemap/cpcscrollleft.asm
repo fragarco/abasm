@@ -21,7 +21,10 @@
 read 'cpcrslib/tilemap/constants.asm'
 
 ; CPC_SCROLLLEFT00
-; 
+; Decrements by one the 20 entries in the video memory addresses stored in the
+; lookup table tiles_videomemory_lines which, as a result, shiftes the drawn
+; image to the LEFT. the column (2 bytes) that goes away on the left is added
+; to the right.
 ; Inputs:
 ;     None
 ; Outputs:

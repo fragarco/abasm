@@ -23,9 +23,9 @@ read 'cpcrslib/tilemap/showtilemap.asm'
 
 ; CPC_RENDERTILEMAP
 ; Renders the tilemap in the double buffer and
-; modifies the render routine to speed up the draw to
+; modifies the show routine to speed up the draw to
 ; video memory. The double buffer follows the same structure
-; as sprites does (bytes are not consecutive).
+; as sprites does (lines are not consecutive).
 ; Inputs:
 ;     None
 ; Outputs:
@@ -40,17 +40,15 @@ cpc_RenderTileMap:
 		ld      hl,tiles_bgmap
 		call    _showt_fill_doublebuffer
 		; now that we have the doublebuffer ready
-		; we move the image to the video memory
+		; let's modify the show routines to speed up
+		; the show to video memory call
 		ld      hl,T_DOUBLEBUFFER_ADDR
 		push    hl
 		ld      (__showt2_doublubuffer_ini+1),hl
 		ld      b,T_WSIZE_BYTES - 4 * T_HIDDEN_W0
 		ld      c,T_HSIZE_BYTES - 16 * T_HIDDEN_H0
-		ld      hl,tiles_videomemory_lines
-		ld      e,(hl)
-		inc     hl
-		ld      d,(hl)
-		ex      de,hl
+		ld      hl,(tiles_videomemory_lines)
+		ld      de,tiles_videomemory_lines
 		ld      (__scans_videomem_ini+1),hl
 		pop     de
 		jp      _showt_create_scans
@@ -62,7 +60,8 @@ cpc_RenderTileMap:
 		ld      hl,tiles_bgmap
 		call    _showt_fill_doublebuffer
 		; now that we have the doublebuffer ready
-		; we move the image to the video memory
+		; let's modify the show routines to speed up
+		; the show to video memory call and also
 		; lets skip the hidden tiles
 		ld      de,T_DOUBLEBUFFER_ADDR
 		ld      hl,T_HIDDEN_W0 * 2
@@ -71,11 +70,11 @@ cpc_RenderTileMap:
 		ld      b,T_HIDDEN_H0 * 8
 		xor     a
 		cp      b
-		jr      z,_showt_fill_videomem
+		jr      z,_showt_prepare_videomem
 	_showt_skip_hhidden:
 		add     hl,de
 		djnz    _showt_skip_hhidden
-	_showt_fill_videomem:
+	_showt_prepare_videomem:
 		push    hl
 		ld      (__showt2_doublubuffer_ini+1),hl ; self modifying code
 		ld      b,T_WSIZE_BYTES - 4 * T_HIDDEN_W0

@@ -167,7 +167,7 @@ cpc_ShowTileMap:
 		
 	ELSE
 
-	; cpc_ShowTileMap2:
+	; cpc_ShowTileMap:
 		ld      bc,256 * (T_WSIZE_BYTES - 4 * T_HIDDEN_W0) + T_HSIZE_BYTES - 16 * T_HIDDEN_H0
 	__showt2_videomem_ini:
 		ld      hl,0    ; self modifying code
@@ -264,7 +264,8 @@ cpc_ShowTileMap:
 
 	; PRIVATE ROUTINE
 	; HL gets modified and the start address of the videomemory is written
-	; Fills a lookup table with video memory positions
+	; Fills a lookup table with video memory positions that will be used
+	; by cpc_ShowTileMap in the drawing process.
 	_showt_create_scans:
 		ld      ix,_showtiles_scantable
 	__scans_videomem_ini:
