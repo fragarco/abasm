@@ -21,7 +21,11 @@
 read 'cpcrslib/tilemap/constants.asm'
 
 ; CPC_SCROLLRIGHT00
-; 
+; Increments by one the start address for the 20 entries stored in the
+; lookup table tiles_videomemory_lines. It also decreases by one the first
+; double buffer column to show in the cpc_ShowTileMap routine. Both things,
+; will shift the tilemap rendered image to the RIGHT. the column (2 bytes)
+; that goes away on the right is added to the left.
 ; Inputs:
 ;     None
 ; Outputs:
@@ -60,7 +64,7 @@ __scrollr01_addloop:
 	dec     hl
 	ld      (__showt2_doublubuffer_ini+1),hl
 
-	ld      hl,tiles_bgmap + ((T_HSIZE_BYTES*T_WSIZE_BYTES)/16 - 1)
+	ld      hl,tiles_bgmap + ((T_HSIZE_BYTES*T_WSIZE_BYTES)/16) - 1
 	ld      de,tiles_bgmap + ((T_HSIZE_BYTES*T_WSIZE_BYTES)/16)
 	ld      bc,(T_HSIZE_BYTES*T_WSIZE_BYTES)/16 - 1
 	lddr

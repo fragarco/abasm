@@ -269,7 +269,7 @@ __test_cursor_right:
     ld      a,h
     or      l
     jr      z,__test_cursor_left
-    jp      cpc_ScrollLeft00 ;AAA
+    jp      cpc_ScrollLeft01 ;AAA
 
     ld      a,(player_cx)
     cp      41  ; only if cx <= 40
@@ -296,7 +296,7 @@ __test_cursor_left:
     ld      a,h
     or      l
     jr      z,__test_cursor_end
-    jp      cpc_ScrollRight00 ;AAA
+    jp      cpc_ScrollRight01 ;AAA
 
     ld      a,(player_cx)
     cp      1   ; only if cx > 0
