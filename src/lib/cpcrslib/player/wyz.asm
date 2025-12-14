@@ -40,7 +40,7 @@ cpc_WyzConfigurePlayer:
 ; are passed in the stack as follows (first push to last push): 
 ; - Songs table address
 ; - Effects table address
-; - "Pautas" table address
+; - Rules table address
 ; - Sounds table address
 ; Inputs:
 ;     All values are passed in the stack
@@ -65,29 +65,23 @@ cpc_WyzInitPlayer:
 	ret
 
 ; cpc_WyzLoadSong
-; Passes an address to a _WYZ_SONG in the stack which is loaded.
+; Sets the selected song number.
 ; Inputs:
-;     All values are passed in the stack
+;     A  Song number.
 ; Outputs:
 ;	  None
 ;     AF, HL, DE and IX are modified
 cpc_WyzLoadSong:
-	ld      hl,2
-	add     hl,sp
-	ld      a,(hl)
 	jp      _WYZ_CARGA_CANCION_WYZ0
 
 ; cpc_WyzSetTempo
-; Sets the _WYZ_TEMPO.
+; Sets the TEMPO.
 ; Inputs:
-;     A  _WYZ_TEMPO value
+;     A  TEMPO value
 ; Outputs:
 ;	  None
 ;     All registers are preserved
 cpc_WyzSetTempo:
-	ld      hl,2
-	add     hl,sp
-	ld      a,(hl)
 	ld      (_wyz_dir_tempo+1),a
 	ret
 
@@ -488,7 +482,7 @@ _WYZ_INIT_DECODER:
     ld      (_WYZ_PUNTERO_P),de
     ld	    hl,(_WYZ_PUNTERO_P_DECP)
     call    _WYZ_DECODE_CANAL    ;CANAL P
-    ld	    (_WYZ_PUNTERO_DECC),hl
+    ld	    (_WYZ_PUNTERO_DECP),hl
     ret
 
 ; DECODIFICA NOTAS de UN CANAL
@@ -723,7 +717,7 @@ _WYZ_WRITEPSGHL:
 ; LOCALIZA _WYZ_NOTA CANAL A
 ; IN (_WYZ_PUNTERO_A)
 _WYZ_LOCALIZA_NOTA:
-    ld      l,0 (ix)     ; HL = (PUNTERO_A_C_B)
+    ld      l,(ix+0)     ; HL = (PUNTERO_A_C_B)
     ld      h,(ix+1)
     ld      a,(hl)
     and     0b11000000   ; COMANDO?
@@ -765,14 +759,14 @@ COM_EFECTO:
     call    _WYZ_INICIA_SONIDO
     ret
 COM_ENVOLVENTE:
-    bit     2,A
-    ret     Z            ; IGNORA - ERROR
+    bit     2,a
+    ret     z            ; IGNORA - ERROR
 
     inc     hl
-    ld      0 (ix),L
-    ld      (ix+1),H
-    ld      L,C
-    ld      H,B
+    ld      (ix+0),l
+    ld      (ix+1),h
+    ld      l,c
+    ld      h,b
     ld	    (hl),0b00010000  ; ENCIENDE EFECTO ENVOLVENTE
     jr      _WYZ_LOCALIZA_NOTA
 LNJP0:
@@ -869,15 +863,15 @@ FIN_NOTA_P:
     ld      de,(_WYZ_CANAL_P)
     ld      (ix+0),e
     ld      (ix+1),d
-    ld      hl,(_WYZ_PUNTERO_DECC)	; CARGA PUNTERO DECODER
+    ld      hl,(_WYZ_PUNTERO_DECP)	; CARGA PUNTERO DECODER
     push	bc
     call    _WYZ_DECODE_CANAL    	; DECODIFICA CANAL
     pop     bc
-    ld      (_WYZ_PUNTERO_DECC),hl	; GUARDA PUNTERO DECODER
+    ld      (_WYZ_PUNTERO_DECP),hl	; GUARDA PUNTERO DECODER
     jp      _WYZ_LOCALIZA_EFECTO
 FIN_CANAL_P:
     ld      hl,(_WYZ_PUNTERO_P_DECP); CARGA PUNTERO INICIAL DECODER
-    ld      (_WYZ_PUNTERO_DECC),hl
+    ld      (_WYZ_PUNTERO_DECP),hl
     jr      FIN_NOTA_P
 NO_FIN_CANAL_P:
     ld      (ix+0),l                ; (PUNTERO_A_B_C)=hl GUARDA PUNTERO
@@ -980,8 +974,8 @@ _WYZ_NOTA:
     ld      b,a
     jr      nz,EVOLVENTES
     ld      a,b
-    ld      hl,DATOS_NOTAS
-    rlca                    ;X2
+    ld      hl,_WYZ_DATOS_NOTAS
+    rlca           ; x2
     ld      d,0
     ld      e,a
     add     hl,de
@@ -1013,8 +1007,8 @@ EVOLVENTES:
 
 ;IN(A) _WYZ_NOTA
 _WYZ_ENV_RUT1:
-	ld      hl,DATOS_NOTAS
-	rlca                    ; X2
+	ld      hl,_WYZ_DATOS_NOTAS
+	rlca           ; X2
     ld      d,0
     ld      e,a
     add     hl,de
@@ -1035,11 +1029,9 @@ _WYZ_EXT_WORD:
     ret
 
 
-TABLA_PAUTAS0:  dw 0
-
-TABLA_SONIDOS0: dw 0
-
-DATOS_NOTAS:
+_WYZ_TABLA_PAUTAS0:  dw 0
+_WYZ_TABLA_SONIDOS0: dw 0
+_WYZ_DATOS_NOTAS:
     dw &0000,&0000
     dw 1711,1614,1524,1438,1358,1281,1210,1142,1078,1017
     dw 960,906,855,807,762,719,679,641,605,571
@@ -1061,7 +1053,7 @@ _WYZ_INTERR: db 0
 _WYZ_TABLA_SONG0:    dw 0
 _WYZ_TABLA_EFECTOS0: dw 0
 
-db 'P','S','G',' ','P','R','O','P','L','A','Y','E','R',' ','B','Y',' ','W','Y','Z','-','1','0'
+db "PSG PROPLAYER BY WYZ-10"
 
 _WYZ_SONG:       db   00    ; DB No de CANCION
 _WYZ_TEMPO:      db   00    ; DB TEMPO
@@ -1095,7 +1087,7 @@ _WYZ_PUNTERO_DECC:	  dw   00		; DW PUNTERO DECODER CANAL C
 _WYZ_PUNTERO_P:       dw   00       ; DW PUNTERO DEL CANAL EFECTOS
 _WYZ_CANAL_P:         dw   00       ; DW DIRECION de WYZ_INICIO de LOS EFECTOS
 _WYZ_PUNTERO_P_DECP:  dw   00		; DW PUNTERO de WYZ_INICIO DEL DECODER CANAL P
-_WYZ_PUNTERO_DECC:    dw   00		; DW PUNTERO DECODER CANAL P
+_WYZ_PUNTERO_DECP:    dw   00		; DW PUNTERO DECODER CANAL P
 
 _WYZ_PSG_REG:         db   00,00,00,00,00,00,00,0b10111000 ,00,00,00,00,00,00,00    ; DB(11) BUFFER de REGISTROS DEL PSG
 _WYZ_PSG_REG_SEC:     db   00,00,00,00,00,00,00,0b10111000 ,00,00,00,00,00,00,00    ; DB(11) BUFFER SECUNDARIO de REGISTROS DEL PSG
