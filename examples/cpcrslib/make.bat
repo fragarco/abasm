@@ -19,7 +19,6 @@ IF "%1"=="clear" (
     del *.lst
     del *.map
     del *.dsk
-    del *.s
 ) ELSE (
     call %DSK% %TARGET%.dsk --new
     for %%x in (example1, example2, example3, example4, example5) do (

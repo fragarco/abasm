@@ -19,7 +19,9 @@
 ; DEALINGS IN THE SOFTWARE.
 
 ; EXAMPLE 003 - Small Sprite Demo (Tile Map)
+
 org &4000
+
 .main
     ; Set colors and video mode
     ld      a,0
