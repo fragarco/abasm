@@ -26,8 +26,7 @@
     ; ESC key is already assigned to entry 15 (&0F) by default
     ; but just for this example let's assign it to entry 5 too.
     ld      e,4             ; table entry index
-    ld      a,&04           ; keyboard matrix byte
-    ld      b,&48           ; keyboard matrix line (see vars.asm)
+    ld      bc,&4804        ; keyboard matrix line + byte
     call    cpc_AssignKey   ; assign ESC key
 
     ld      hl,string1

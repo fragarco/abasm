@@ -21,20 +21,21 @@
 read 'cpcrslib/keyboard/vars.asm'
 
 ; CPC_ASSIGNKEY
-; Writes in the key assigment table a new key (Line + Byte matrix values)
+; Writes in the key assigment table a new key (Line + Byte matrix values).
+; The file vars.asm includes some already defined constants.
 ; Inputs:
-;     A  Byte value in the keyboard matrix for the desired key
 ;     B  Line value in the keyboard matrix for the desired key
+;     C  Byte value in the keyboard matrix for the desired key
 ;     E  Entry in the key asignment table (&0-&F)
 ; Outputs:
 ;	  None
-;     AF, HL and DE are modified.
+;     Flags, HL and DE are modified.
 cpc_AssignKey:						
 	ld      hl,_cpcrslib_keys_table
 	sla     e
 	ld      d,0
 	add     hl,de 		; Position in the key assignment table
-	ld      (hl),a 		; Byte value
+	ld      (hl),c 		; Byte value
 	inc     hl			
 	ld      (hl),b		; Line value
 	ret

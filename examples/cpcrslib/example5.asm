@@ -44,40 +44,99 @@ org &4000
     call    cpc_DrawStrXY_M1
     call    change_song
 
+    ; Cursor keys are in the key assignment table by default
+    ; lets add the 1-4 numbers to fire the sound effects:
+    ld      bc,KEY_1
+    ld      e,5
+    call    cpc_AssignKey
+    ld      bc,KEY_2
+    ld      e,6
+    call    cpc_AssignKey
+    ld      bc,KEY_3
+    ld      e,7
+    call    cpc_AssignKey
+    ld      bc,KEY_4
+    ld      e,8
+    call    cpc_AssignKey
+
 __main_loop:
     ; leave sometime for the last key to take effect, as it
     ; affects interrupts
     call    pause
+    call    cpc_WyzTestPlayer
+    ; cpc_ScanKeyboard + cpc_CheckKey is faster than cpc_TestKey
+    ; when we want to test several keys.
+    call    cpc_ScanKeyboard
     __test_cursor_up:
     ld      l,2
-    call    cpc_TestKey
+    call    cpc_CheckKey
     ld      a,h
     or      l
     jr      z,__test_cursor_down
     ld      a,(_current_song)
     inc     a
     cp      5
-    jr      nc,__test_cursor_end
+    jr      nc,__test_key1
     ld      (_current_song),a
     call    cpc_WyzSetPlayerOff
     call    pause
     call    change_song
-    jr      __test_cursor_end
+    jr      __test_key1
+    
     __test_cursor_down:
     ld      l,3
-    call    cpc_TestKey
+    call    cpc_CheckKey
     ld      a,h
     or      l
-    jr      z,__test_cursor_end
+    jr      z,__test_key1
     ld      a,(_current_song)
     dec     a
-    jp      m,__test_cursor_end
+    jp      m,__test_key1
     ld      (_current_song),a
     call    cpc_WyzSetPlayerOff
     call    pause
     call    change_song
-    __test_cursor_end:
-    jr __main_loop
+
+    __test_key1:
+    ld      l,5
+    call    cpc_CheckKey
+    ld      a,h
+    or      l
+    jr      z,__test_key2
+    ld      bc,&10 ; channel and effect number
+    call    cpc_WyzStartEffect
+    jr      __test_key_end
+
+    __test_key2:
+    ld      l,6
+    call    cpc_CheckKey
+    ld      a,h
+    or      l
+    jr      z,__test_key3
+    ld      bc,&11 ; channel and effect number
+    call    cpc_WyzStartEffect
+    jr      __test_key_end
+  
+    __test_key3:
+    ld      l,7
+    call    cpc_CheckKey
+    ld      a,h
+    or      l
+    jr      z,__test_key4
+    ld      bc,&22 ; channel and effect number
+    call    cpc_WyzStartEffect
+    jr      __test_key_end
+
+    __test_key4:
+    ld      l,8
+    call    cpc_CheckKey
+    ld      a,h
+    or      l
+    jr      z,__test_key_end
+    ld      bc,&31 ; channel and effect number
+    call    cpc_WyzStartEffect
+    __test_key_end:
+    jp __main_loop
 
 change_song:
 	ld      a,(_current_song)
@@ -184,18 +243,23 @@ _texto02: db "Press keys 1 to 4 to play SFX",0
 _texto03: db "Up & Down to change song",0
 _texto04: db "ESC to Quit",0
 
-_texto05: db "RED;ALERT;;;;;",0
-_texto06: db "CANCION;NUEVA;",0
-_texto07: db "GOTHIC;;;;;;;;",0
-_texto08: db "MARYJANE;;;;;;",0
-_texto09: db "MIDNIGHT;XPRES",0
+_texto05: db "1;RED;ALERT;;;;;",0
+_texto06: db "2;CANCION;NUEVA;",0
+_texto07: db "3;GOTHIC;;;;;;;;",0
+_texto08: db "4;MARYJANE;;;;;;",0
+_texto09: db "5;MIDNIGHT;XPRES",0
 _texto10: db "NOW;PLAYING:",0
 
 read 'cpcrslib/firmware/setmode.asm'
 read 'cpcrslib/firmware/disablefw.asm'
 read 'cpcrslib/firmware/print.asm'
+
 read 'cpcrslib/player/wyz.asm'
-read 'cpcrslib/keyboard/testkey.asm'
+
+read 'cpcrslib/keyboard/scankeyboard.asm'
+read 'cpcrslib/keyboard/checkkey.asm'
+read 'cpcrslib/keyboard/assignkey.asm'
+
 read 'cpcrslib/text/font_color.asm'
 read 'cpcrslib/text/drawstr_m1.asm'
 
