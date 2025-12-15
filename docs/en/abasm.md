@@ -256,6 +256,12 @@ To learn more about each instruction, a short list can be consulted in the `Z80 
 - [Zilog's Official Documentation for the Z80 Processor](https://www.zilog.com/docs/z80/um0080.pdf): Especially useful are the last two sections titled *Z80 CPU Instructions* and *Z80 Instruction Set*.
 - [Z80 Heaven](http://z80-heaven.wikidot.com/): A web with a detailed information for each instruction.
 
+## Libraries
+
+The `read` directive allows additional files to be included from a main file. These files can be local or located within the installation’s `lib` directory. In this way, it is possible to create libraries that can be shared across projects.
+
+As an example, the **ABASM** distribution includes a small version of the **CPCRSLIB** library. For more information, you can consult the examples available in the `examples/cpcrslib` directory.
+
 ## Assembler Directives
 
 An assembler directive is an instruction that does not directly translate into machine code for the CPU but provides information or instructions to the assembler on how to process the source code. These directives control aspects of the assembly process, such as code organization, data definition, memory allocation, and constant definitions. Unlike instructions executed by the CPU, directives only affect the assembler during the assembly of the source code. Common examples include ORG (to set the starting address), EQU (to define constants), and DB (to define data in memory). The complete list of directives supported by ABASM and their meanings are as follows:
@@ -1200,9 +1206,9 @@ FD AE hh    	XOR   (IY+d)    5 Exclusive OR value at location in IY+d and accumu
 
 # Changelog
 
-- Versión 1.2.0 - 25/11/2025
-  * Support for libraries, asm files that can be placed inside the `lib` directory.
-  * Port of CPCRSLIB as an example of libraries in ABASM.
+- Versión 1.2.0 - 15/12/2025
+  * Support for libraries, asm files placed inside the `lib` directory.
+  * Port of a section of CPCRSLIB as an example of a library in ABASM.
   * new flag `-s` `--sfile` that generated a new .s file with all assembled code in one file, including the code imported from other files.
   * Better handle of multiple ORG occurrences.
   * Only import once a given ASM file if it's referenced by multiple READ directives.

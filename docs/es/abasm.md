@@ -264,6 +264,12 @@ En español, se pueden consultar los siguientes enlaces:
 - [Juego de instrucciones del microprocesador Z80](https://www.infor.uva.es/~bastida/OC/Tablas%20Z80%20SPARC%20y%20ASCII.pdf): Otro buen documento centrado en las instrucciones soportadas por el procesador Z80.
 - [Dominando el ensamblador Z80 (DEZ80) de la Universidad de Alicante](https://www.cpcwiki.eu/index.php/DEZ80): Serie de librosCurso de programación en ensamblador para el Amstrad CPC impartido por el profesor Francisco Gallego y en formato de vídeos.
 
+## Bibliotecas
+
+La directiva `read` permite incluir archivos adicionales desde un archivo principal. Estos archivos pueden ser locales o residir dentro de la carpeta `lib` de la instalación. De esta manera, es posible crear bibliotecas reutilizables entre proyectos.
+
+Como ejemplo, la distribución de **ABASM** incluye una versión reducida de la biblioteca **CPCRSLIB**. Para obtener más detalles, puedes consultar los ejemplos disponibles en la carpeta `examples/cpcrslib`.
+
 ## Directivas del Ensamblador
 
 Una directiva en ensamblador es una instrucción que no se traduce directamente en código máquina para la CPU, sino que proporciona información o instrucciones al ensamblador sobre cómo procesar el código fuente. Estas directivas controlan aspectos del proceso de ensamblado, como la organización del código, la definición de datos, la asignación de memoria y la definición de constantes. A diferencia de las instrucciones que se ejecutan en la CPU, las directivas solo afectan al ensamblador durante el ensamblado del código fuente. Ejemplos comunes incluyen ORG (para establecer la dirección de inicio), EQU (para definir constantes) o DB (para definir datos en memoria). A continuación, se presenta una lista completa de las directivas soportadas por ABASM y su significado:
@@ -1208,9 +1214,9 @@ FD AE hh    	XOR   (IY+d)    5 Realiza una OR exclusiva entre el valor en (IY+d)
 
 # Historial de cambios
 
-- Versión 1.2.0 - 25/11/2025
-  * Soporte para el uso de liberías, ficheros .asm situados dentro del directorio `lib` a ABASM.
-  * Port de la librería CPCRSLIB como ejemplo del nuevo soporte a librerías.
+- Versión 1.2.0 - 15/12/2025
+  * Soporte para el uso de bibliotecas, ficheros .asm situados dentro del directorio `lib` de la distribución ABASM.
+  * Port de parte de la biblioteca CPCRSLIB como ejemplo del nuevo soporte a bibliotecas. Se pueden ver varios ejemplos de su uso en `examples/cpcrslib`.
   * Nuevo flag `-s` `--sfile` que genera un único fichero .s con todo el código ensamblado, incluyendo el código importando de otros ficheros.
   * Mejora en la gestión de múltiples directivas ORG
   * Importa solo una vez un mismo fichero .ASM referenciado multiples veces por READ o INCLUDE
