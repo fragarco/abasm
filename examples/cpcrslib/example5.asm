@@ -103,7 +103,7 @@ __main_loop:
     ld      a,h
     or      l
     jr      z,__test_key2
-    ld      bc,&10 ; channel and effect number
+    ld      bc,0 ; channel and effect number
     call    cpc_WyzStartEffect
     jr      __test_key_end
 
@@ -113,7 +113,7 @@ __main_loop:
     ld      a,h
     or      l
     jr      z,__test_key3
-    ld      bc,&11 ; channel and effect number
+    ld      bc,&0101 ; channel and effect number
     call    cpc_WyzStartEffect
     jr      __test_key_end
   
@@ -123,7 +123,7 @@ __main_loop:
     ld      a,h
     or      l
     jr      z,__test_key4
-    ld      bc,&22 ; channel and effect number
+    ld      bc,&0202 ; channel and effect number
     call    cpc_WyzStartEffect
     jr      __test_key_end
 
@@ -133,7 +133,7 @@ __main_loop:
     ld      a,h
     or      l
     jr      z,__test_key_end
-    ld      bc,&31 ; channel and effect number
+    ld      bc,&0301 ; channel and effect number
     call    cpc_WyzStartEffect
     __test_key_end:
     jp __main_loop
