@@ -173,14 +173,14 @@ An important aspect of all four elements is that ABASM is case-insensitive. Ther
 main              ; defines the global label 'main'
     ld a,32       ; first ASCII letter code in accumulator
 
-.loop             ; defines the local label 'loop'
+!loop             ; defines the local label 'loop'
     call &BB5A    ; CALL txt_output, the firmware output routine
     inc  a        ; move to next character
     cp   128      ; have we done them all?
-    jr   c,.loop  ; no - go back for another one
+    jr   c,!loop  ; no - go back for another one
 
 .end  
-    jp   .end     ; infinite loop used as the program's end point
+    jp   end      ; infinite loop used as the program's end point
 
 ```
 

@@ -146,7 +146,7 @@ El nombre del archivo origen aparece en la primera columna, mientras que la segu
 
 ## Archivo de símbolos
 
-ABASM también genera un listado de todos los símbolos globales encontrados y su valor asociado. La mayoría de ellos serán etiquetas utilizadas para marcar posiciones de salto o ubicaciones de memoria donde se han almacenado ciertos datos. Los símbolos locales son aquellos que comienzan con el caracter '.'.
+ABASM también genera un listado de todos los símbolos globales encontrados y su valor asociado. La mayoría de ellos serán etiquetas utilizadas para marcar posiciones de salto o ubicaciones de memoria donde se han almacenado ciertos datos. Los símbolos locales son aquellos que comienzan con el caracter '!'.
 
 La extensión del fichero de símbolos es `.MAP` y su formato es el de un diccionario de Python. Esto permite emplear el archivo en otras utilidades (como los empaquetadores DSK y CDT) y utilizar los símbolos en lugar de sus valores. En la documentación sobre las utilidades DSK y CDT se puede encontrar un ejemplo de uso de este archivo.
 
@@ -175,14 +175,14 @@ Un aspecto importante y común a los cuatro elementos es que ABASM no discrimina
 main              ; define la etiqueta global 'main'
     ld a,32       ; primer código de letra ASCII en el acumulador
 
-.loop             ; define la etiqueta local 'loop'
+!loop             ; define la etiqueta local 'loop'
     call &BB5A    ; LLAMA a txt_output, la rutina de salida del firmware
     inc  a        ; pasa al siguiente carácter
     cp   128      ; ¿hemos terminado con todos?
-    jr   c,.loop  ; no - regresa para procesar el siguiente
+    jr   c,!loop  ; no - regresa para procesar el siguiente
 
 .end  
-    jp   .end     ; bucle infinito usado como punto final del programa
+    jp   end      ; bucle infinito usado como punto final del programa
 
 ```
 

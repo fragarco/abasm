@@ -38,9 +38,16 @@ org &4000
     call    cpc_DisableFirmware
 
     ; Start playing first song
+    ld      de,_texto10
+    ld      l,0     ; X
+    ld      h,10*8  ; Y
+    call    cpc_DrawStrXY_M1
     call    change_song
 
 __main_loop:
+    ; leave sometime for the last key to take effect, as it
+    ; affects interrupts
+    call    pause
     __test_cursor_up:
     ld      l,2
     call    cpc_TestKey
@@ -49,10 +56,11 @@ __main_loop:
     jr      z,__test_cursor_down
     ld      a,(_current_song)
     inc     a
-    cp      4
+    cp      5
     jr      nc,__test_cursor_end
     ld      (_current_song),a
     call    cpc_WyzSetPlayerOff
+    call    pause
     call    change_song
     jr      __test_cursor_end
     __test_cursor_down:
@@ -66,6 +74,7 @@ __main_loop:
     jp      m,__test_cursor_end
     ld      (_current_song),a
     call    cpc_WyzSetPlayerOff
+    call    pause
     call    change_song
     __test_cursor_end:
     jr __main_loop
@@ -83,6 +92,10 @@ __current_song0:
     push    hl
     ld      hl,_SOUND_TABLE_0
     push    hl
+    ld      de,_texto05
+    ld      l,0     ; X
+    ld      h,11*8  ; Y
+    call    cpc_DrawStrXY_M1
     jr      __play_song
 __current_song1:
     cp      1
@@ -95,6 +108,10 @@ __current_song1:
     push    hl
     ld      hl,_SOUND_TABLE_1
     push    hl
+    ld      de,_texto06
+    ld      l,0     ; X
+    ld      h,11*8  ; Y
+    call    cpc_DrawStrXY_M1
     jr      __play_song
 __current_song2:
     cp      2
@@ -107,10 +124,14 @@ __current_song2:
     push    hl
     ld      hl,_SOUND_TABLE_2
     push    hl
+    ld      de,_texto07
+    ld      l,0     ; X
+    ld      h,11*8  ; Y
+    call    cpc_DrawStrXY_M1
     jr      __play_song
 __current_song3:
     cp      3
-    ret     nz
+    jr      nz,__current_song4
     ld      hl,_SONG_TABLE_3
     push    hl
     ld      hl,_EFFECT_TABLE
@@ -119,6 +140,26 @@ __current_song3:
     push    hl
     ld      hl,_SOUND_TABLE_3
     push    hl
+    ld      de,_texto08
+    ld      l,0     ; X
+    ld      h,11*8  ; Y
+    call    cpc_DrawStrXY_M1
+    jr      __play_song
+__current_song4:
+    cp      4
+    ret     nz
+    ld      hl,_SONG_TABLE_4
+    push    hl
+    ld      hl,_EFFECT_TABLE
+    push    hl
+    ld      hl,_RULE_TABLE_4
+    push    hl
+    ld      hl,_SOUND_TABLE_4
+    push    hl
+    ld      de,_texto09
+    ld      l,0     ; X
+    ld      h,11*8  ; Y
+    call    cpc_DrawStrXY_M1
 __play_song:
     call    cpc_WyzInitPlayer  ; Set addresses
     pop     hl
@@ -129,17 +170,34 @@ __play_song:
     call    cpc_WyzLoadSong    ; Select song to play (uncompress it and the start to play)
 	jp      cpc_WyzSetPlayerOn ; Start music and sound effects (SFX)
 
+
+pause:
+	ld      b,10
+	pause_loop:
+		halt
+	djnz pause_loop
+    ret
+
 _texto00: db "SFX & MUSIC DEMO. CPCRSLIB 2012",0
 _texto01: db "PSG PROPLAYER BY WYZ 2010",0
 _texto02: db "Press keys 1 to 4 to play SFX",0
 _texto03: db "Up & Down to change song",0
 _texto04: db "ESC to Quit",0
 
+_texto05: db "RED;ALERT;;;;;",0
+_texto06: db "CANCION;NUEVA;",0
+_texto07: db "GOTHIC;;;;;;;;",0
+_texto08: db "MARYJANE;;;;;;",0
+_texto09: db "MIDNIGHT;XPRES",0
+_texto10: db "NOW;PLAYING:",0
+
 read 'cpcrslib/firmware/setmode.asm'
 read 'cpcrslib/firmware/disablefw.asm'
 read 'cpcrslib/firmware/print.asm'
 read 'cpcrslib/player/wyz.asm'
 read 'cpcrslib/keyboard/testkey.asm'
+read 'cpcrslib/text/font_color.asm'
+read 'cpcrslib/text/drawstr_m1.asm'
 
 _current_song: db 0
 
