@@ -22,6 +22,8 @@
 ;; Include constants and general values
 ;;
 
+read 'cpctelera/strings/cpct_drawCharM1_f.asm'
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 ;; Function: cpct_drawStringM1_f
