@@ -127,7 +127,7 @@ read 'cpctelera/firmware/cpc_mode_rom_status.asm'
 cpct_drawStringM1:
    ;; Enable Lower ROM during char copy operation, with interrupts disabled 
    ;; to prevent firmware messing things up
-   ld     a,(_cpct_mode_rom_status) ;; [4] A = mode_rom_status (present value)
+   ld     a,(cpct_mode_rom_status) ;; [4] A = mode_rom_status (present value)
    and    0b11111011                ;; [2] bit 3 of A = 0 --> Lower ROM enabled (0 means enabled)
    ld     b, GA_port_byte           ;; [2] B = Gate Array Port (0x7F)
    di                               ;; [1] Disable interrupts to prevent firmware from taking control while Lower ROM is enabled
@@ -153,7 +153,7 @@ firstChar:
 
 endstring:
    ;; After finishing character drawing, restore previous ROM and Interrupts status
-   ld     a, (_cpct_mode_rom_status) ;; [4] A = mode_rom_status (present saved value)
+   ld     a, (cpct_mode_rom_status) ;; [4] A = mode_rom_status (present saved value)
    ld     b, GA_port_byte            ;; [2] B = Gate Array Port (0x7F)
    out   (c), a                      ;; [3] GA Command: Set Video Mode and ROM status (100)
    ei                                ;; [1] Enable interrupts

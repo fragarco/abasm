@@ -35,5 +35,5 @@
 ;; Default value: 0x8D = (10001101)
 ;;
 
-_cpct_mode_rom_status: db &8D
+cpct_mode_rom_status: db &8D
 
