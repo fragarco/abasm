@@ -83,21 +83,21 @@ loop:
    ;; Draw a Box
    ld   de, &C325  ;; DE = Pointer to video memory location where the box will be drawn
    ld   bc, &140A  ;; B = Height (20 = 0x14), C = Width (10 = 0x0A)
-   ld    a, &AA    ;; A = Colour Pattern (0xAA = 3, 0, 3, 0)
+   ld    l, &AA    ;; L = Colour Pattern (0xAA = 3, 0, 3, 0)
 
    call cpct_drawSolidBox ;; Call the box drawing function
 
    ;; Draw another Box
    ld   de, &C335  ;; DE = Pointer to video memory location where the box will be drawn
    ld   bc, &140A  ;; B = Height (20 = 0x14), C = Width (10 = 0x0A)
-   ld    a, &A0    ;; A = Colour Pattern (0xAA = 1, 0, 1, 0)
+   ld    l, &A0    ;; L = Colour Pattern (0xA0 = 1, 0, 1, 0)
 
    call cpct_drawSolidBox ;; Call the box drawing function
 
    ;; Draw a third Box
    ld   de, &C345  ;; DE = Pointer to video memory location where the box will be drawn
    ld   bc, &140A  ;; B = Height (20 = 0x14), C = Width (10 = 0x0A)
-   ld    a, &0A    ;; A = Colour Pattern (0xAA = 2, 0, 2, 0)
+   ld    l, &0A    ;; L = Colour Pattern (0xAA = 2, 0, 2, 0)
 
    call cpct_drawSolidBox ;; Call the box drawing function
 
