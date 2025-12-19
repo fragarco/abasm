@@ -52,22 +52,6 @@ bg_tile_offsets:
        dw &35A0, &35B4, &35C8, &35DC  ;; 150
 ;;--------------------------------------------------
 
-
-;; Include macros to easily manage undocumented opcodes
-.include "macros/cpct_undocumentedOpcodes.h.s"
-
-;; Symbols with the names of the CPCtelera functions we want to use
-;; must be declared globl to be recognized by the compiler. Later on,
-;; linker will do its job and make the calls go to function code.
-.globl cpct_disableFirmware_asm
-.globl cpct_setVideoMode_asm
-.globl cpct_setPalette_asm
-.globl cpct_setPALColour_asm
-.globl cpct_drawSprite_asm
-.globl cpct_drawSpriteMasked_asm
-.globl cpct_hflipSpriteMaskedM1_asm
-.globl cpct_setVideoMemoryPage_asm
-
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; FUNC: initialize
@@ -77,22 +61,22 @@ bg_tile_offsets:
 ;;
 initialize:
    ;; Disable Firmware
-   call  cpct_disableFirmware_asm   ;; Disable firmware
+   call  cpct_disableFirmware   ;; Disable firmware
 
    ;; Set Mode 1
-   ld    c, 1                      ;; C = 1 (New video mode)
-   call  cpct_setVideoMode_asm      ;; Set Mode 1
+   ld    c, 1                   ;; C = 1 (New video mode)
+   call  cpct_setVideoMode      ;; Set Mode 1
    
    ;; Set Palette
-   ld    hl, g_palette            ;; HL = pointer to the start of the palette array
-   ld    de, palete_size           ;; DE = Size of the palette array (num of colours)
-   call  cpct_setPalette_asm        ;; Set the new palette
+   ld    hl, g_palette          ;; HL = pointer to the start of the palette array
+   ld    de, palete_size        ;; DE = Size of the palette array (num of colours)
+   call  cpct_setPalette        ;; Set the new palette
 
    ;; Change border colour
-   ld    hl, border_colour         ;; L=Border colour value, H=Palette Colour to be set (Border=16)
-   call  cpct_setPALColour_asm      ;; Set the border (colour 16)
+   ld    hl, border_colour      ;; L=Border colour value, H=Palette Colour to be set (Border=16)
+   call  cpct_setPALColour      ;; Set the border (colour 16)
 
-   ret                              ;; return
+   ret                          ;; return
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -150,7 +134,7 @@ next_tile:
    ;; HL already points to the sprite
    ;; DE already points to the memory location where to draw it
    ld    bc, tile_HxW           ;; BC = Sprite WidthxHeight
-   call  cpct_drawSprite_asm     ;; Draw the sprite on the screen
+   call  cpct_drawSprite        ;; Draw the sprite on the screen
 
    ;; Recover saved values for next iteration from the stack
    pop   bc       ;; BC points to the pointer to the next sprite (tile) to be drawn
@@ -170,28 +154,29 @@ next_tile:
 ;; DESTROYS:
 ;;    AF, BC, HL
 ;;
-screen_buffer: db >pbackbuffer  ;; This variable holds the upper byte of the memory address of the screen backbuffer 
-                                ;; It changes every time buffers are switched, so it always contains backbuffer address.
+
+screen_buffer: db (pbackbuffer >> 8) & 0xFF  ;; This variable holds the upper byte of the memory address of the screen backbuffer 
+                                             ;; It changes every time buffers are switched, so it always contains backbuffer address.
 switch_screen_buffer:
    ;; Check which one of the buffers is actually tagged as backbuffer (&C000 or &8000)
    ld   hl, screen_buffer    ;; HL points to the variable holding actual backbuffer address Most Significant Byte 
-   ld    a, (hl)              ;; A = backbuffer address MSB (&C0 or &80)
-   cp &C0                   ;; Check if it is &C00
-   jr    z, to_back_buffer    ;; If it is &C000, set it to &8000
+   ld    a, (hl)             ;; A = backbuffer address MSB (&C0 or &80)
+   cp  &C0                   ;; Check if it is &C00
+   jr    z, to_back_buffer   ;; If it is &C000, set it to &8000
 
 to_front_buffer:
    ;; Actual backbuffer is &8000. Switch to &C000
-   ld (hl), >pvideomem               ;; Save &C0 as new backbuffer address MSB
+   ld (hl), (pvideomem >> 8) & 0xFF ;; Save &C0 as new backbuffer address MSB
    ld    l, &20                     ;; | Then show new frontbuffer (&8000) 
-   call  cpct_setVideoMemoryPage_asm  ;; | ... in the screen
+   call  cpct_setVideoMemoryPage    ;; | ... in the screen
    
    ret                        ;; And Return
 
 to_back_buffer:
    ;; Actual backbuffer is &C000. Switch to &8000
-   ld (hl), >pbackbuffer             ;; Save &80 as new backbuffer address MSB
-   ld    l, &30                     ;; | Then show new frontbuffer (&8000) 
-   call  cpct_setVideoMemoryPage_asm  ;; | ... in the screen
+   ld (hl), (pbackbuffer >> 8) & 0xFF ;; Save &80 as new backbuffer address MSB
+   ld    l, &30                       ;; | Then show new frontbuffer (&8000) 
+   call  cpct_setVideoMemoryPage      ;; | ... in the screen
 
    ret                        ;; And Return
 
@@ -211,8 +196,8 @@ knight_x:      db 00   ;; Column where the knight is actually located
 knight_dir:    db 00   ;; Direction towards the knight is looking at (0: right, 1: left)
 
 redrawKnight:
-   omitted = 4*2        ;; To draw tiles 4-15 we must omit 4 of them. As each pointer takes 2 bytes, 
-                        ;; ... we need to advance 4*2 bytes in the array to reach tile 4.
+   omitted equ 4*2     ;; To draw tiles 4-15 we must omit 4 of them. As each pointer takes 2 bytes, 
+                       ;; ... we need to advance 4*2 bytes in the array to reach tile 4.
 
    ;; Erase previous sprite drawing 3 down rows of tiles
    ld__ixl 12                           ;; IXL=12, as we want to paint 12 tiles (4-15)
@@ -233,7 +218,7 @@ redrawKnight:
    ex    de, hl                     ;; DE Points to (X,Y) location in the video memory buffer, where Knight will be drawn
    ld    hl, g_spr_knight         ;; HL Points to the sprite of the knight with interlaced mask
    ld    bc, knight_WxH            ;; BC Holds dimensions of the knight (HxW)
-   call  cpct_drawSpriteMasked_asm  ;; Draw the sprite of the knight in the video memory buffer
+   call  cpct_drawSpriteMasked  ;; Draw the sprite of the knight in the video memory buffer
 
    ret         ;; Return
 
@@ -255,7 +240,7 @@ moveKnight:
 move_right:
    inc    a                        ;; A++, to move knight to the right
    ld (knight_x), a                ;; Store new location of the knight
-   cp screen_Width - knight_Width ;; Check if the Knight has arrived to the right border of the screen
+   cp screen_Width - knight_Width  ;; Check if the Knight has arrived to the right border of the screen
    jr     z, turn_around           ;; If Zero, night has arrived to the right border, jump to turn_around section
    ret                             ;; Else, nothing more to do, so return.
 
@@ -267,12 +252,12 @@ move_left:
                                    ;; Else (A=0), knight is at left limit, so continue to turn it around
 
 turn_around:
-   ld     a, (knight_dir)          ;; A=Direction towards the knight is looking at (0: right, 1:left)
-   xor   1                        ;; Change direction by altering the Least Significant Bit (0->1, 1->0)
-   ld  (knight_dir), a             ;; Store new direction in knight_dir variable
-   ld    bc, knight_WxH           ;; BC=Dimensions of the knight sprite
-   ld    hl, g_spr_knight        ;; HL=Pointer to the start of the knight sprite
-   call  cpct_hflipSpriteMaskedM1_asm ;; Horizontally flip the knight sprite, along with its mask
+   ld    a, (knight_dir)           ;; A=Direction towards the knight is looking at (0: right, 1:left)
+   xor   1                         ;; Change direction by altering the Least Significant Bit (0->1, 1->0)
+   ld    (knight_dir), a           ;; Store new direction in knight_dir variable
+   ld    bc, knight_WxH            ;; BC=Dimensions of the knight sprite
+   ld    hl, g_spr_knight          ;; HL=Pointer to the start of the knight sprite
+   call  cpct_hflipSpriteMaskedM1  ;; Horizontally flip the knight sprite, along with its mask
 
    ret      ;; Return
 
@@ -298,14 +283,14 @@ main:
    ;; (We don't need to draw the other 3 rows, as they will be drawn by redrawKnight function)
    ld__ixl 4                   ;; IXL will act as counter for the number of tiles
    ld    hl, bg_tile_offsets   ;; HL points to the start of the memory offsets for tiles
-   ld    bc, g_tileset        ;; BC points to the start of the tileset
+   ld    bc, g_tileset         ;; BC points to the start of the tileset
    ld    de, pvideomem         ;; DE points to the start of video memory, where Background should be drawn
    call  drawBackgroundTiles   ;; Draw the background
 
    ;; Draw first tile row in the secondary video memory buffer (&8000-&BFFF)
    ld__ixl 4                   ;; IXL will act as counter for the number of tiles
    ld    hl, bg_tile_offsets   ;; HL points to the start of the memory offsets for tiles
-   ld    bc, g_tileset        ;; BC points to the start of the tileset
+   ld    bc, g_tileset         ;; BC points to the start of the tileset
    ld    de, pbackbuffer       ;; DE points to the start of video memory, where Background should be drawn
    call  drawBackgroundTiles   ;; Draw the background
 
@@ -327,6 +312,19 @@ loop:
 
    jr    loop                 ;; Repeat forever
 
+
+;; Include macros to easily manage undocumented opcodes
+;; and other cpctelera routines
+read "cpctelera/macros/cpct_undocumentedOpcodes.asm"
+read "cpctelera/firmware/cpct_removeInterruptHandler.asm"
+read "cpctelera/video/cpct_setVideoMode.asm"
+read "cpctelera/video/cpct_setPalette.asm"
+read "cpctelera/video/cpct_setPALColour.asm"
+read "cpctelera/sprites/cpct_drawSprite.asm"
+read "cpctelera/video/cpct_setVideoMemoryPage.asm"
+read "cpctelera/sprites/cpct_drawSpriteMasked.asm"
+
+;; sprites and tiles
 
 g_spr_knight: ; defs 7250
 	db &FF, &00, &FF, &00, &FF, &00, &FF, &00, &FF, &00, &FF, &00, &FF, &00, &FF, &00, &FF, &00, &00, &00, &77, &00, &FF, &00, &FF, &00, &FF, &00, &FF, &00, &FF, &00, &FF, &00, &FF, &00, &FF, &00, &FF, &00, &FF, &00, &FF, &00, &FF, &00, &FF, &00, &FF, &00
@@ -475,7 +473,7 @@ g_spr_knight: ; defs 7250
 	db &EE, &00, &00, &ff, &00, &ff, &00, &ff, &00, &ff, &00, &dd, &00, &ee, &FF, &00, &FF, &00, &FF, &00, &FF, &00, &FF, &00, &00, &77, &00, &bb, &00, &ff, &00, &ff, &00, &ff, &00, &ff, &77, &00, &FF, &00, &FF, &00, &FF, &00, &FF, &00, &FF, &00, &FF, &00
 	db &FF, &00, &00, &00, &00, &00, &00, &00, &00, &00, &00, &00, &11, &00, &FF, &00, &FF, &00, &FF, &00, &FF, &00, &FF, &00, &88, &00, &00, &00, &00, &00, &00, &00, &00, &00, &00, &00, &77, &00, &FF, &00, &FF, &00, &FF, &00, &FF, &00, &FF, &00, &FF, &00
 
-g_palette: &54, &47, &43, &4b
+g_palette: db &54, &47, &43, &4b
 
 g_tileset: 
 	dw g_background_00

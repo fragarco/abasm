@@ -426,6 +426,10 @@ macro decnz_a
 mend
 ```
 
+WinApe utiliza el símbolo '@' para identificar **etiquetas de macro locales**, pero ese símbolo lo utiliza ABASM como la dirección actual en memoria para el código ensamblado. Por tanto, ABASM no es compatible con WinApe en este aspecto.
+
+Si una misma macro se define una segunda vez, la segunda definición pasa a ser la valida desde ese momento. Sin embargo, también es posible emplear la directiva `MDELETE símbolo` para eliminar una definición existente.
+
 ### LET
 
 - LET símbolo=valor
@@ -1213,6 +1217,11 @@ FD AE hh    	XOR   (IY+d)    5 Realiza una OR exclusiva entre el valor en (IY+d)
 **[2]** Todas las instrucciones RST del Z80, excepto una, han sido reservadas para uso del sistema. De RST 1 a RST 5 (&08-&28) se utilizan para extender el conjunto de instrucciones añadiendo instrucciones específicas de llamada y salto que habilitan y deshabilitan los ROMs. RST 6 (&30) está disponible para el usuario. Se puede obtener más información sobre el uso de la instrucción RST aquí: [ROMs. RAM and Restart Instructions.](https://www.cpcwiki.eu/imgs/f/f6/S968se02.pdf)
 
 # Historial de cambios
+
+- Versión 1.3.0 - 
+  * Nueva directiva MDELETE para eliminar la definición de una macro.
+  * Arreglado un problema con el uso de macros sin parámetros.
+  * Port de la biblioteca CPCTELERA como nuevo ejemplo de bibliotecas en ABASM.
 
 - Versión 1.2.0 - 15/12/2025
   * Soporte para el uso de bibliotecas, ficheros .asm situados dentro del directorio `lib` de la distribución ABASM.

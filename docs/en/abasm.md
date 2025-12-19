@@ -420,6 +420,8 @@ mend
 
 WinApe uses the symbol '@' to mark **macro local labels** but that symbol is used by ABASM to represent the current instruction's memory address too. As a result, ABASM departs from WinApe in this point.
 
+If a macro is defined twice, ABASM uses the latest processed definition. However, it is also possible to use the directive `MDELETE symbol` to ensure that a current macro definition is not longer available.
+
 ### LIMIT
 
 - LIMIT memory_address
@@ -1206,7 +1208,12 @@ FD AE hh    	XOR   (IY+d)    5 Exclusive OR value at location in IY+d and accumu
 
 # Changelog
 
-- Versión 1.2.0 - 15/12/2025
+- Version 1.3.0 - 
+  * New directive MDELETE to delete an already defined macro.
+  * Fix for macros without arguments.
+  * Port of CPCTELERA library.
+ 
+- Version 1.2.0 - 15/12/2025
   * Support for libraries, asm files placed inside the `lib` directory.
   * Port of a section of CPCRSLIB as an example of a library in ABASM.
   * new flag `-s` `--sfile` that generated a new .s file with all assembled code in one file, including the code imported from other files.

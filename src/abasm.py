@@ -336,18 +336,23 @@ class AsmContext:
                 self.check_symbol(label, type='label')
                 self.set_symbol(label, self.origin, is_label = True, type='label')
             elif self.get_symbol(label) != self.origin:
-                warning(f'label address redefinition: {hex(self.get_symbol(label)).upper()} != {hex(self.origin).upper()}', TLEVEL_LENIENT)
+                warning(f'{label} label address redefinition: {hex(self.get_symbol(label)).upper()} != {hex(self.origin).upper()}', TLEVEL_LENIENT)
 
     def process_macro(self, macro, args):
-        argv = args.replace(' ', '').split(',')
+        argv = []
+        if args.strip() != '':
+            argv = args.replace(' ', '').split(',')
         code = self.macros[macro].code
         params = self.macros[macro].argv
+        if len(argv) != len(params):
+            abort(f"macro arguments mismatch {len(argv)} <> {len(params)}")
         macrocode = [f"_MACRO_ENTER_ {macro}"]
         for line in code:
             for i,arg in enumerate(argv):
                 line = line.replace(params[i], arg)
             macrocode.append(line)
         macrocode.append(f"_MACRO_LEAVE_ {macro}")
+        print("AAA", macro, macrocode)
         return macrocode
 
     def store(self, p, content):
@@ -1730,12 +1735,23 @@ def op_MACRO(p, opargs):
     name, args = g_context.parse_instruction(opargs)
     if g_context.verbose and p==1: print(f" adding macro {name} to the macros table")
     g_context.check_symbol(name, 'macro')
+    argv = []
     if len(args) > 0:
         argv = args.split(',')
 
     macro = AsmMacro(name, argv)
     g_context.macros[name] = macro
     g_context.defining_macro = macro
+    return 0
+
+def op_MDELETE(p, opargs):
+    # Macros can contain calls to other macros but can delete macro definitions
+    if g_context.applying_macro != None:
+        abort("macro deletion cannot be used inside a macro definition")
+    check_args(opargs, 1)    
+    args = opargs.split(',', 1)
+    if args[0] in g_context.macros:
+        del g_context.macros[args[0]]
     return 0
 
 def op_ENDM(p, opargs):
