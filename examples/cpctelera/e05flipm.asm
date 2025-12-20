@@ -21,6 +21,12 @@
 org &4000
 jp  main
 
+;; Code modified to be used with ABASM by Javier "Dwayne Hicks" Garcia
+
+;; Include macros to easily manage undocumented opcodes
+;; macros must be declared before their first use
+read "cpctelera/macros/cpct_undocumentedOpcodes.asm"
+
 ;;===============================================================================
 ;; DEFINED CONSTANTS
 ;;===============================================================================
@@ -312,10 +318,7 @@ loop:
 
    jr    loop                 ;; Repeat forever
 
-
-;; Include macros to easily manage undocumented opcodes
-;; and other cpctelera routines
-read "cpctelera/macros/cpct_undocumentedOpcodes.asm"
+;; Include all CPCtelera definitions and variables
 read "cpctelera/firmware/cpct_removeInterruptHandler.asm"
 read "cpctelera/video/cpct_setVideoMode.asm"
 read "cpctelera/video/cpct_setPalette.asm"
@@ -323,6 +326,7 @@ read "cpctelera/video/cpct_setPALColour.asm"
 read "cpctelera/sprites/cpct_drawSprite.asm"
 read "cpctelera/video/cpct_setVideoMemoryPage.asm"
 read "cpctelera/sprites/cpct_drawSpriteMasked.asm"
+read "cpctelera/sprites/flipping/cpct_hflipSpriteMaskedM1.asm"
 
 ;; sprites and tiles
 

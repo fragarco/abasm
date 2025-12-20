@@ -352,7 +352,6 @@ class AsmContext:
                 line = line.replace(params[i], arg)
             macrocode.append(line)
         macrocode.append(f"_MACRO_LEAVE_ {macro}")
-        print("AAA", macro, macrocode)
         return macrocode
 
     def store(self, p, content):
