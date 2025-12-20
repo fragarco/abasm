@@ -18,7 +18,7 @@
 
 ;; Code modified to be used with ABASM by Javier "Dwayne Hicks" Garcia
 
-org &4000
+org &2000
 jp  main
 
 ;; Code modified to be used with ABASM by Javier "Dwayne Hicks" Garcia
@@ -287,7 +287,7 @@ main:
 
    ;; Draw first tile row in the main video memory buffer (&C000-&FFFF)
    ;; (We don't need to draw the other 3 rows, as they will be drawn by redrawKnight function)
-   ld__ixl 4                   ;; IXL will act as counter for the number of tiles
+   ld__ixl 4                  ;; IXL will act as counter for the number of tiles
    ld    hl, bg_tile_offsets   ;; HL points to the start of the memory offsets for tiles
    ld    bc, g_tileset         ;; BC points to the start of the tileset
    ld    de, pvideomem         ;; DE points to the start of video memory, where Background should be drawn
