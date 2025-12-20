@@ -1669,13 +1669,6 @@ dw 2,2,2,2,1,1,1,1,1,1,1,1
 ;; contributed to this source.
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-cpct_akp_musicInit:
-   ld   hl, 2    ;; [10] Retrieve parameters from stack
-   add  hl, sp    ;; [11]
-   ld    e, (hl)  ;; [ 7] DE = Pointer to the start of music
-   inc  hl        ;; [ 6]
-   ld    d, (hl)  ;; [ 7]
-
 cpct_akp_musicInit:   ;; Entry point for assembly calls using registers for parameter passing
    ;; First, set song loop times to 0 when we start
    xor   a                          ;; A = 0
@@ -1794,7 +1787,7 @@ PLY_Stop:
    ld  bc, &0500
    ld  (hl), c
    inc hl
-   djnz .-2
+   djnz $-2
    ld   a, 0b00111111
    jp  PLY_SendRegisters
 
@@ -1841,12 +1834,6 @@ IF PLY_UseSoundEffects
    ;; --------------------------------------
    ;; (end code)
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-   cpct_akp_SFXGetInstrument:
-      ;; Get Parameter from Stack
-      ld   hl, 2               ;; [10] HL points to the start of parameters in the stack
-      add  hl, sp               ;; [11]
-      ld    a, (hl)             ;; [ 7] A = Selected Channel Bitmask
 
    cpct_akp_SFXGetInstrument:  ;; Entry point for assembly calls using registers for parameter passing
 
@@ -1934,13 +1921,6 @@ IF PLY_UseSoundEffects
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
    PLY_SFX_Init:
-   cpct_akp_SFXInit:
-      ld  hl, 2                                   ;; [10] Get Parameter from Stack
-      add hl, sp                                   ;; [11]
-      ld  e, (hl)                                  ;; [ 7]
-      inc hl                                       ;; [ 6]
-      ld  d, (hl)                                  ;; [ 7] DE = Pointer to the SFX "Song"
-
    cpct_akp_SFXInit:     ;; Entry point for assembly calls using registers for parameter passing
 
       ;Find the Instrument Table.
@@ -1995,11 +1975,10 @@ IF PLY_UseSoundEffects
    ;; contributed to this source.
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-   cpct_akp_SFXStopAll:
-   cpct_akp_SFXStopAll:  ;; Entry point for assembly calls 
    PLY_SFX_StopAll:
+   cpct_akp_SFXStopAll:  ;; Entry point for assembly calls 
       ;Clear the three channels of any sound effect.
-      ld  hl, 0                                   ;; [10]
+      ld  hl, 0                                    ;; [10]
       ld  (PLY_SFX_Track1_Instrument + 1), hl      ;; [16]
       ld  (PLY_SFX_Track2_Instrument + 1), hl      ;; [16]
       ld  (PLY_SFX_Track3_Instrument + 1), hl      ;; [16]
@@ -2071,25 +2050,8 @@ IF PLY_UseSoundEffects
    ;; code from Targhan / Arkos. Madram / Overlander and Grim / Arkos have also 
    ;; contributed to this source.
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-   cpct_akp_SFXPlay:
    PLY_SFX_Play:
-      ld  (PLY_SFX_Recover_IX+2), ix   ;; [20] Save IX value (cannot use push as parameters are on the stack)
-      pop  af                          ;; [10]
-      pop  hl                          ;; [10]
-      pop  de                          ;; [10]
-      pop  bc                          ;; [10]
-      pop  ix                          ;; [14]
-      push ix                          ;; [15]
-      push bc                          ;; [11]
-      push de                          ;; [11]
-      push hl                          ;; [11]
-      push af                          ;; [11]
-
-      dw &7DDD  ; ld a, ixl         ;; [ 8] A = Channel number
-
-      cpct_akp_SFXPlay:     ;; Entry point for assembly calls using registers for parameter passing
-
+   cpct_akp_SFXPlay:     ;; Entry point for assembly calls using registers for parameter passing
       ;; Pick up the selected audio channel using bitmasks
       ;; to reproduce the sound effect
       rrca                             ;; [ 4] Check for channel 0 / A (bit 0)
@@ -2203,13 +2165,7 @@ IF PLY_UseSoundEffects
    ;; code from Targhan / Arkos. Madram / Overlander and Grim / Arkos have also 
    ;; contributed to this source.
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-   cpct_akp_SFXStop:
    PLY_SFX_Stop:
-      ld   hl, 2                             ;; [10] Get Parameter from Stack
-      add  hl, sp                             ;; [11]
-      ld    a, (hl)                           ;; [ 7] A = Channel number to be stopped
-
    cpct_akp_SFXStop:     ;; Entry point for assembly calls using registers for parameter passing
 
       ld   hl, 0                             ;; [10] Value 0 to stop SFX in a channel

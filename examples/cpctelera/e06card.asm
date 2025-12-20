@@ -21,6 +21,9 @@
 org &2000
 jp  main
 
+;; Include CPCtelera opcode macros
+read 'cpctelera/macros/cpct_undocumentedOpcodes.asm'
+
 ;;===============================================================================
 ;; DEFINED CONSTANTS
 ;;===============================================================================
@@ -418,12 +421,9 @@ db &a2, &4b, &b0, &41, &8a, &4b, &98, &41, &b0, &4b, &b8, &41, &98, &4b, &a0, &4
 db &b8, &4b, &b4, &41, &a0, &4b, &9c, &41, &b4, &4b, &b4, &45, &9c, &4b, &9c, &45
 db &b4, &4b, &a6, &71, &0d, &42, &0f, &42, &0d, &42, &0b, &42, &60, &00, &00
 
-;; Include CPCtelera opcode macros
-read 'cpctelera/macros/cpct_undocumentedOpcodes.asm'
+;; CPCtelera functions we want to use
+read 'cpctelera/audio/arkostracker.asm'
 
-;; Symbols with the names of the CPCtelera functions we want to use
-;; must be declared globl to be recognized by the compiler. Later on,
-;; linker will do its job and make the calls go to function code.
 read 'cpctelera/video/cpct_setVideoMode.asm'
 read 'cpctelera/video/cpct_setPalette.asm'
 read 'cpctelera/video/cpct_setPALColour.asm'
@@ -434,8 +434,6 @@ read 'cpctelera/strings/cpct_drawStringM0.asm'
 read 'cpctelera/strings/cpct_setDrawCharM0.asm'
 read 'cpctelera/firmware/cpct_removeInterruptHandler.asm'
 read 'cpctelera/firmware/cpct_setInterruptHandler.asm'
-
-read 'cpctelera/audio/arkostracker.asm'
 
 interrupt_handler:
    ;; Update interrupt counter variable (iscount)

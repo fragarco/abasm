@@ -2035,7 +2035,7 @@ PLY_Stop:
    ld  bc, &0500
    ld  (hl), c
    inc hl
-   djnz .-2
+   djnz $-2
    ld   a, 0b00111111
    jp  PLY_SendRegisters
 

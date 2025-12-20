@@ -925,18 +925,20 @@ def op_BRK(p, opargs):
     return 0
 
 def op_PRINT(p, opargs):
+    sufix = "(pass 1)"
     if p == 2:
-        text = []
-        for expr in opargs.split(","):
-            if expr.strip().startswith('"'):
-                text.append(expr.strip().rstrip()[1:-1])
+        sufix = "(pass 2)"
+    text = []
+    for expr in opargs.split(","):
+        if expr.strip().startswith('"'):
+            text.append(expr.strip().rstrip()[1:-1])
+        else:
+            a = g_context.parse_expression(expr, allowundef=1)
+            if a != None:
+                text.append(str(a))
             else:
-                a = g_context.parse_expression(expr, allowundef=1)
-                if a != None:
-                    text.append(str(a))
-                else:
-                    text.append("?")
-        print("[abasm]", os.path.basename(g_context.currentfile) + ":", "PRINT ", ",".join(text))
+                text.append("?")
+    print(f"[abasm] {os.path.basename(g_context.currentfile)}: PRINT{sufix} {','.join(text)}")
     return 0
 
 def op_EQU(p, opargs):
