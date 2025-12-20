@@ -11,7 +11,7 @@ REM * USAGE: make [clear]
 set ASM=python3 ../../src/abasm.py %*
 set DSK=python3 ../../src/dsk.py
 
-set LOADADDR=0x4000
+set LOADADDR=0x2000
 set TARGET=cpctelera
 
 IF "%1"=="clear" (
