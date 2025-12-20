@@ -175,3 +175,6 @@ cython_debug/
 # ABASM DEV WIP directory
 tmp/
 extras/
+
+# Other files
+.DS_Store
