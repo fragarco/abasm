@@ -41,7 +41,7 @@ ABASM: USER MANUAL
 
 # Introduction
 
-ABASM is a cross-assembler specifically designed for the Amstrad CPC platform and its Z80 CPU. Developed in Python 3, its main goal is to provide a lightweight and highly portable tool for programmers interested in writing assembly code for this classic 8-bit platform. With no external libraries or third-party tools required, ABASM can run on any system with a Python 3 interpreter. Additionally, the project includes other tools, also written in Python and with no dependencies, to package the assembler’s output into DSK or CDT files.
+ABASM is a cross-assembler specifically designed for the Amstrad CPC platform and its Z80 CPU. Developed in Python 3, its main goal is to provide a lightweight and highly portable tool for programmers interested in writing assembly code for this classic 8-bit platform. With no external libraries or third-party tools required, ABASM can run on any system with a Python 3 interpreter. Additionally, the project includes other tools, also written in Python and with no dependencies, to package the assembler’s output into DSK or CDT files for example, o to create a basic project structure (ASMPRJ).
 
 ABASM is based on the fantastic pyZ80 project, initially created by Andrew Collier and later modified by Simon Owen.
 
@@ -1210,9 +1210,10 @@ FD AE hh    	XOR   (IY+d)    5 Exclusive OR value at location in IY+d and accumu
 
 - Version 1.3.0 - 
   * New directive MDELETE to delete an already defined macro.
-  * Fix for macros without arguments.
+  * Macros without arguments were not working as expected.
   * Port of CPCTELERA library.
- 
+  * New tool `asmprj` that allows users to create of basic project structure.
+
 - Version 1.2.0 - 15/12/2025
   * Support for libraries, asm files placed inside the `lib` directory.
   * Port of a section of CPCRSLIB as an example of a library in ABASM.

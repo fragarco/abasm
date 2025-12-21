@@ -1222,6 +1222,7 @@ FD AE hh    	XOR   (IY+d)    5 Realiza una OR exclusiva entre el valor en (IY+d)
   * Nueva directiva MDELETE para eliminar la definición de una macro.
   * Arreglado un problema con el uso de macros sin parámetros.
   * Port de la biblioteca CPCTELERA como nuevo ejemplo de bibliotecas en ABASM.
+  * Nueva herramientas ASMPRJ para crear una estructura básica de proyecto.
 
 - Versión 1.2.0 - 15/12/2025
   * Soporte para el uso de bibliotecas, ficheros .asm situados dentro del directorio `lib` de la distribución ABASM.
