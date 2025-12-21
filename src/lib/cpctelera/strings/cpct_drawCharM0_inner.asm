@@ -144,7 +144,7 @@ endpixelline:
    jr    nz, nextline      ;; [2/3]  by checking the 4 bits that identify present memory line. 
                            ;; .... If 0, we have crossed boundaries
 boundary_crossed:
-   ld    de, &C050       ;; [3] | HL = HL + 0xC050: Relocate DE pointer to the start of the next pixel line in video memory
+   ld    de, &C050         ;; [3] | HL = HL + 0xC050: Relocate DE pointer to the start of the next pixel line in video memory
    add   hl, de            ;; [3] \ (Remember that HL and DE will be exchanged at the start of nextline:)
    jr    nextline          ;; [3] Jump to continue with next pixel line
 

@@ -139,7 +139,7 @@ nextChar:
    ;; Increment Pointers
    ld    de, 4                      ;; [3] /
    add   hl, de                     ;; [3] | HL += 4 (point to next position in video memory, 8 pixels to the right)
-   inc   iy                         ;; [3] IX += 1 (point to next character in the string)
+   inc   iy                         ;; [3] IY += 1 (point to next character in the string)
 
 firstChar:
    ld     a, (iy)                   ;; [5] A = next character from the string
@@ -153,4 +153,4 @@ endstring:
    out   (c), a                      ;; [3] GA Command: Set Video Mode and ROM status (100)
    ei                                ;; [1] Enable interrupts
 
-;; IX/IY Restore and Return provided by bindings
+   ret      ;; [3] Return to caller
