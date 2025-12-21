@@ -563,12 +563,11 @@ redrawString:
    call  cpct_getScreenPtr      ;; Return pointer to byte located at (x,y) (C, B) in HL
    push  hl                     ;; Returns HL = Pointer to video memory (Required by drawStringM0)
                                 ;; We save it for later use
-
    ;; Set colours to be used by DrawChar/DrawStringM0 functions
    fg_colour equ $+1            ;; fg_colour = location in memory of the Foreground colour value
    ld    hl, init_colour        ;; HL = fg/bg colours (value modified dynamically)
    call  cpct_setDrawCharM0     ;; Set colours before using DrawStringM0
-
+zzz: jr zzz
    ;; Draw the string (IY points to the string)
    pop   hl                     ;; HL Points to video memory location where the string will be drawn
    call  cpct_drawStringM0      ;; Draw the string
@@ -701,9 +700,9 @@ boundary_hit:
    
    ;; Redraw string with a new colour value
    ;; (BC already contains y and x coordinates)
-   ld     a, (ix+0)               ;; | IY = Pointer to the string
+   ld     a, (ix+0)              ;; | IY = Pointer to the string
    ld__iyl_a                     ;; |
-   ld     a, (ix+1)               ;; |
+   ld     a, (ix+1)              ;; |
    ld__iyh_a                     ;; |
    call  redrawString            ;; Redraws the string
 
