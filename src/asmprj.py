@@ -132,10 +132,10 @@ def script_tools_paths() -> Tuple[str, str]:
 def target_name_from_dir(path: str) -> str:
     return os.path.basename(os.path.normpath(path))
 
-def update_project_win(content: str, asm_path: str, dsk_path: str, target_name: str) -> str:
+def update_project_win(content: str, asm_path: str, dsk_path: str) -> str:
     """
     We have to use lamda functions to avoid the problem with Windows paths and re.sub calls
-    raising errors like 're.error: bad escape \U'
+    raising errors like 're.error: bad escape'
     """
     content = re.sub(
         r'^set ASM=.*$',
@@ -150,16 +150,9 @@ def update_project_win(content: str, asm_path: str, dsk_path: str, target_name: 
         content,
         flags=re.MULTILINE,
     )
-
-    content = re.sub(
-        r'^set TARGET=.*$',
-        lambda _: f'set TARGET={target_name}',
-        content,
-        flags=re.MULTILINE,
-    )
     return content
 
-def update_project_unix(content: str, asm_path: str, dsk_path: str, target_name: str) -> str:
+def update_project_unix(content: str, asm_path: str, dsk_path: str) -> str:
     """ 
     Linux shouldn't have the same problem than Windows with bars in the path, but
     lets use the lambda workaround just in case.
@@ -177,13 +170,6 @@ def update_project_unix(content: str, asm_path: str, dsk_path: str, target_name:
         content,
         flags=re.MULTILINE,
     )
-
-    content = re.sub(
-        r'^TARGET=.*$',
-        lambda _: f'TARGET={target_name}',
-        content,
-        flags=re.MULTILINE,
-    )
     return content
 
 def update_project(target_dir: str, is_windows: bool) -> None:
@@ -195,19 +181,16 @@ def update_project(target_dir: str, is_windows: bool) -> None:
         sys.exit(1)
 
     asm_path, dsk_path = script_tools_paths()
-    target_name: str = target_name_from_dir(target_dir)
 
     with open(make_path, "r", encoding="utf-8") as f:
         content: str = f.read()
     if is_windows:
-        content = update_project_win(content, asm_path, dsk_path, target_name)
+        content = update_project_win(content, asm_path, dsk_path)
     else:
-        content = update_project_unix(content, asm_path, dsk_path, target_name)
+        content = update_project_unix(content, asm_path, dsk_path)
     with open(make_path, "w", encoding="utf-8", newline="\n") as f:
         f.write(content)
-
     print(f"{make_name} was sucessfully updated")
-    print(f"TARGET = {target_name}")
 
 def create_project(target_dir: str, is_windows: bool) -> None:
     target_name: str = target_name_from_dir(target_dir)

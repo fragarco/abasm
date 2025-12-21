@@ -34,7 +34,7 @@ También puede utilizarse `.` para indicar el directorio actual.
 
 - `--update <directorio>`  
   Actualiza un proyecto existente.  
-  Recalcula y actualiza las rutas de las variables `ASM` y `DSK` en el fichero `make.bat` o `make.sh`, así como la variable `TARGET`, por si el proyecto ha sido movido o renombrado.
+  Recalcula y actualiza las rutas de las variables `ASM` y `DSK` en el fichero `make.bat` o `make.sh`.
 
 - `--help`  
   Muestra un texto de ayuda con información sobre el uso de la herramienta y finaliza la ejecución.
