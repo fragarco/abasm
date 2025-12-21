@@ -1,9 +1,9 @@
 #!/usr/bin/env python
 
 """
-BASM.PY by Javier Garcia
+ABASM.PY by Javier Garcia
 
-BASM is a Z80 assembler focused on the Amstrad CPC. It's based on pyz80,
+ABASM is a Z80 assembler focused on the Amstrad CPC. It's based on pyz80,
 originally crafted by Andrew Collier and later on modified by Simon Owen
 
 This program is free software; you can redistribute it and/or modify
