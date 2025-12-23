@@ -16,6 +16,8 @@
 ;;  along with this program.  If not, see <http://www.gnu.org/licenses/>.
 ;;-------------------------------------------------------------------------------
 
+;; Code modified to be used with ABASM by Javier "Dwayne Hicks" Garcia
+
 ;;//////////////////////////////////////////////////////////////////////
 ;;//////////////////////////////////////////////////////////////////////
 ;; File: Colours (asm)
