@@ -126,7 +126,7 @@ cpct_setDrawCharM1:
    ;; into the table with half the amount of bytes in the generating code. It also includes the 
    ;; combination FG-BG-BG-BG that will be inserted only once, making a total of 15 combinations.
    ld     a, b    ;; [1] A = BG-BG-BG-BG combination
-loop:
+sdchm1_loop:
    ;; Insert pixel combinations in the table
    ld    de, &EEDD   ;; [3] D = 0xEE [1110|1110], E = 0xDD [1101|1101]
                      ;;    Two combinations used 6 times for AND operations. 
@@ -191,27 +191,27 @@ loop:
    ;; iteration of this loop, and a RET (0xC9) the second interaction. That will save
    ;; as a register, as no counter will be required. The only thing to do is to
    ;; XOR the instruction against 0xC9 to make it switch between 0x00 and 0xC9.
-   ld    de, nopret     ;; [3] DE = Memory address where the NOP/RET instruction is stored
+   ld    de, sdchm1_nopret ;; [3] DE = Memory address where the NOP/RET instruction is stored
    ld     a, (de)       ;; [2] A = Present value of the NOP/RET instruction
    xor   &C9            ;; [2] XOR the NOP/RET instruction against 0xC9 to make it switch from NOP to RET and viceversa
    ld  (de), a          ;; [2] Store the switched version of the NOP/RET instruction
 
    ;; Do nothing the first iteration, return on the second
-nopret:
-   ret            ;; [1/3] NOP / RET Placeholder
+sdchm1_nopret:
+   ret               ;; [1/3] NOP / RET Placeholder
 
    ;; If execution arrives here, means that previous instruction was a NOP,
    ;; therefore this is the first iteration of the loop (on the second, previous instruction will be a RET)
    ;; We only need to increment HL now (not in the second iteration), because we have filled half the table
-   inc   hl       ;; [2] HL points to the byte 8 of the table
+   inc   hl          ;; [2] HL points to the byte 8 of the table
    
    ;; Combination: FG-BG-BG-BG
-   ld     a, b    ;; [1] A = BG-BG-BG-BG
-   xor    c       ;; [1] / Make 1st pixels FG (Insert FG colour here > [F---|F---])
-   and   &77      ;; [2] | Insert FG Colour in the 1st bits of each nibble: 0x77 = [0111|0111]
-   xor    c       ;; [1] \ C = 4 foreground pixel values
-   ld  (hl), a    ;; [2] Store the FG-BG-BG-BG combination at the byte 8 of the table 
-   inc   hl       ;; [2] HL points to the byte 9 of the table
-   ld     b, a    ;; [1] B = FG-BG-BG-BG (New combination to be used on the second iteration of the loop)
+   ld     a, b       ;; [1] A = BG-BG-BG-BG
+   xor    c          ;; [1] / Make 1st pixels FG (Insert FG colour here > [F---|F---])
+   and   &77         ;; [2] | Insert FG Colour in the 1st bits of each nibble: 0x77 = [0111|0111]
+   xor    c          ;; [1] \ C = 4 foreground pixel values
+   ld  (hl), a       ;; [2] Store the FG-BG-BG-BG combination at the byte 8 of the table 
+   inc   hl          ;; [2] HL points to the byte 9 of the table
+   ld     b, a       ;; [1] B = FG-BG-BG-BG (New combination to be used on the second iteration of the loop)
 
-   jr    loop     ;; [3] Repeat the loop for a second time (FG-XX-XX-XX combinations)
+   jr    sdchm1_loop ;; [3] Repeat the loop for a second time (FG-XX-XX-XX combinations)

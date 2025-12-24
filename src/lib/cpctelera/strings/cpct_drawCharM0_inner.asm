@@ -21,6 +21,7 @@
 ;;
 ;; Include constants and general values
 ;;
+
 read "cpctelera/macros/cpct_undocumentedOpcodes.asm"
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -101,10 +102,10 @@ cpct_drawCharM0_inner:
    ld__ixl_a      ;; [2] and save it to IXL = |edcba|000|
    ;; Now IX = |edcba|000||00111hgf| = 0x3800 + 8*ASCII
 
-   ld    bc, dc_2pxtableM0    ;; [3] BC points to the 2 1-bit pixels to 2 4-bit pixels conversion table
+   ld    bc, dc_2pxtableM0 ;; [3] BC points to the 2 1-bit pixels to 2 4-bit pixels conversion table
 
    ;; Draw next line from the character to the screen
-nextline:
+dchm0i_nextline:
    ex    de, hl      ;; [1] Put Destination pointer into DE (it is in HL)
    ld     a, (ix)    ;; [5] A = Next Character pixel line definition 
                      ;; .... (8 bits defining 0 = background colour, 1 = foreground)
@@ -123,7 +124,7 @@ REPEAT 4
    inc   bc          ;; [2] BC is decremented by LDI but we want it to keep pointing to the table, so we add 1 again
 REND
 
-endpixelline:
+dchm0i_endpixelline:
    ;; Move to next pixel-line definition of the character
    inc__ixl          ;; [2] Next pixel Line (characters are 8-byte-aligned in memory, 
                      ;; ... so we only need to increment IXL, as IXH will not change)
@@ -135,18 +136,18 @@ endpixelline:
    ;; Prepare to copy next line 
    ;;  -- Move DE pointer to the next pixel line on the video memory
    ;; (We save new calculations on HL, because it will be exchanged with DE at the start of nextline: loop)
-   ld    hl, &800-4      ;; [3] | Next pixel line is 0x800 bytes away in standard video modes
+   ld    hl, &800-4        ;; [3] | Next pixel line is 0x800 bytes away in standard video modes
    add   hl, de            ;; [3] | ..but DE has already being incremented 4 times. So add 0x800-4 to
                            ;;       ..DE to make it point to the start of the next pixel line in video memory
    ;; Check if new address has crossed character boundaries (every 8 pixel lines)
    ld     a, h             ;; [1] A = H (top 8 bits of video memory address)
-   and   &38             ;; [2] We check if we have crossed memory boundary (every 8 pixel lines)
-   jr    nz, nextline      ;; [2/3]  by checking the 4 bits that identify present memory line. 
+   and   &38               ;; [2] We check if we have crossed memory boundary (every 8 pixel lines)
+   jr    nz, dchm0i_nextline ;; [2/3]  by checking the 4 bits that identify present memory line. 
                            ;; .... If 0, we have crossed boundaries
-boundary_crossed:
+dchm0i_boundary_crossed:
    ld    de, &C050         ;; [3] | HL = HL + 0xC050: Relocate DE pointer to the start of the next pixel line in video memory
    add   hl, de            ;; [3] \ (Remember that HL and DE will be exchanged at the start of nextline:)
-   jr    nextline          ;; [3] Jump to continue with next pixel line
+   jr    dchm0i_nextline   ;; [3] Jump to continue with next pixel line
 
 ;; Conversion table from 2 1-bit pixels to mode 0 2 4-bit pixels. Essentially, there are 4
 ;; possible combinations with 2 pixels and 2 colours: (00, 01, 10, 11 == BG-BG, BG-FG, FG-BG, FG-FG)

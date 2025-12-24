@@ -18,25 +18,22 @@
 
 ;; Code modified to be used with ABASM by Javier "Dwayne Hicks" Garcia
 
-read "cpctelera/strings/strings.asm"
-read "cpctelera/strings/cpct_drawCharM0_inner.asm"
-
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-;; Function: cpct_drawStringM0
+;; Function: cpct_drawStringM2
 ;;
-;;    Draws a null-terminated string with ROM characters to video memory or 
-;; to a hardware backbuffer in Mode 0 (160x200, 16 colours).
+;;    Prints a null-terminated string with ROM characters on a given byte-aligned 
+;; position on the screen in Mode 2 (640x200px, 2 colours).
 ;;
 ;; C Definition:
-;;    void <cpct_drawStringM0> ( void* *string*, void* *video_memory*) __z88dk_callee
+;;    void <cpct_drawStringM2> (void* *string*, void* *video_memory*) __z88dk_callee;
 ;;
 ;; Input Parameters (4 Bytes):
 ;;  (2B IY) string       - Pointer to the null terminated string being drawn
 ;;  (2B HL) video_memory - Video memory location where the string will be drawn
 ;;
 ;; Assembly call (Input parameters on registers):
-;;    > call cpct_drawStringM0
+;;    > call cpct_drawStringM2
 ;;
 ;; Parameter Restrictions:
 ;;  * *string* must be a null terminated string. It could contain any 8-bit value as 
@@ -57,22 +54,27 @@ read "cpctelera/strings/cpct_drawCharM0_inner.asm"
 ;; hang or crash).
 ;;  * This routine does not check for boundaries. If you draw too long strings or out 
 ;; of the screen, unpredictable results will happen.
-;;  * Screen must be configured in Mode 0 (160x200 px, 16 colours)
+;;  * Screen must be configured in Mode 2 (640x200 px, 2 colours)
+;;  * This function requires the CPC *firmware* to be *DISABLED*. Otherwise, random
+;; crashes might happen due to side effects.
 ;;  * This function *disables interrupts* during main loop (character printing), and
 ;; re-enables them at the end.
 ;;  * This function *will not work from ROM*, as it uses self-modifying code.
 ;;
 ;; Details:
 ;;    This function receives a null-terminated string and draws it to the screen in 
-;; Mode 0 (160x200, 16 colours). To do so, it repeatedly calls <cpct_drawCharM0_inner>,
+;; Mode 2 (640x200, 2 colours). To do so, it repeatedly calls <cpct_drawCharM2_inner>,
 ;; for every character to be drawn. As foreground and background colours it uses the
-;; ones previously set up by the latest call to <cpct_setDrawCharM0>.
+;; ones previously set up by the latest call to <cpct_setDrawCharM2>. Therefore, you
+;; need to call <cpct_setDrawCharM2> previous to using this function to select the
+;; colours you want the text to be drawn of. However, once you set colours, they 
+;; remain set with no need to call <cpct_setDrawCharM2> again.
 ;;
 ;;   *video_memory* parameter points to the byte where the string will be
 ;; drawn. The first pixel of that byte will be the upper-left corner of the string.
 ;; As this function uses a byte-pointer to refer to the upper-left corner of the 
-;; string, it can only draw string on even-pixel columns (0, 2, 4, 6...), as 
-;; every byte contains 2 pixels in Mode 0.
+;; string, it can only start drawing the string on every pixel columns divisible by 8 
+;; (0, 8, 16...), as every byte contains 8 pixels in Mode 2.
 ;;
 ;;    Usage of this function is quite straight-forward, as you can see in the 
 ;; following example,
@@ -81,18 +83,18 @@ read "cpctelera/strings/cpct_drawCharM0_inner.asm"
 ;;    void main () {
 ;;       u8* pvmem;  // Pointer to video memory
 ;;
-;;       // Set video mode 0
+;;       // Set video mode 2
 ;;       cpct_disableFirmware();
-;;       cpct_setVideoMode(0);
+;;       cpct_setVideoMode(2);
 ;;
 ;;       // Draw some testing strings with curious colours, more or less centered
 ;;       pvmem = cpctm_screenPtr(CPCT_VMEM_START, 16, 88);  // Calculate video memory address
-;;       cpct_setDrawCharM0(3, 5);                          // Red over black
-;;       cpct_drawStringM0("Hello there!", pvmem);          // Draw the string
+;;       cpct_setDrawCharM2(1, 0);                          // Yellow over blue
+;;       cpct_drawStringM2("Hello there!", pvmem);          // Draw the string
 ;;
 ;;       pvmem = cpctm_screenPtr(CPCT_VMEM_START, 20, 108); // Calculate new video memory address
-;;       cpct_setDrawCharM0(1, 9);                          // Bright yellow over yellow
-;;       cpct_drawStringM0("Great man!",   pvmem);          // Draw the string
+;;       cpct_setDrawCharM2(0, 1);                          // Blue over yellow
+;;       cpct_drawStringM2("Great man!",   pvmem);          // Draw the string
 ;;
 ;;       // And loop forever
 ;;       while(1);
@@ -100,27 +102,31 @@ read "cpctelera/strings/cpct_drawCharM0_inner.asm"
 ;; (end code)
 ;;
 ;; Destroyed Register values: 
-;;    C bindings  - AF, BC, DE, HL
-;;  ASM bindings  - AF, BC, DE, HL, IX, IY
+;;    C bindings     - AF, BC, DE, HL
+;;    ASM bindings   - AF, BC, DE, HL, IY
 ;;
-;; Required memory: 
-;;    C bindings  - 58 (+100 cpct_drawCharM0_inner = 158 bytes)
-;;  ASM bindings  - 38 (+100 cpct_drawCharM0_inner = 138 bytes)
+;; Required memory:
+;;    C bindings     - 47 bytes (+38 bytes <cpct_drawCharM2_inner> = 85 bytes)
+;;    ASM bindings   - 35 bytes (+38 bytes <cpct_drawCharM2_inner> = 73 bytes)
 ;;
 ;; Time Measures:
 ;; (start code)
-;;   Case     | microSecs (us) | CPU Cycles
+;;   Case     | microSecs (us) |  CPU Cycles
+;; -------------------------------------------
+;;   Best     |   63 + 162*L   |  252 + 648*L
+;;   Worst    |   63 + 180*L   |  252 + 720*L
 ;; ----------------------------------------------
-;;   Best     |    74 + 854*L  |  296 + 3416*L  
-;;   Worst    |    74 + 862*L  |  296 + 3448*L
-;; ----------------------------------------------
-;; Asm saving |      -38       |     -152
+;; Asm saving |      -29       |      -116
 ;; ----------------------------------------------
 ;; (end code)
 ;;    L = Length of the string (excluding null-terminator character)
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-cpct_drawStringM0:
+read 'cpctelera/strings/strings.asm'
+read 'cpctelera/strings/cpct_drawCharM2_inner.asm'
+read 'cpctelera/firmware/cpc_mode_rom_status.asm'
+
+cpct_drawStringM2:
    ;; Enable Lower ROM during char copy operation, with interrupts disabled 
    ;; to prevent firmware messing things up
    ld     a,(cpct_mode_rom_status)  ;; [4] A = mode_rom_status (present value)
@@ -129,29 +135,28 @@ cpct_drawStringM0:
    di                               ;; [1] Disable interrupts to prevent firmware from taking control while Lower ROM is enabled
    out   (c), a                     ;; [3] GA Command: Set Video Mode and ROM status (100)
 
-   jr    dsm0_firstChar             ;; [3] Jump to first char (Saves 1 jr back every iteration)
+   jr    dsm2_firstChar             ;; [3] Jump to first char (Saves 1 jr back every iteration)
 
-dsm0_nextChar:
+dsm2_nextChar:
    ;; Draw next character
    push  hl                         ;; [4] Save HL
-   call  cpct_drawCharM0_inner      ;; [5 + 824/832] Draws the next character
+   call  cpct_drawCharM2_inner      ;; [5 + 137/155] Draws the next character
    pop   hl                         ;; [3] Recover HL 
 
    ;; Increment Pointers
-   ld    de, 4                      ;; [3] /
-   add   hl, de                     ;; [3] | HL += 4 (point to next position in video memory, 8 pixels to the right)
+   inc   hl                         ;; [2] ++HL (point to next position in video memory, 8 pixels to the right)
    inc   iy                         ;; [3] IY += 1 (point to next character in the string)
 
-dsm0_firstChar:
+dsm2_firstChar:
    ld     a, (iy)                   ;; [5] A = next character from the string
    or     a                         ;; [1] Check if A = 0
-   jr    nz, dsm0_nextChar          ;; [2/3] if A != 0, A is next character, draw it, else end
+   jr    nz, dsm2_nextChar          ;; [2/3] if A != 0, A is next character, draw it, else end
 
-dsm0_endstring:
+dsm2_endstring:
    ;; After finishing character drawing, restore previous ROM and Interrupts status
-   ld     a, (cpct_mode_rom_status)  ;; [4] A = mode_rom_status (present saved value)
-   ld     b, GA_port_byte            ;; [2] B = Gate Array Port (0x7F)
-   out   (c), a                      ;; [3] GA Command: Set Video Mode and ROM status (100)
-   ei                                ;; [1] Enable interrupts
+   ld     a, (cpct_mode_rom_status) ;; [4] A = mode_rom_status (present saved value)
+   ld     b, GA_port_byte           ;; [2] B = Gate Array Port (0x7F)
+   out   (c), a                     ;; [3] GA Command: Set Video Mode and ROM status (100)
+   ei                               ;; [1] Enable interrupts
 
    ret      ;; [3] Return to caller

@@ -16,35 +16,34 @@
 ;;  along with this program.  If not, see <http://www.gnu.org/licenses/>.
 ;;-------------------------------------------------------------------------------
 ;
-
 ;; Code modified to be used with ABASM by Javier "Dwayne Hicks" Garcia
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-;; Function: cpct_isAnyKeyPressed
+;; Function: cpct_isAnyKeyPressed_f
 ;;
-;;    Checks if there is at least one key pressed.
+;;    Checks if there is at least one key pressed. This function does the same as
+;; <cpct_isAnyKeyPressed> but ~73% faster.
 ;;
 ;; C Definition:
-;;    <u8> <cpct_isAnyKeyPressed> ();
+;;    <u8> <cpct_isAnyKeyPressed_f> ();
 ;;
 ;; Assembly call (Input parameters on registers):
-;;    > call cpct_isAnyKeyPressed
+;;    > call cpct_isAnyKeyPressed_f
 ;;
 ;; Return value:
 ;;    <u8> - *false* (0, no single key is pressed) or *true* (>0, at least one key
 ;; is pressed). Take into account that *true* is not 1, but any non-0 number. Return 
 ;; value is placed in registers A and L (same value for both)
 ;;
-;; Flag Output Status:
-;;    - *Z* = 1 (NO Key Pressed) / 0 (Some Key Pressed)
-;;
 ;; Details:
 ;;    Checks if at least one key from the keyboard is pressed. It does it looking   
 ;; at the <cpct_keyboardStatusBuffer>, which is an 80-bit array holding the pressed / not pressed 
 ;; status of each of the 80 keys in the CPC keyboard. If at least one key is pressed, 
 ;; one of the 80-bits representing the keys must be set to 0 (which means that key
-;; is pressed right now).
+;; is pressed right now). This is exactly the same as its brother function <cpct_isAnyKeyPressed>
+;; but using an unrolled version of the loop that makes it ~73% faster. However, it's counterpart
+;; is requiring more space for performing the operation. 
 ;;
 ;;    The <cpct_keyboardStatusBuffer> is just an array in memory that *must
 ;; be updated* with current key status. To do this, <cpct_scanKeyboard> 
@@ -54,13 +53,13 @@
 ;;    A, B, HL
 ;;
 ;; Required memory:
-;;       13 bytes
+;;       27 bytes
 ;;
 ;; Time Measures:
 ;; (start code)
 ;;   Case      | microSecs (us) | CPU Cycles 
 ;; -------------------------------------------
-;; Any         |       83       |    332
+;; Any         |       48       |    192
 ;; -------------------------------------------
 ;; (end code)
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -68,15 +67,29 @@
 ;; Keyboard Status Buffer defined in an external file
 read 'cpctelera/keyboard/keyboard.asm'
 
-cpct_isAnyKeyPressed:
+cpct_isAnyKeyPressed_f:
    ld  hl, cpct_keyboardStatusBuffer ;; [3] HL Points to the start of the keyboard status buffer
    ld   b, 9            ;; [2] We are going to do 9 AND operations against the first byte of the buffer
    ld   a, (hl)         ;; [2] A = First byte from keyboardStatusBuffer
 
-akp_and_loop:
    inc  hl              ;; [2] HL points to the next byte from the KeyboardStatusBuffer
    and (hl)             ;; [2] A = A & NextByte (The byte pointed by HL)
-   djnz akp_and_loop    ;; [3/4] Repeat until all 9 bytes have been ANDed (Then B = 0)
+   inc  hl              ;; [2] Repeat for byte Buffer+2
+   and (hl)             ;; [2] 
+   inc  hl              ;; [2] Repeat for byte Buffer+3
+   and (hl)             ;; [2] 
+   inc  hl              ;; [2] Repeat for byte Buffer+4
+   and (hl)             ;; [2] 
+   inc  hl              ;; [2] Repeat for byte Buffer+5
+   and (hl)             ;; [2] 
+   inc  hl              ;; [2] Repeat for byte Buffer+6
+   and (hl)             ;; [2] 
+   inc  hl              ;; [2] Repeat for byte Buffer+7
+   and (hl)             ;; [2] 
+   inc  hl              ;; [2] Repeat for byte Buffer+8
+   and (hl)             ;; [2] 
+   inc  hl              ;; [2] Repeat for byte Buffer+9
+   and (hl)             ;; [2] 
 
    inc   a              ;; [1] A holds the result of ANDing the 10 bytes. If no key is pressed, all bits should
                         ;; ... be 1, so A=0xFF. If we add 1, A=0, we return FALSE (no key is pressed).

@@ -181,17 +181,17 @@ cpct_drawSprite:
    ld    a, 126            ;; [2] We need to jump 126 bytes (63 LDIs*2 bytes) minus the width of the sprite * 2 (2B)
    sub   c                 ;; [1]    to do as much LDIs as bytes the Sprite is wide
    sub   c                 ;; [1]
-   ld (ds_drawSpriteWidth+4), a ;; [4] Modify JR data to create the jump we need
+   ld (dsp_drawSpriteWidth+4), a ;; [4] Modify JR data to create the jump we need
 
    ld    a, b              ;; [1] A = Height (used as counter for the number of lines we have to copy)
    ex   de, hl             ;; [1] Instead of jumping over the next line, we do the inverse operation because 
                            ;; .... it is only 4 cycles and not 10, as a JP would be)
 
-ds_drawSpriteWidth_next:
+dsp_drawSpriteWidth_next:
    ;; NEXT LINE
    ex   de, hl             ;; [1] HL and DE are exchanged every line to do 16bit maths with DE. 
                            ;; .... This line reverses it before proceeding to copy the next line.
-ds_drawSpriteWidth:
+dsp_drawSpriteWidth:
    ;; Draw a sprite-line of n bytes
    ld   bc, &800    ;; [3] 0x800 bytes is the distance in memory from one pixel line to the next within every 8 pixel lines
                     ;; ... Each LDI performed will decrease this by 1, as we progress through memory copying the present line
@@ -272,13 +272,13 @@ ds_drawSpriteWidth:
                     ;; .... If that happens, bits 13,12 and 11 of destination pointer will be 0
    and   &38        ;; [2] leave out only bits 13,12 and 11 from new memory address (00xxx000 00000000)
    ld    a, b       ;; [1] Restore A from B (A = B)
-   jp   nz, ds_drawSpriteWidth_next ;; [3] If any bit from {13,12,11} is not 0, we are still inside 
-                                    ;; .... video memory boundaries, so proceed with next line
+   jp   nz, dsp_drawSpriteWidth_next ;; [3] If any bit from {13,12,11} is not 0, we are still inside 
+                                     ;; .... video memory boundaries, so proceed with next line
 
    ;; Every 8 lines, we cross the 16K video memory boundaries and have to
    ;; reposition destination pointer. That means our next line is 16K-0x50 bytes back
    ;; which is the same as advancing 48K+0x50 = 0xC050 bytes, as memory is 64K 
    ;; and our 16bit pointers cycle over it
-   ld   bc, &C050           ;; [3] We advance destination pointer to next line
-   add  hl, bc                ;; [3]  HL += 0xC050
-   jp ds_drawSpriteWidth_next ;; [3] Continue copying
+   ld   bc, &C050              ;; [3] We advance destination pointer to next line
+   add  hl, bc                 ;; [3]  HL += 0xC050
+   jp dsp_drawSpriteWidth_next ;; [3] Continue copying

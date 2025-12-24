@@ -95,13 +95,13 @@ cpct_drawCharM1_inner:
    ld     c, a        ;; [1] C = A, so that BC points to the start of the character definition in ROM memory
    ;; Now BC = |edcba|000||00111hgf| = 0x3800 + 8*ASCII
 
-nextrow:
+dchm1i_nextrow:
    ;; HL holds destination video memory address where to draw next
    ;; Lets put it on DE and use HL to point to the conversion table
    ex    de, hl       ;; [1] DE points to video memory, HL is free
 
    ;; Draw first 4 pixels (1st byte) of the row to the screen
-   ld    hl, char2px  ;; [3] HL points to char2pixels conversion table
+   ld    hl, cpct_char2pxM1  ;; [3] HL points to char2pixels conversion table
    ld     a, (bc)     ;; [2] Get current row definition to extract the high nibble, which defines first 4 pixels
    rrca               ;; [1] / Switch both nibbles of A. We want to use the high nibble (4 highest bits)
    rrca               ;; [1] | as a value to be added to the base address of the char2px table (now in HL)
@@ -118,7 +118,7 @@ nextrow:
    inc   de           ;; [2] \ (DE) <- (HL) : DE++
 
    ;; Draw second 4 pixels (2nd byte) of the row to the screen
-   ld    hl, char2px  ;; [3] HL points to char2pixels conversion table again
+   ld    hl, cpct_char2pxM1  ;; [3] HL points to char2pixels conversion table again
    ld     a, (bc)     ;; [2] Get current row definition again, but this time to extract low nibble, defining next 4 pixels
    and   &0F          ;; [2] A = |abcdefgh| >>> A' = |0000efgh| (Leave only lowest nibble as a 0-15 value)
    add    l           ;; [1] / 
@@ -129,7 +129,7 @@ nextrow:
    ld     a, (hl)     ;; [2] / Write next 4 pixels to the screen 
    ld  (de), a        ;; [2] \ (DE) <- (HL)
 
-endpixelline:
+dchm1i_endpixelline:
    ;; Move to next pixel-line definition of the character
    inc    c           ;; [1] Next pixel Line (characters are 8-byte-aligned in memory, 
                       ;; ... so we only need to increment C, as B will not change)
@@ -147,16 +147,15 @@ endpixelline:
    ;; Check if new address has crossed character boundaries (every 8 pixel lines)
    ld     a, h        ;; [1] A = H (top 8 bits of video memory address)
    and   &38          ;; [2] We check if we have crossed memory boundary (every 8 pixel lines)
-   jr    nz, nextrow  ;; [2/3]  by checking the 4 bits that identify present memory line. 
+   jr    nz, dchm1i_nextrow  ;; [2/3]  by checking the 4 bits that identify present memory line. 
                       ;; .... If 0, we have crossed boundaries
-boundary_crossed:
+dchm1i_boundary_crossed:
    ld    de, &C050    ;; [3] | HL = HL + 0xC050: Relocate DE pointer to the start of the next pixel line in video memory
    add   hl, de       ;; [3] \ (Remember that HL and DE will be exchanged at the start of nextrow:)
-   jr    nextrow      ;; [3] Jump to continue with next pixel line
+   jr    dchm1i_nextrow  ;; [3] Jump to continue with next pixel line
 
 ;; Character To Pixels Definition conversion table.
 ;; This table is set up with the 16 combinations for pixel values using the current 
 ;; PEN/PAPER selected configuration. This is used to convert the character definition
 ;; to actual pixel values and then render them to screen
-char2px:                 ;; Alias for brevity
 cpct_char2pxM1: defs 16

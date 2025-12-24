@@ -1,6 +1,6 @@
 ;;-----------------------------LICENSE NOTICE------------------------------------
 ;;  This file is part of CPCtelera: An Amstrad CPC Game Engine 
-;;  Copyright (C) 2014 - 2015 ronaldo / Fremos / Cheesetea / ByteRealms (@FranGallegoBR)
+;;  Copyright (C) 2014-2016 ronaldo / Fremos / Cheesetea / ByteRealms (@FranGallegoBR)
 ;;
 ;;  This program is free software: you can redistribute it and/or modify
 ;;  it under the terms of the GNU Lesser General Public License as published by
@@ -18,14 +18,12 @@
 
 ;; Code modified to be used with ABASM by Javier "Dwayne Hicks" Garcia
 
-read 'cpctelera/keyboard/keyboard.asm'
-
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-;; Function: cpct_scanKeyboard
+;; Function: cpct_scanKeyboard_i
 ;;
 ;;    Reads the status of keyboard and joysticks and stores it in the 
-;; 10 bytes reserved as <cpct_keyboardStatusBuffer>
+;; 10 bytes reserved as <cpct_keyboardStatusBuffer>. (Interrupt-Unsafe version)
 ;;
 ;; C Definition:
 ;;    void <cpct_scanKeyboard> ()
@@ -35,11 +33,12 @@ read 'cpctelera/keyboard/keyboard.asm'
 ;; about all the 80 available Amstrad CPC's keys / buttons.
 ;;
 ;; Assembly call:
-;;    > call cpct_scanKeyboard
+;;    > call cpct_scanKeyboard_i
 ;;
 ;; Known limitations:
-;;    This function disables interrupts while does keyboard scanning. Interrupts
-;; are enabled at the end, when scanning has finished.
+;;    * This function may not work properly if an interrupt occurs during the
+;; execution of this code. You should use this function always in interrupt-safe 
+;; places (inside an Interrupt Service Routine (ISR), for instance)
 ;;
 ;; Details:
 ;;    This function reads the pressed / not pressed status of the entire set
@@ -51,32 +50,41 @@ read 'cpctelera/keyboard/keyboard.asm'
 ;; Programmable Peripheral Interface (PPI) chip demands it. For more details
 ;; on how all this process works, check <Keyboard> topic.
 ;;
+;;    The function does not disable nor reenable interrupts (contrary to what
+;; <cpct_scanKeyboard> does). This means that this function is Interrupt-Unsafe.
+;; If an interrupt happens during the execution of this function's code, the 
+;; output may be corrupt. To prevent this from happening, you should ensure that
+;; this function is called only in interrupt-safe places. You may call in a 
+;; syncronized part of your code, knowing that no interrupt will happen there, 
+;; inside a manually disabled interrupts section, or inside an interrupt service
+;; routine. In any case, is up to you to ensure that no interrupt happens during
+;; key scanning.
+;;
 ;; Destroyed Register values: 
 ;;    AF, BC, DE, HL
 ;;
 ;; Required memory:
-;;    49 bytes
+;;    47 bytes
 ;;
 ;; Time Measures:
 ;; (start code)
 ;; Case | microSecs (us) | CPU Cycles 
 ;; ------------------------------------
-;; Any  |     212        |    848
+;; Any  |     210        |    840
 ;; ------------------------------------
 ;; (end code)
 ;;
 ;; Credits:                                                       
 ;;    This fragment of code is based on a scanKeyboard code issued by CPCWiki.                                                    
 ;; http://www.cpcwiki.eu/index.php/Programming:Keyboard_scanning. This version
-;; of the code is, however, 2 microseconds faster than CPCWiki's (209 vs 211, 
+;; of the code is, however, 4 microseconds faster than CPCWiki's (207 vs 211, 
 ;; excluding the 3 microseconds from the ret instruction)
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; Keyboard Status Buffer defined in an external file
+read 'cpctelera/keyboard/keyboard.asm'
 
-cpct_scanKeyboard:          ;; Assembly entry point
-
-   di                       ;; [1] Disable interrupts
+cpct_scanKeyboard_i:     ;; Assembly entry point
 
    ;; Configure PPI: Select Register 14 (the one connected with keyboard status) and set it for reading
    ;;
@@ -92,7 +100,7 @@ cpct_scanKeyboard:          ;; Assembly entry point
    ld   bc, &F6C0           ;; [3] Write (C0h = 11 000000b) on PPI Port C (F6h): operation > select register 
    ld    d, b               ;; [1] Save F6h into D to use it later in the loop
    out (c), c               ;; [4]
-   DW  &71ED ; out (c), 0   ;; [4] OUT (C), 0 => Write 0 on PPI's Port C to put PSG's in inactive mode 
+   dw  &71ED ; out (c), 0 ;; [4] OUT (C), 0 => Write 0 on PPI's Port C to put PSG's in inactive mode 
                             ;; .... (required in between different operations)
    ld   bc, &F792           ;; [3] Configure PPI 8255: Set Port A = Input, Port C = Output. 
    out (c), c               ;; [4] 92h= 1001 0010 :(B7=1)=> I/O Mode,        (B6-5=00)=> Mode 1,
@@ -101,12 +109,12 @@ cpct_scanKeyboard:          ;; Assembly entry point
 
    ;; Read Loop: We read the 10-bytes that define the pressed/not pressed status
    ;;
-   ld    a, &40            ;; [2] A refers to the next keyboard line to be read (40h to 49h)
+   ld    a, &40           ;; [2] A refers to the next keyboard line to be read (40h to 49h)
    ld    c, 10             ;; [2] We have to write 10 keyboard lines
    ld   hl, cpct_keyboardStatusBuffer ;; [3] HL Points to the start of the keyboardBuffer, 
                                       ;; .... where scanned data will be stored
 
-rfks_nextKeyboardLine:
+rfks_nextKeyboardLine_i:
    ld    b, d               ;; [1] B = F6h => Write the value of A to PPI's Port C to select next Matrix Line
    out (c), a               ;; [4]
 
@@ -115,13 +123,11 @@ rfks_nextKeyboardLine:
 
    inc   a                  ;; [1] Loop: Increment A => Next Matrix Line. 
    dec   c                  ;; [1] Check if we have arrived to line 4a, which is the end 
-   jr    nz, rfks_nextKeyboardLine ;; [2/3] Repeat loop if we are not done.
+   jr    nz, rfks_nextKeyboardLine_i ;; [2/3] Repeat loop if we are not done.
 
    ;; Restore PPI status to Port A=Output, Port C=Output
    ;;
    ld   bc, &F782           ;; [3] Put again PPI in Output/Output mode for Ports A/C.
    out (c), c               ;; [4]
-
-   ei                       ;; [1] Reenable interrupts
 
    ret                      ;; [3] Return

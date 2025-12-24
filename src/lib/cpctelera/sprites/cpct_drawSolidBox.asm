@@ -130,14 +130,14 @@ cpct_drawSolidBox:
    ld     a, 128           ;; [2] We need to jump 128 bytes (64 COPY2HL_n_INC*2 bytes) minus the width of the sprite * 2 (2B)
    sub    c                ;; [1]  to do as much COPY2HL_n_INC as bytes the Sprite is wide
    sub    c                ;; [1]
-   ld (_jr_offset+1), a    ;; [4] Modify JR data to create the jump we need
+   ld (_dboxjr_offset+1),a ;; [4] Modify JR data to create the jump we need
    
    ld     c, l             ;; [1] C=L (Colour pattern)
    ld     h, d             ;; [1] / HL = DE
    ld     l, e             ;; [1] \ HL Points to Video Memory, and DE holds a copy which won't be modified
 
-_next_line:
-_jr_offset:
+_dbox_next_line:
+_dboxjr_offset:
    jr    $                 ;; [3] Self modifying instruction: the '$' will be substituted by the required jump forward. 
                            ;; ... (Note: Writting JR 0 compiles but later it gives odd linking errors)  
 ;; 64 COPY2HL_n_INC c, which are able to copy up to 64 bytes each time.
@@ -161,7 +161,7 @@ REND
    ;; We check if we have crossed video memory boundaries (which will happen every 8 lines). 
    ;; ... If that happens, bits 13,12 and 11 of destination pointer will be 0
    and   &38               ;; [2] leave out only bits 13,12 and 11 from new memory address (00xxx000 00000000)
-   jp    nz, _next_line    ;; [3] If any bit from {13,12,11} is not 0, we are still inside 
+   jp    nz, _dbox_next_line ;; [3] If any bit from {13,12,11} is not 0, we are still inside 
                            ;; ... video memory boundaries, so proceed with next line
 
    ;; Every 8 lines, we cross the 16K video memory boundaries and have to
@@ -172,4 +172,4 @@ REND
    add   hl, de            ;; [3] HL = DE + 0xC050
    ld     d, h             ;; [1] / DE = HL
    ld     e, l             ;; [1] \
-   jp   _next_line         ;; [3] Continue copying   
+   jp   _dbox_next_line    ;; [3] Continue copying   

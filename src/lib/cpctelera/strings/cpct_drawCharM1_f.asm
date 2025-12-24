@@ -135,7 +135,7 @@ read 'cpctelera/firmware/cpc_mode_rom_status.asm'
 ;; (end code)
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-cpct_drawCharM1_f::
+cpct_drawCharM1_f:
    ld  (dcm1f_asciiHL+2), a    ;; [13] Save ASCII code of the character as data of a later "OR data" instruction. 
                                ;; .... This is 1-cycle faster than pushing and popping to the stack and resets Carry Flag
 

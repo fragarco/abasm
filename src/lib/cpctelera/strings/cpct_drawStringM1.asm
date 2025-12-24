@@ -18,6 +18,7 @@
 
 ;; Code modified to be used with ABASM by Javier "Dwayne Hicks" Garcia
 
+read 'cpctelera/strings/strings.asm'
 read 'cpctelera/strings/cpct_drawCharM1_inner.asm'
 read 'cpctelera/firmware/cpc_mode_rom_status.asm'
 
@@ -133,9 +134,9 @@ cpct_drawStringM1:
    di                               ;; [1] Disable interrupts to prevent firmware from taking control while Lower ROM is enabled
    out   (c), a                     ;; [3] GA Command: Set Video Mode and ROM status (100)
 
-   jr    firstChar                  ;; [3] Jump to first char (Saves 1 jr back every iteration)
+   jr    dsm1_firstChar             ;; [3] Jump to first char (Saves 1 jr back every iteration)
 
-nextChar:
+dsm1_nextChar:
    ;; Draw next character
    push  hl                         ;; [4] Save HL
    call  cpct_drawCharM1_inner      ;; [5 + 458/466] Draws the next character
@@ -146,16 +147,16 @@ nextChar:
    inc   hl                         ;; [2] | HL += 2 (point to next position in video memory, 8 pixels to the right)
    inc   iy                         ;; [3] IX += 1 (point to next character in the string)
 
-firstChar:
+dsm1_firstChar:
    ld     a, (iy+0)                 ;; [5] A = next character from the string
    or     a                         ;; [1] Check if A = 0
-   jr    nz, nextChar               ;; [2/3] if A != 0, A is next character, draw it, else end
+   jr    nz, dsm1_nextChar          ;; [2/3] if A != 0, A is next character, draw it, else end
 
-endstring:
+dsm1_endstring:
    ;; After finishing character drawing, restore previous ROM and Interrupts status
    ld     a, (cpct_mode_rom_status) ;; [4] A = mode_rom_status (present saved value)
    ld     b, GA_port_byte            ;; [2] B = Gate Array Port (0x7F)
    out   (c), a                      ;; [3] GA Command: Set Video Mode and ROM status (100)
    ei                                ;; [1] Enable interrupts
 
-;; IY Restore and Return provided by bindings
+   ret      ;; [3] Return to caller

@@ -18,35 +18,32 @@
 
 ;; Code modified to be used with ABASM by Javier "Dwayne Hicks" Garcia
 
-;;
-;; Include constants and general values
-;;
-read 'cpctelera/strings/strings.asm'
-read 'cpctelera/firmware/cpc_mode_rom_status.asm'
-read 'cpctelera/strings/cpct_drawCharM0_inner.asm'
-
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-;; Function: cpct_drawCharM0
+;; Function: cpct_drawCharM1
 ;;
-;;    Draws a ROM character to the screen or hardware back-buffer in Mode 0 format
-;; (160x200 px, 16 colours).
+;;    Prints a ROM character on a given byte-aligned position on the screen 
+;; in Mode 1 (320x200 px, 4 colours).
 ;;
 ;; C Definition:
-;;    void <cpct_drawCharM0> (void* *video_memory*, <u8> *ascii*) __z88dk_callee
+;;    void <cpct_drawCharM1> (void* *video_memory*, <u8> *ascii*) __z88dk_callee
 ;;
 ;; Input Parameters (3 Bytes):
 ;;  (2B HL) video_memory - Video memory location where the character will be drawn
 ;;  (1B E ) ascii        - Character to be drawn (ASCII code)
 ;;
 ;; Assembly call (Input parameters on registers):
-;;    > call cpct_drawCharM0_asm
+;;    > call cpct_drawCharM1
 ;;
 ;; Parameter Restrictions:
 ;;  * *video_memory* could theoretically be any 16-bit memory location. It will work
 ;; outside current screen memory boundaries, which is useful if you use any kind of
 ;; double buffer. However, be careful where you use it, as it does no kind of check
 ;; or clipping, and it could overwrite data if you select a wrong place to draw.
+;;  * *fg_pen* must be in the range [0-3]. It is used to access a colour mask table and,
+;; so, a value greater than 3 will return a random colour mask giving unpredictable 
+;; results (typically bad character rendering, with odd colour bars).
+;;  * *bg_pen* must be in the range [0-3], with identical reasons to *fg_pen*.
 ;;  * *ascii* could be any 8-bit value, as 256 characters are available in ROM.
 ;;
 ;; Requirements and limitations:
@@ -55,7 +52,9 @@ read 'cpctelera/strings/cpct_drawCharM0_inner.asm'
 ;; so CPU would read code from ROM instead of RAM in first bank, effectively shadowing
 ;; this piece of code. This would lead to undefined results (typically program would
 ;; hang or crash).
-;;  * Screen must be configured in Mode 0 (160x200 px, 16 colours)
+;;  * Screen must be configured in Mode 1 (320x200 px, 4 colours)
+;;  * This function requires the CPC *firmware* to be *DISABLED*. Otherwise, random
+;; crashes might happen due to side effects.
 ;;  * This function *disables interrupts* during main loop (character printing), and
 ;; re-enables them at the end.
 ;;  * This function *will not work from ROM*, as it uses self-modifying code.
@@ -63,35 +62,37 @@ read 'cpctelera/strings/cpct_drawCharM0_inner.asm'
 ;; Details:
 ;;    This function reads a character from ROM and draws it at a given byte-aligned 
 ;; video memory location, that corresponds to the upper-left corner of the 
-;; character. As this function assumes screen is configured for Mode 0
-;; (160x200, 16 colours), it means that the character can only be drawn at even 
-;; pixel columns (0, 2, 4, 8...), because each byte contains 2 pixels in Mode 0.
+;; character. As this function assumes screen is configured for Mode 1
+;; (320x200, 4 colours), it means that the character can only be drawn at module-4 
+;; pixel columns (0, 4, 8, 12...), because each byte contains 4 pixels in Mode 1.
+;; It prints the character in 2 colours (PENs) one for foreground (*fg_pen*), and 
+;; the other for background (*bg_pen*). 
 ;;
 ;;    The character will be drawn using preconfigured foreground (FG) and 
 ;; background (BG) colours (by default BG=0, FG=1). Both colours can be set
-;; calling <cpct_setDrawCharM0> before calling this function. Colours get set
-;; by modifying and internal 4-byte array called _dc_2pxtableM0_. This means
+;; calling <cpct_setDrawCharM1> before calling this function. Colours get set
+;; by modifying and internal 16-byte array called _cpct_char2pxM1_. This means
 ;; that once colours are set they stay. You may set them once and call 
 ;; this function as many times as you want to draw with the same set of colours.
 ;;
 ;;    Next code example shows how to use this function in conjunction with
-;; <cpct_setDrawCharM0>,
+;; <cpct_setDrawCharM1>,
 ;; (start code)
-;;    void drawSomeCharacters(u8* pscreen) {
-;;       cpct_setDrawCharM0(5, 0);        // Foreground colour 5, Background 0
+;;    void drawSomeCharactersM1(u8* pscreen, u8 fgcolour, u8 bgcolour) {
+;;       cpct_setDrawCharM1(fgcolour, bgcolour);   // Set colours before drawing
 ;;
 ;;       // Draw A, B, C consecutive
-;;       cpct_drawCharM0(pscreen + 0, 'A');
-;;       cpct_drawCharM0(pscreen + 4, 'B');
-;;       cpct_drawCharM0(pscreen + 8, 'C');
+;;       cpct_drawCharM1(pscreen +  0, 'A');
+;;       cpct_drawCharM1(pscreen +  2, 'B');
+;;       cpct_drawCharM1(pscreen +  4, 'C');
 ;;
 ;;       // Set video inverse (inverted colours from before)
-;;       cpct_setDrawCharM0(0, 5);        // Foreground colour 0, Background 5
+;;       cpct_setDrawCharM1(bgcolour, fgcolour);   // Set inverse colours
 ;;
 ;;       // Draw D, E, F consecutive in inverse video
-;;       cpct_drawCharM0(pscreen + 16, 'D');
-;;       cpct_drawCharM0(pscreen + 20, 'E');
-;;       cpct_drawCharM0(pscreen + 24, 'F');
+;;       cpct_drawCharM1(pscreen +  6, 'D');
+;;       cpct_drawCharM1(pscreen +  8, 'E');
+;;       cpct_drawCharM1(pscreen + 10, 'F');
 ;;    }
 ;; (end code)
 ;;
@@ -100,25 +101,25 @@ read 'cpctelera/strings/cpct_drawCharM0_inner.asm'
 ;;    ASM bindings   - AF, BC, DE, HL, IX
 ;;
 ;; Required memory:
-;;    C bindings   - 35 bytes (+100 from cpct_drawCharM0_inner_asm = 135 bytes)
-;;    ASM bindings - 23 bytes (+100 from cpct_drawCharM0_inner_asm = 123 bytes)
+;;    C bindings     - 35 bytes (+80 bytes cpct_drawCharM1_inner = 115 bytes)
+;;    ASM bindings   - 23 bytes (+80 bytes cpct_drawCharM1_inner = 103 bytes)
 ;;
 ;; Time Measures:
 ;; (start code)
-;;   Case     | microSecs | CPU Cycles 
-;; -------------------------------------
-;;   Best     |    880    |    3520
-;;   Worst    |    888    |    3552
-;; -------------------------------------
-;; Asm saving |    -25    |    -100
-;; -------------------------------------
+;;   Case     | microSecs (us) | CPU Cycles
+;; -------------------------------------------
+;;    Best    |       514      |     2056
+;;    Worst   |       522      |     2088
+;; -------------------------------------------
+;; Asm saving |       -28      |     -112
+;; -------------------------------------------
 ;; (end code)
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 read 'cpctelera/strings/strings.asm'
-read 'cpctelera/firmware/cpc_mode_rom_status.asm'
+read 'cpctelera/strings/cpct_drawCharM1_inner.asm'
 
-cpct_drawCharM0:
+cpct_drawCharM1:
    ;; Enable Lower ROM during char copy operation, with interrupts disabled 
    ;; to prevent firmware messing things up
    ld     a,(cpct_mode_rom_status)   ;; [4] A = mode_rom_status (present value)
@@ -129,9 +130,9 @@ cpct_drawCharM0:
 
    ;; Draw the character
    ld     a, e                       ;; [1] A = ASCII Value of the character
-   call   cpct_drawCharM0_inner      ;; [828/837] Does the actual drawing to screen
+   call   cpct_drawCharM1_inner      ;; [5+458/466] Does the actual drawing to screen
 
-dchm0_endDraw:
+dchm1_endDraw:
    ;; After finishing character printing, restore previous ROM and Interrupts status
    ld     a, (cpct_mode_rom_status)  ;; [4] A = mode_rom_status (present saved value)
    ld     b, GA_port_byte            ;; [2] B = Gate Array Port (0x7F)
@@ -139,3 +140,4 @@ dchm0_endDraw:
    ei                                ;; [1] Enable interrupts
 
    ret                               ;; [3] Return
+   
