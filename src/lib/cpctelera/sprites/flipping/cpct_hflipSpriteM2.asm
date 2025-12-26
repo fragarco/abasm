@@ -18,16 +18,14 @@
 
 ;; Code modified to be used with ABASM by Javier "Dwayne Hicks" Garcia
 
-read 'cpctelera/macros/cpct_reverseBits.asm'
-
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-;; Function: cpct_hflipSpriteM1
+;; Function: cpct_hflipSpriteM2
 ;;
-;;   Horizontally flips a sprite, encoded in screen pixel format, *mode 1*.
+;;   Horizontally flips a sprite, encoded in screen pixel format, *mode 2*.
 ;;
 ;; C definition:
-;;   void <cpct_hflipSpriteM1> (<u8> width, <u8> height, void* sprite) __z88dk_callee;
+;;   void <cpct_hflipSpriteM2> (<u8> width, <u8> height, void* sprite) __z88dk_callee;
 ;;
 ;; Input Parameters (4 bytes):
 ;;  (1B  C) width  - Width of the sprite in *bytes* (*NOT* in pixels!). Must be >= 1.
@@ -35,23 +33,23 @@ read 'cpctelera/macros/cpct_reverseBits.asm'
 ;;  (2B HL) sprite - Pointer to the sprite array (first byte of consecutive sprite data)
 ;;
 ;; Assembly call (Input parameters on registers):
-;;    > call cpct_hflipSpriteM1_asm
+;;    > call cpct_hflipSpriteM2
 ;;
 ;; Parameter Restrictions:
 ;;  * *sprite* must be an array containing sprite's pixels data in screen pixel format
-;; (Mode 1 data, 4 pixels per byte). Sprite must be rectangular and all bytes in the array 
+;; (Mode 2 data, 8 pixels per byte). Sprite must be rectangular and all bytes in the array 
 ;; must be consecutive pixels, starting from top-left corner and going left-to-right, top-to-bottom 
-;; down to the bottom-right corner. Total amount of bytes in pixel array should be *width* x *height*
-;; You may check screen pixel format for mode 1 (<cpct_px2byteM1>). *Warning!* This function
-;; will admit any 16-bits value as sprite pointer and will *modify* bytes at the given
-;; address. On giving an incorrect address this function will yield undefined behaviour,
-;; probably making your program crash or doing odd things due to part of the memory being
-;; altered by this function.
+;; down to the bottom-right corner. Total amount of bytes in pixel array should be *width* x *height*,
+;; having *width* in bytes. Each byte of the sprite encodes 8 pixles in screen pixel format mode 2 
+;; (1 bit per pixel, all pixels consecutive). *Warning!* This function will admit any 16-bits value 
+;; as sprite pointer and will *modify* bytes at the given address. On giving an incorrect address 
+;; this function will yield undefined behaviour, probably making your program crash or doing odd 
+;; things due to part of the memory being altered by this function.
 ;;  * *width* must be the width of the sprite *in bytes* and must be 1 or more. 
 ;; Using 0 as *width* parameter for this function could potentially make the program 
 ;; hang or crash. Always remember that the *width* must be expressed in bytes 
-;; and *not* in pixels. The correspondence is 1 byte = 4 pixels (mode 1)
-;;  * *height* must be the height of the sprite in pixels / bytes (both should be the
+;; and *not* in pixels. The correspondence is 1 byte = 8 pixels (mode 2)
+;;  * *height* must be the height of the sprite in pixels or bytes (both should be the
 ;; same amount), and must be greater than 0. There is no practical upper limit to this value,
 ;; but giving a height greater than the height of the sprite will yield undefined behaviour,
 ;; as bytes after the sprite array might result modified. 
@@ -72,24 +70,24 @@ read 'cpctelera/macros/cpct_reverseBits.asm'
 ;;    This function performs an horizontal flipping of the given sprite. To 
 ;; do so, the function inverts byte-order in all sprite rows, and also inverts
 ;; pixel order inside each byte of the sprite. The function expects to receive
-;; an sprite in screen pixel format (mode 1), like in this example:
+;; an sprite in screen pixel format (mode 2), like in this example:
 ;;
 ;; (start code)
-;;    // Example call. Sprite has 16x4 pixels (4x4 bytes)
-;;    cpct_hflipSpriteM1(4, 4, sprite);
+;;    // Example call. Sprite has 24x4 pixels (3x4 bytes)
+;;    cpct_hflipSpriteM0(3, 4, sprite);
 ;;
 ;;    // Operation performed by the call and results
 ;;    //
-;;    // -----------------------------------------------------------------------------
-;;    //  |  Received as parameter             | Result after flipping               |
-;;    // -----------------------------------------------------------------------------
-;;    //  | sprite => [0123][5678][HGFE][DCBA] |  sprite => [ABCD][EFGH][8765][3210] |
-;;    //  |           [9876][5432][abcd][efgh] |            [hgfe][dcba][2345][6789] |
-;;    //  |           [0123][5678][HGFE][DCBA] |            [ABCD][EFGH][8765][3210] |
-;;    //  |           [9876][5432][abcd][efgh] |            [hgfe][dcba][2345][6789] |
-;;    // -----------------------------------------------------------------------------
-;;    //  Sprite takes 16 consecutive bytes in memory (4 rows with 4 bytes, 
-;;    //  and 4 pixels each byte, for a total of 16x4 pixels, 64 pixels)
+;;    // -----------------------------------------------------------------------------------------
+;;    //  |         Received as parameter            |           Result after flipping           |
+;;    // -----------------------------------------------------------------------------------------
+;;    //  | sprite => [01235678][9ABCDEFG][HIJKLMNO] |  sprite => [ONMLKJIH][GFEDCBA9][87653210] |
+;;    //  |           [qwertyui][asdfghjk][zxcvbnmp] |            [pmnbvcxz][kjhgfdsa][iuytrewq] |
+;;    //  |           [01235678][9ABCDEFG][HIJKLMNO] |            [01235678][9ABCDEFG][HIJKLMNO] |
+;;    //  |           [qwertyui][asdfghjk][zxcvbnmp] |            [qwertyui][asdfghjk][zxcvbnmp] |
+;;    // -----------------------------------------------------------------------------------------
+;;    //  Sprite takes 12 consecutive bytes in memory (4 rows with 3 bytes, and 8 pixels 
+;;    //  each byte, for a total of 24x4 pixels, 96 pixels)
 ;;    //
 ;; (end code)
 ;;
@@ -107,29 +105,41 @@ read 'cpctelera/macros/cpct_reverseBits.asm'
 ;; is better to consider the use of functions with memory-aligned conversion tables.
 ;;
 ;; Use example:
-;;    Next example shows a function designed to draw an animated flag
-;; that flips right-to-left as if it was being agitated. To do so, every
-;; 30 times it is redrawn, it is flipped horizontally to simulate that 
-;; right-to-left animated movement: 
+;;    Next example presents a function that draws all enemy ships in a game.
+;; Ships are stored in an array, ordered by direction they are facing. Therefore,
+;; first ships in the array are facing left, and the rest are facing right. 
+;; There is also a count of the total number of ships facing left, so as not to
+;; be continuously testing.
 ;; (start code)
-;;    // Draws an animated flag that changes from left-to-right
-;;    // periodically (every 30 times it is redrawn). Flag is
-;;    // 24x16 mode 1 pixels (6x16 bytes)
-;;    void drawFlag(u8 x, u8 y) {
-;;       static u8 timesdrawn;  // Statically count the number of times the flag has been drawn
-;;       u8* pvmem;            // Pointer to video memory to draw the sprite
+;;    // Draws all the enemy ships that are visible in the present screen.
+;;    // The enemy ships array contains all the ships facing left first, then
+;;    // all of those facing right. 
+;;    void drawEnemyShips(TEnemyShip* ships, u8 leftships, u8 rightships) {
+;;       // First draw all ships that are facing left
+;;       while (leftships--) {
+;;          // Draw Ship
+;;          u8 pvmem = cpct_getScreenPtr(CPCT_VMEM_START, ships->x, ships->y);
+;;          cpct_drawSprite(g_shipSprite, pvmem, SHIP_WIDTH, SHIP_HEIGHT);
 ;;
-;;       // Count for a new redraw of the flag and check if it has been
-;;       // drawn 30 or more times in order to flip it
-;;       if(++timesdrawn > 30) {
-;;          // Horizontally flip the flag to animate it
-;;          cpct_hflipSpriteM1(6, 16, flagSprite);
-;;          timesdrawn = 0;
+;;          // Move the pointer to point to the next ship
+;;          ships++;
 ;;       }
 ;;
-;;       // Draw the flag
-;;       pvmem = cpct_getScreenPtr(CPCT_VMEM_START, x, y);
-;;       cpct_drawSprite(flagSprite, pvmem, 6, 16);
+;;       // Now proceed to flip the sprite to be able to draw ships facing right
+;;       cpct_hflipSpriteM2(SHIP_WIDTH, SHIP_HEIGHT, g_shipSprite);
+;;
+;;       // Now draw all ships facing right
+;;       while (rightships--) {
+;;          // Draw Ship
+;;          u8 pvmem = cpct_getScreenPtr(CPCT_VMEM_START, ships->x, ships->y);
+;;          cpct_drawSprite(g_shipSprite, pvmem, SHIP_WIDTH, SHIP_HEIGHT);
+;;
+;;          // Move the pointer to point to the next ship
+;;          ships++;
+;;       }
+;;
+;;       // Flip the sprite again to left it as it was at the start
+;;       cpct_hflipSpriteM2(SHIP_WIDTH, SHIP_HEIGHT, g_shipSprite);
 ;;    }
 ;; (end code)
 ;;
@@ -144,17 +154,19 @@ read 'cpctelera/macros/cpct_reverseBits.asm'
 ;; (start code)
 ;;  Case       |      microSecs (us)       |         CPU Cycles          |
 ;; -----------------------------------------------------------------------
-;;  Even-width |     (48WW + 16)H + 32     |     (192WW +  64)H + 128    |
-;;  Oven-width |     (48WW + 36)H + 37     |     (192WW + 144)H + 148    |
+;;  Even-width |     (50WW + 18)H + 32     |     (200WW +  72)H + 128    |
+;;   Odd-width |     (50WW + 39)H + 37     |     (200WW + 156)H + 148    |
 ;; -----------------------------------------------------------------------
-;;  W=2,H=16   |          1056             |           4224              |
-;;  W=5,H=32   |          4261             |          17044              |
+;;  W=2,H=16   |          1120             |           4480              |
+;;  W=5,H=32   |          4485             |          17940              |
 ;; -----------------------------------------------------------------------
 ;;  Asm saving |          -12              |            -48              |
 ;; -----------------------------------------------------------------------
 ;; (end code)
 ;;   *WW* = *width*/2, *H* = *height*
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+read 'cpctelera/macros/cpct_reverseBits.asm'
 
 ;;
 ;; USEFUL CONSTANTS TO CLARIFY CODE
@@ -167,10 +179,11 @@ read 'cpctelera/macros/cpct_reverseBits.asm'
 ;;                  jr_one, but to jump from (varjump+2) to (nextbyte+1), as there is no ld_b_hl
 ;;                  operation before jr_byteloop.
 ;;
-hfspm1_ld_b_hl     equ &46
-hfspm1_jr_one      equ &18 + &100 * (          hfspm1_one  - (hfspm1_varjump + 3))
-hfspm1_jr_byteloop equ &18 + &100 * ((hfspm1_nextbyte + 1) - (hfspm1_varjump + 2))
-   
+hfspm2_ld_b_hl     equ &46
+hfspm2_jr_one      equ &18 + &100 * (          hfspm2_one  - (hfspm2_varjump + 3))
+hfspm2_jr_byteloop equ &18 + &100 * ((hfspm2_nextbyte + 1) - (hfspm2_varjump + 2))
+
+cpct_hflipSpriteM2:
 ;;
 ;; SET UP CODE: Set up loop internal "variable jump" {varjump} code so that it takes
 ;;    into account the differences between odd-wide and even-wide sprites. 
@@ -178,7 +191,7 @@ hfspm1_jr_byteloop equ &18 + &100 * ((hfspm1_nextbyte + 1) - (hfspm1_varjump + 2
 ;;    - Odd-width sprites have a first iteration of the loop in which only the 
 ;;      central byte is flipped (and then leaved in its same place)
 ;;
-cpct_hflipSpriteM1:
+
    ;; We need HL to point to the byte previous to the start of the sprite array.
    ;; This is because HL will point to the previous byte of the next row in the 
    ;; array at the end of every loop, and hence we can add always the same quantity
@@ -188,7 +201,7 @@ cpct_hflipSpriteM1:
    ;; Divide sprite width by 2 and check if there is remainder to know if the 
    ;; sprite is odd-wide (if remainder, then Carry = 1)
    srl c              ;; [2]   C = C / 2 (Sprite width / 2)
-   jr  c, hfspm1_odd_width   ;; [2/3] Carry = 1, means Odd sprite width
+   jr  c, hfspm2_odd_width   ;; [2/3] Carry = 1, means Odd sprite width
 
    ;; For even sprite widths, the only thing we will need to do will be to increase
    ;; HL pointer 1 each row. This is because both HL and DE will be in this situation:
@@ -201,20 +214,20 @@ cpct_hflipSpriteM1:
    ;; let the loop proceed reversing and switching them. To to this, we put a JR #first-1
    ;; operation in the varjump zone, that will jump to next INC HL operation.
    ;;
-hfspm1_even_width:
-   ld  de, hfspm1_jr_byteloop  ;; [3] DE = Opcode for "JR nextbyte+1" operation, to jump to the byte loop
-   ld  (hfspm1_varjump), de    ;; [6] Insert "JR nextbyte+1" at varjump location
-   jr hfspm1_nextrow           ;; [3] Start processing the loop for the first 2 bytes
+hfspm2_even_width:
+   ld  de, hfspm2_jr_byteloop ;; [3] DE = Opcode for "JR nextbyte+1" operation, to jump to the byte loop
+   ld  (hfspm2_varjump), de   ;; [6] Insert "JR nextbyte+1" at varjump location
+   jr hfspm2_nextrow          ;; [3] Start processing the loop for the first 2 bytes
    
    ;; For odd sprite widths, we need to set up a first loop iteration that only takes
    ;; the central byte of the sprite row and reverses it. So, as both HL & DE will be
    ;; pointing to the central byte, we add an operation to read the byte in B (LD B, (HL))
    ;; and jump to the middle of the loop (label "one"), just to perform the reversing operation
-hfspm1_odd_width: 
-   ld   a, hfspm1_ld_b_hl    ;; [2] A = Opcode for "LD B, (HL)" operation
-   ld (hfspm1_varjump), a    ;; [4] Insert "LD B, (HL)" at varjump location
-   ld  de, hfspm1_jr_one     ;; [3] DE = Opcode for "JR one" operation
-   ld (hfspm1_varjump+1), de ;; [6] Insert "JR one" at varjump+1 location (right after LD B, (HL))
+hfspm2_odd_width: 
+   ld   a, hfspm2_ld_b_hl    ;; [2] A = Opcode for "LD B, (HL)" operation
+   ld (hfspm2_varjump), a    ;; [4] Insert "LD B, (HL)" at varjump location
+   ld  de, hfspm2_jr_one     ;; [3] DE = Opcode for "JR one" operation
+   ld (hfspm2_varjump+1), de ;; [6] Insert "JR one" at varjump+1 location (right after LD B, (HL))
    inc c              ;; [1] C++ (C = Width + 1, as reversing the central byte will require 1 more looping...
                       ;;     ... and also the central byte will be at [HL + Width/2 + 1] )
 ;;
@@ -227,13 +240,14 @@ hfspm1_odd_width:
 ;; It reverses each byte's pair of colours, and it also reverses byte order inside the 
 ;; same row. So, virtual layout scheme is as follows:
 ;; --------------------------------------------------------------------------
-;; byte order    |   A     B     C          C     B     A
-;; pixel values  | [1234][5678][90AB] --> [BA09][8765][4321]
+;; byte order    |      x        y               y         x
+;; pixel values  | [01234567][89ABCDEF] --> [FEDCBA98][76543210]
 ;; --------------------------------------------------------------------------
-;; byte layout   | [ 0123 4567 ]     [ 3210 7654 ] << Bit order (reversed by pairs)
-;; (Mode 1, 4 px)| [ abcd abcd ] --> [ dcba dcba ] << Pixel bits (4 pixels, a-d)
+;; byte layout   |                 
+;; (Mode 2, 8 px)| [ 01234567 ] --> [ 76543210 ] << Pixel bits (pixels 0 to 7)
+;; --------------------------------------------------------------------------
 ;;
-hfspm1_nextrow:
+hfspm2_nextrow:
    push bc      ;; [4] Save Height/Width into the stack for later recovery
    ld   b, 0    ;; [2] BC  = C = Width/2 (In order to easily add the width to HL)
    add  hl, bc  ;; [3] HL += BC (Add Width/2 to start-of-row pointer, HL, to make it point to the central byte)
@@ -248,10 +262,10 @@ hfspm1_nextrow:
    ;; it will just jump to label nextbyte plus 1 { JR nextbyte+1 } which will do a INC HL operation
    ;; and then start performing normal reverse and switch operations to flip the sprite.
    ;;
-hfspm1_varjump:
+hfspm2_varjump:
    ;; Odd-width varjump code (3-bytes, longer one)
    ld   b, (hl) ;; [2] B = central byte of the row, ready to be reversed
-   jr   hfspm1_one ;; [3] Jump to the second part of the internal loop, to reverse only the central byte
+   jr   hfspm2_one ;; [3] Jump to the second part of the internal loop, to reverse only the central byte
 
    ;; Even-width varjump code (2-bytes)
 ;; jr  nextbyte+1  ;; [3] Jump to the instruction previous to the inner loop (INC HL)
@@ -265,39 +279,39 @@ hfspm1_varjump:
    ;; a special case for the central byte, at the label "one", which only flips pixels
    ;; in that byte and leaves it at the same place.
    ;;
-hfspm1_nextbyte:
+hfspm2_nextbyte:
    dec de          ;; [2] DE-- (Move DE from the central byte to the first of the row)
    inc hl          ;; [2] HL++ (Move HL from the central byte to the last of the row)
 
    ;; Flip byte pointed by DE
-   ld a, (de)      ;; [2] A = Byte pointed by DE (4 pixels)
+   ld a, (de)      ;; [2] A = Byte pointed by DE (8 pixels)
    ld b, a         ;; [1] B = A, Copy of A, required by reverse macro
    
-   ;; Reverse (flip) the 4 pixels contained in A (Using B as temporary storage)
-   cpctm_reverse_mode_1_pixels_of_A b ;; [16] 
+   ;; Reverse (flip) the 8 pixels contained in A (Using B as temporary storage)
+   cpctm_reverse_mode_2_pixels_of_A b ;; [16] 
 
    ;; Switch DE flipped byte and HL byte to be flipped
-   ld b, (hl)      ;; [2] B = Byte pointed by HL (4 pixels)
+   ld b, (hl)      ;; [2] B = Byte pointed by HL (8 pixels)
    ld (hl), a      ;; [2] Store flipped byte from (DE) at (HL)
 
    ;; Flip byte pointed by HL and store it at (DE)
-hfspm1_one:
+hfspm2_one:
    ld a, b         ;; [1] A = B = Copy of byte pointed by HL (4 pixels)
 
-   ;; Reverse (flip) the 4 pixels contained in A (using B as temporary storage)
-   cpctm_reverse_mode_1_pixels_of_A b ;; [16]
+   ;; Reverse (flip) the 8 pixels contained in A (using B as temporary storage)
+   cpctm_reverse_mode_2_pixels_of_A b ;; [16]
 
    ld (de), a      ;; [2] Store flipped byte from (HL) at (DE)
 
    ;; C is the counter of pairs of bytes to be flipped and switched. 
    dec c           ;; [1]   C-- (one less pair of bytes to be flipped and switched)
-   jr nz, hfspm1_nextbyte ;; [2/3] If C != 0, there are still bytes to be flipped and switched, so continue
+   jr nz, hfspm2_nextbyte ;; [2/3] If C != 0, there are still bytes to be flipped and switched, so continue
 
 
    ;; All bytes in the present row have been flipped and switched. 
    ;; Recover BC (Height/Width) form the stack, decrement height and check if there are
    ;; still more rows to be flipped
    pop  bc      ;; [3]   BC contains (H: height, L: width of the sprite)
-   djnz hfspm1_nextrow ;; [3/4] B-- (Height--). If B!=0, there are still more rows pending, so continue
+   djnz hfspm2_nextrow ;; [3/4] B-- (Height--). If B!=0, there are still more rows pending, so continue
 
    ret          ;; [3] All sprite rows flipped. Return.

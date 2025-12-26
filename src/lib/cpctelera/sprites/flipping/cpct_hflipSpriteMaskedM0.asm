@@ -18,17 +18,15 @@
 
 ;; Code modified to be used with ABASM by Javier "Dwayne Hicks" Garcia
 
-read 'cpctelera/macros/cpct_reverseBits.asm'
-
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-;; Function: cpct_hflipSpriteMaskedM1
+;; Function: cpct_hflipSpriteMaskedM0
 ;;
-;;   Horizontally flips a sprite, encoded in screen pixel format, *mode 1*,  with 
+;;   Horizontally flips a sprite, encoded in screen pixel format, *mode 0*,  with 
 ;; interlaced mask.
 ;;
 ;; C definition:
-;;   void <cpct_hflipSpriteMaskedM1> (<u8> width, <u8> height, void* sprite) __z88dk_callee;
+;;   void <cpct_hflipSpriteMaskedM0> (<u8> width, <u8> height, void* sprite) __z88dk_callee;
 ;;
 ;; Input Parameters (4 bytes):
 ;;  (1B  C) width  - Width of the sprite in *bytes* (*NOT* in pixels!). Must be >= 1.
@@ -36,12 +34,12 @@ read 'cpctelera/macros/cpct_reverseBits.asm'
 ;;  (2B HL) sprite - Pointer to the sprite array (first byte of consecutive sprite data)
 ;;
 ;; Assembly call (Input parameters on registers):
-;;    > call cpct_hflipSpriteMaskedM1
+;;    > call cpct_hflipSpriteMaskedM0
 ;;
 ;; Parameter Restrictions:
 ;;  * *sprite* must be an array containing sprite's pixels data in screen pixel format
 ;; with interlaced mask data (Pairs of bytes, 1st: mask data for next byte, 2nd:
-;; mode 1 pixel data byte). You may check screen pixel format for mode 1 (<cpct_px2byteM1>).
+;; mode 0 pixel data byte). You may check screen pixel format for mode 0 (<cpct_px2byteM0>).
 ;; Each mask byte will contain enabled bits as those that should be picked from the background
 ;;  (transparent) and disabled bits for those that will be printed from sprite colour data. 
 ;; Each mask data byte must precede its associated colour data byte. Sprite must be rectangular 
@@ -51,7 +49,7 @@ read 'cpctelera/macros/cpct_reverseBits.asm'
 ;;  * *width* must be the width of the sprite *in bytes*, without accounting for mask bytes, 
 ;;  and *must be 1 or more*. Using 0 as *width* parameter for this function could potentially 
 ;; make the program hang or crash. Always remember that the *width* must be expressed in bytes
-;; and *NOT* in pixels. The correspondence is 1 byte = 4 pixels (mode 1)
+;; and *NOT* in pixels. The correspondence is 1 byte = 2 pixels (mode 0)
 ;;  * *height* must be the height of the sprite in pixels / bytes (both should be the
 ;; same amount), and must be greater than 0. There is no practical upper limit to this value,
 ;; but giving a height greater than the height of the sprite will yield undefined behaviour,
@@ -77,33 +75,25 @@ read 'cpctelera/macros/cpct_reverseBits.asm'
 ;; interlaced mask. To do so, the function inverts the order of the pairs of bytes formed
 ;; by each mask byte and its associated pixel-definition byte, for all sprite rows. It also 
 ;; inverts pixel order inside each byte of the *sprite* (be it pixel byte or mask byte). 
-;; The function expects to receive an *sprite* in screen pixel format (mode 1), along with
+;; The function expects to receive an *sprite* in screen pixel format (mode 0), along with
 ;; its interlaced mask like in this example:
 ;;
 ;; (start code)
-;;    // Example call. Sprite has 16x4 pixels (4x4 bytes)
-;;    cpct_hflipSpriteMaskedM1(4, 4, sprite);
+;;    // Example call. Sprite has 8x4 pixels (4x4 bytes)
+;;    cpct_hflipSpriteMaskedM0(4, 4, sprite);
 ;;
-;;    // Operation performed by the call and results (mM, nN: mask values)
+;;    // Operation performed by the call and results (mM, nN = mask data bytes)
 ;;    //
-;;    // ---------------------------------------------------------------
-;;    //  |                Received as parameter                       |
-;;    // ---------------------------------------------------------------
-;;    //  | sprite => [mMmM][0123][mMmM][5678][mMmM][HGFE][mMmM][DCBA] |
-;;    //  |           [nNnN][9876][nNnN][5432][nNnN][abcd][nNnN][efgh] |
-;;    //  |           [mMmM][0123][mMmM][5678][mMmM][HGFE][mMmM][DCBA] |
-;;    //  |           [nNnN][9876][nNnN][5432][nNnN][abcd][nNnN][efgh] |
-;;    // ---------------------------------------------------------------
-;;    //  |                Result after flipping                       |
-;;    // ---------------------------------------------------------------
-;;    //  | sprite => [MmMm][ABCD][MmMm][EFGH][MmMm][8765][MmMm][3210] |
-;;    //  |           [NnNn][hgfe][NnNn][dcba][NnNn][2345][NnNn][6789] |
-;;    //  |           [MmMm][ABCD][MmMm][EFGH][MmMm][8765][MmMm][3210] |
-;;    //  |           [NnNn][hgfe][NnNn][dcba][NnNn][2345][NnNn][6789] |
-;;    // -----------------------------------------------------------------------------
-;;    //  Sprite takes 32 consecutive bytes in memory (4 rows with 8 bytes, 4 mask bytes
-;;    //  and 4 pixel definition bytes, 4 pixels each pixel byte, for a total of 
-;;    //  16x4 = 64 pixels)
+;;    // ---------------------------------------------------------------------------------------------
+;;    //  |          Received as parameter             |          Result after flipping              |
+;;    // ---------------------------------------------------------------------------------------------
+;;    //  | sprite => [mM][05][nN][21][mM][73][nN][40] |  sprite => [Nn][04][Mm][37][Nn][12][Mm][05] |
+;;    //  |           [mM][52][nN][23][mM][37][nN][74] |            [Nn][47][Mm][73][Nn][32][Mm][25] |
+;;    //  |           [mM][05][nN][11][mM][31][nN][04] |            [Nn][04][Mm][13][Nn][11][Mm][50] |
+;;    //  |           [mM][00][nN][55][mM][44][nN][00] |            [Nn][00][Mm][44][Nn][55][Mm][00] |
+;;    // ---------------------------------------------------------------------------------------------
+;;    //  Sprite takes 32 consecutive bytes in memory: 4 rows with 8 bytes (4 bytes pixel data, 
+;;    //  and 4 bytes mask data)
 ;;    //
 ;; (end code)
 ;;
@@ -111,7 +101,7 @@ read 'cpctelera/macros/cpct_reverseBits.asm'
 ;; Therefore, the *sprite* becomes horizontally flipped after the call and will not return to 
 ;; normal status unless another horizontally flipping operation is performed.
 ;;
-;;    This function performs reasonably well compared to <cpct_hflipSpriteM1>, as time required
+;;    This function performs reasonably well compared to <cpct_hflipSpriteM0>, as time required
 ;; for doing the flip is a little bit less than doubled, for double amount of bytes. However, 
 ;; for maximum performance, functions making use of memory-aligned conversion tables are advised.
 ;; Also, having memory-aligned sprites will permit developing even faster versions. In any case,
@@ -119,29 +109,26 @@ read 'cpctelera/macros/cpct_reverseBits.asm'
 ;; function and a 256-bytes aligned table together.
 ;;
 ;; Use example:
-;;    Next example shows a function designed to draw an animated flag
-;; that flips right-to-left as if it was being agitated. To do so, every
-;; 30 times it is redrawn, it is flipped horizontally to simulate that 
-;; right-to-left animated movement: 
+;;    Next example shows how to create a function for drawing a 2D-Character
+;; sprite that can look either to the left or to the right. Sprite is only 
+;; flipped when the character changes the side it is looking.
 ;; (start code)
-;;    // Draws an animated flag that changes from left-to-right periodically 
-;;    //(every 30 times it is redrawn). Flag is  24x16 mode 1 pixels 
-;;    //(6x16 bytes, 12x16 bytes taking interlaced mask into account)
-;;    void drawFlag(u8 x, u8 y) {
-;;       static u8 timesdrawn;  // Statically count the number of times the flag has been drawn
-;;       u8* pvmem;             // Pointer to video memory to draw the sprite
+;;    // Draws the main character sprite always looking to the 
+;;    // appropriate side (right or left), reversing it whenever required
+;;    void drawCharacter(u8 lookingat, u8 x, u8 y) {
+;;       u8* pvmem; // Pointer to video memory to draw the sprite
 ;;
-;;       // Count for a new redraw of the flag and check if it has been
-;;       // drawn 30 or more times in order to flip it
-;;       if(++timesdrawn > 30) {
-;;          // Horizontally flip the flag to animate it
-;;          cpct_hflipSpriteMaskedM1(6, 16, flagSprite);
-;;          timesdrawn = 0;
+;;       // Check if we have to reverse character sprite or not
+;;       if(lookingAt != wasLookingAt) {
+;;          // Horizontally flip character's sprite when it 
+;;          // changes the side it is looking at
+;;          cpct_hflipSpriteMaskedM0(4, 8, characterSprite);
+;;          wasLookingAt = lookingAt;
 ;;       }
 ;;
-;;       // Draw the flag
+;;       // Draw main character's sprite
 ;;       pvmem = cpct_getScreenPtr(CPCT_VMEM_START, x, y);
-;;       cpct_drawSpriteMasked(flagSprite, pvmem, 6, 16);
+;;       cpct_drawSpriteMasked(characterSprite, pvmem, 4, 8);
 ;;    }
 ;; (end code)
 ;;
@@ -149,25 +136,28 @@ read 'cpctelera/macros/cpct_reverseBits.asm'
 ;;    AF, BC, DE, HL
 ;;
 ;; Required memory:
-;;    C-bindings - 80 bytes
-;;  ASM-bindings - 77 bytes
+;;    C-bindings - 62 bytes
+;;  ASM-bindings - 59 bytes
 ;;
 ;; Time Measures:
 ;; (start code)
 ;;  Case       |      microSecs (us)       |         CPU Cycles          |
 ;; -----------------------------------------------------------------------
-;;  Even-width |    (116WW + 18)H + 16     |     (464WW +  72)H + 64     |
-;;   Odd-width |    (116WW + 87)H + 16     |     (464WW + 348)H + 64     |
+;;  Even-width |     (80WW + 18)H + 16     |     (320WW +  72)H + 64     |
+;;   Odd-width |     (80WW + 69)H + 16     |     (320WW + 244)H + 64     |
 ;; -----------------------------------------------------------------------
-;;  W=2,H=16   |          2160             |           8640              |
-;;  W=5,H=32   |         10224             |          40896              |
+;;  W=2,H=16   |          1584             |           6336              |
+;;  W=5,H=32   |          7344             |          29376              |
 ;; -----------------------------------------------------------------------
 ;;  Asm saving |          -12              |            -48              |
 ;; -----------------------------------------------------------------------
 ;; (end code)
 ;;   *WW* = (int)(*width*/2), *H* = *height*
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-cpct_hflipSpriteMaskedM1:  
+
+read 'cpctelera/macros/cpct_reverseBits.asm'
+
+cpct_hflipSpriteMaskedM0:  
    ;; We need HL to point to the byte previous to the start of the sprite array.
    ;; This is because HL will point to the previous byte of the next row in the 
    ;; array at the end of every loop, and hence we can add always the same quantity
@@ -182,18 +172,18 @@ cpct_hflipSpriteMaskedM1:
 ;; and goes decreasing DE and increasing HL. At the end, DE points to the first byte of 
 ;; the row and HL to the last one, so HL points to the previous byte of the next row.
 ;; It reverses each byte's pair of colours, and it also reverses byte order inside the 
-;; same row. So, virtual layout scheme is as follows (mM & nN are mask pairs of bits):
-;; -----------------------------------------------------------------------------------------------
-;; byte order    |          A           B           C                C           B           A
-;; pixel values  | [mMmM][1234][nNnN][5678][mMmM][90AB] --> [MmMm][BA09][NnNn][8765][MmMm][4321]
-;; -----------------------------------------------------------------------------------------------
-;; byte layout   | [ 0123 4567 ]     [ 3210 7654 ] << Bit order (reversed by pairs)
-;; (Mode 1, 4 px)| [ abcd abcd ] --> [ dcba dcba ] << Pixel bits (4 pixels, a-d)
-;; -----------------------------------------------------------------------------------------------
+;; same row. So, virtual layout scheme is as follows:
+;; ------------------------------------------------------------------------------------
+;; byte order    |   A   B   C   D       C   D   A   B
+;; pixel values  | [mM][12][nN][34]--> [Nn][43][Mm][21]  :: mM & nN are mask nibbles
+;; ------------------------------------------------------------------------------------
+;; byte layout   | [ 0123 4567 ]     [ 1032 5476 ] << Bit order (reversed by pairs)
+;; (Mode 0,2 px) | [ 0101 0101 ] --> [ 1010 1010 ] << Pixel bits (pixel 1, pixel 0)
+;; ------------------------------------------------------------------------------------
 ;;
-hfspmm1_nextrow:
+hfspmm0_nextrow:
    push bc      ;; [4] Save Height/Width into the stack for later recovery
-   ld   b,  0   ;; [2] BC = C = Width (In order to easily add it to HL)
+   ld   b, 0    ;; [2] BC = C = Width (In order to easily add it to HL)
    add  hl, bc  ;; [3] HL += BC (Add Width to start-of-row pointer, HL, to make it point to the central byte)
                 ;; ... Remember that sprite Width is half the width of the array, as it does not account for masks
    ld   d, h    ;; [1] | DE = HL, so that DE also points to the central byte of the row
@@ -208,7 +198,7 @@ hfspmm1_nextrow:
    ;;   Width: 4     |          |             |          |  |          | 4 pixel bytes (2 pixels/byte)
    ;;                |        HL&DE      -->> | -->>     DE HL         | 4 mask  bytes
    ;; --------------------------------------------------------------------------------------------------
-   jr  nc, hfspmm1_firstpair ;; [2/3] If Carry=0, last bit of C was 0, so Width is Even, then jump
+   jr  nc, hfspmm0_firstpair ;; [2/3] If Carry=0, last bit of C was 0, so Width is Even, then jump
 
    ;; Odd sprites first switch the central byte, then start with the rest, 
    ;; according to this diagram: (P: pixel byte, M: mask byte, p/m: pixel/mask reversed byte)
@@ -217,10 +207,10 @@ hfspmm1_nextrow:
    ;;   Width: 3     |       |          |          |       | 3 pixel bytes (2 pixels per byte)
    ;;                |      HL&DE       |        HL&DE     | 3 mask  bytes
    ;; --------------------------------------------------------------------------------------------------
-   call hfspmm1_switch_bytes_single ;; [5+26] Reverse central pair, mask definition byte (first byte)
+   call hfspmm0_switch_bytes_single ;; [5+17] Reverse central pair, mask definition byte (first byte)
    inc  hl                  ;; [2]    HL++ (HL Points to second central byte, pixel definition)
    inc  de                  ;; [2]    DE++ (DE also points to second central byte, pixel definition)
-   call hfspmm1_switch_bytes_single ;; [5+26] Reverse central pair, pixel definition byte (second byte)
+   call hfspmm0_switch_bytes_single ;; [5+17] Reverse central pair, pixel definition byte (second byte)
 
    ;;
    ;; INTERNAL LOOP THAT FLIPS THE SPRITE
@@ -233,34 +223,34 @@ hfspmm1_nextrow:
    ;; of bytes (first byte of the pair) and DE is decremented by 3, to point to the 
    ;; first byte of the pair that needs to be switched with that pointer by HL.
    ;;
-hfspmm1_nextpair:
+hfspmm0_nextpair:
    dec de            ;; [2] | DE -= 2 (Make DE go backwards 1 pair of bytes, but still
    dec de            ;; [2] |  point to the second byte of the pair)
-hfspmm1_firstpair:
+hfspmm0_firstpair:
    dec de            ;; [2] DE-- (Make DE point to the first byte of its pair of bytes)
    inc hl            ;; [2] HL++ (Point to the next pair of bytes)
 
-fhfspmm1_irstbyte:
-   call hfspmm1_switch_bytes ;; [5+45] Reverse and Switch first byte of both pairs of bytes (pixel values)
+hfspmm0_firstbyte:
+   call hfspmm0_switch_bytes ;; [5+27] Reverse and Switch first byte of both pairs of bytes (pixel values)
    inc hl            ;; [2]    HL++ (HL points to the second byte of the pair, its mask)
    inc de            ;; [2]    DE++ (DE points to the second byte of the pair, its mask)
-   call hfspmm1_switch_bytes ;; [5+45] Reverse and Switch second byte of both pairs of bytes (mask values)
+   call hfspmm0_switch_bytes ;; [5+27] Reverse and Switch second byte of both pairs of bytes (mask values)
 
    ;; C is the counter of pairs of bytes to be flipped and switched. 
    dec c             ;; [1]   C-- (one less pair of bytes to be flipped and switched)
-   jr nz, hfspmm1_nextpair   ;; [2/3] If C!=0, there are still pairs of bytes to be flipped and switched, so continue
+   jr nz, hfspmm0_nextpair   ;; [2/3] If C!=0, there are still pairs of bytes to be flipped and switched, so continue
 
    ;; All pairs of bytes in the present row have been flipped and switched. 
    ;; Recover BC (Height/Width) form the stack, decrement height and check if there are
    ;; still more rows to be flipped
    pop  bc           ;; [3]   BC contains (B: height, C: width of the sprite)
-   djnz hfspmm1_nextrow      ;; [3/4] B-- (Height--). If B!=0, there are still more rows pending, so continue
+   djnz hfspmm0_nextrow      ;; [3/4] B-- (Height--). If B!=0, there are still more rows pending, so continue
 
    ret               ;; [3] All sprite rows flipped. Return.
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
   ;; switch_bytes
-  ;;     Subroutine to invert and switch a pair of bytes in mode 1
+  ;;     Subroutine to invert and switch a pair of bytes in mode 0
   ;;
   ;; INPUTS:
   ;;   HL: Pointer to Byte 1 to be inverted and switched with DE
@@ -272,16 +262,16 @@ fhfspmm1_irstbyte:
   ;; In-between entry-point:
   ;;   switch_bytes_single - Gets byte pointed by HL, reverses it and moves it to DE
   ;;
-hfspmm1_switch_bytes:
+hfspmm0_switch_bytes:
    ;; Flip byte pointed by DE
    ld a, (de)      ;; [2] A = Byte pointed by DE (2 pixels)
    ld b, a         ;; [1] B = A, Copy of A, required by reverse macro
    
    ;; Reverse (flip) both pixels contained in A (using B as temporary storage)
-   cpctm_reverse_mode_1_pixels_of_A b ;; [16] 
+   cpctm_reverse_mode_0_pixels_of_A b ;; [7] 
 
    ;; Switch DE flipped byte and HL byte to be flipped
-hfspmm1_switch_bytes_single:
+hfspmm0_switch_bytes_single:
    ld b, (hl)      ;; [2] B = Byte pointed by HL (2 pixels)
    ld (hl), a      ;; [2] Store flipped byte from (DE) at (HL)
 
@@ -289,7 +279,7 @@ hfspmm1_switch_bytes_single:
    ld a, b         ;; [1] A = B = Copy of byte pointed by HL (2 pixels)
 
    ;; Reverse (flip) both pixels contained in A (using B as temporary storage)
-   cpctm_reverse_mode_1_pixels_of_A b ;; [16] 
+   cpctm_reverse_mode_0_pixels_of_A b ;; [7]
 
    ld (de), a      ;; [2] Store flipped byte from (HL) at (DE)
   
