@@ -16,6 +16,7 @@ ABASM: USER MANUAL
   - [Comments](#comments)
   - [Labels](#labels)
   - [Instructions](#instructions)
+  - [Libraries](#libraries)
   - [Assembler Directives](#assembler-directives)
     - [ALIGN](#align)
     - [ASSERT](#assert)
@@ -461,7 +462,7 @@ READ "./lib/keyboard.asm"
 
 - REPEAT numeric expression `code block` REND
 
-Repeats a block of code as many times as the value specified by the numeric expression.
+Repeats a block of code as many times as the value specified by the numeric expression. REPEAT directive cannot be used in the body of a macro definition.
 
 ```
 EQU ENTITIES, 10
@@ -518,7 +519,7 @@ Stops the assembly process issuing an error.
 
 - WHILE logic expression `code block` WEND
 
-It allows a block of code to be assembled repeatedly as long as the specified condition is met. If the condition never becomes false, this directive can result in an infinite loop.
+It allows a block of code to be assembled repeatedly as long as the specified condition is met. If the condition never becomes false, this directive can result in an infinite loop. WHILE directive cannot be used in the body of a macro definition.
 
 ```
 LET OBJECTS = 32
@@ -1208,9 +1209,10 @@ FD AE hh    	XOR   (IY+d)    5 Exclusive OR value at location in IY+d and accumu
 
 # Changelog
 
-- Version 1.3.0 - 
+- Version 1.3.0 - 27/12/2025
   * New directive MDELETE to delete an already defined macro.
   * Macros without arguments were not working as expected.
+  * Abasm shows the correct error messages if REPEAT or WHILE directives are used inside a macro body.
   * Port of CPCTELERA library.
   * New tool `asmprj` that allows users to create of basic project structure.
 

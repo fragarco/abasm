@@ -16,6 +16,7 @@ ABASM: MANUAL DEL USUARIO
   - [Comentarios](#comentarios)
   - [Etiquetas](#etiquetas)
   - [Instrucciones](#instrucciones)
+  - [Bibliotecas](#bibliotecas)
   - [Directivas del Ensamblador](#directivas-del-ensamblador)
     - [ALIGN](#align)
     - [ASSERT](#assert)
@@ -469,7 +470,7 @@ READ "./lib/keyboard.asm"
 
 - REPEAT expresión numérica `bloque de código` REND
 
-Repite un bloque de código tantas veces como el valor indicado por la expresión numérica.
+Repite un bloque de código tantas veces como el valor indicado por la expresión numérica. No puede utilizarse dentro de la definición de una macro.
 
 ```
 EQU ENTITIES, 10
@@ -525,7 +526,7 @@ Detiene inmediatamente el proceso de ensamblado mostrando un error.
 
 - WHILE expresión lógica `bloque de código` WEND
 
-Permite ensamblar repetidamente un bloque de código mientras se cumpla la condición especificada. Si la condición nunca llega a ser falsa, esta directiva puede generar un bucle infinito.
+Permite ensamblar repetidamente un bloque de código mientras se cumpla la condición especificada. Si la condición nunca llega a ser falsa, esta directiva puede generar un bucle infinito. No puede utilizarse dentro de la definición de una macro.
 
 ```
 LET OBJECTS = 32
@@ -1218,9 +1219,10 @@ FD AE hh    	XOR   (IY+d)    5 Realiza una OR exclusiva entre el valor en (IY+d)
 
 # Historial de cambios
 
-- Versión 1.3.0 - 
+- Versión 1.3.0 - 27/12/2025
   * Nueva directiva MDELETE para eliminar la definición de una macro.
   * Arreglado un problema con el uso de macros sin parámetros.
+  * Abasm muestra el mensaje de error adecuado si se usan las directivas REPEAT o WHILE dentro de una macro.
   * Port de la biblioteca CPCTELERA como nuevo ejemplo de bibliotecas en ABASM.
   * Nueva herramientas ASMPRJ para crear una estructura básica de proyecto.
 

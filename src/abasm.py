@@ -1092,6 +1092,8 @@ def op_INCBIN(p, opargs):
     return len(content)
 
 def op_WHILE(p, opargs):
+    if g_context.applying_macro != None:
+        abort("macro definitions don't support WHILE loops")
     do = g_context.parse_expression(opargs)
     if do != 0:
         if g_context.whileline != None and g_context.whileline != g_context.linenumber:
@@ -1115,6 +1117,8 @@ def op_WEND(p, opargs):
     return 0
 
 def op_REPEAT(p, opargs):
+    if g_context.applying_macro != None:
+        abort("macro definitions don't support REPEAT loops")
     value = 0
     if g_context.repeatloop != None:
         line, value = g_context.repeatloop
