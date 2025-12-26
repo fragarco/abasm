@@ -261,7 +261,7 @@ To learn more about each instruction, a short list can be consulted in the `Z80 
 
 The `read` directive allows additional files to be included from a main file. These files can be local or located within the installation’s `lib` directory. In this way, it is possible to create libraries that can be shared across projects.
 
-As an example, the **ABASM** distribution includes a small version of the **CPCRSLIB** library. For more information, you can consult the examples available in the `examples/cpcrslib` directory.
+As an example, the **ABASM** distribution includes a small version of the **CPCRSLIB** library and a complete port of **CPCTELERA**. For more information, you can consult the examples available in the `examples/cpcrslib` and `examples/cpctelera` directories.
 
 ## Assembler Directives
 

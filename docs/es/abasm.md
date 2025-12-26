@@ -269,7 +269,7 @@ En español, se pueden consultar los siguientes enlaces:
 
 La directiva `read` permite incluir archivos adicionales desde un archivo principal. Estos archivos pueden ser locales o residir dentro de la carpeta `lib` de la instalación. De esta manera, es posible crear bibliotecas reutilizables entre proyectos.
 
-Como ejemplo, la distribución de **ABASM** incluye una versión reducida de la biblioteca **CPCRSLIB**. Para obtener más detalles, puedes consultar los ejemplos disponibles en la carpeta `examples/cpcrslib`.
+Como ejemplo, la distribución de **ABASM** incluye una versión reducida de la biblioteca **CPCRSLIB** y una versión completa de la biblioteca **CPCTELERA**. Para obtener más detalles, puedes consultar los ejemplos disponibles en la carpeta `examples/cpcrslib` y `examples/cpctelera`.
 
 ## Directivas del Ensamblador
 
