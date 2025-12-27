@@ -16,7 +16,7 @@
 	org &8000
 
 ; Initialize Screen mode, inks & User Defined Graphics
-
+main:
 	xor a
 	call &bc0e			; Mode 0
 

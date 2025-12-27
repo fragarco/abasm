@@ -7,8 +7,8 @@
 # USAGE: ./make.sh [clear]
 #
 
-ASM="python3 /Users/javi/workspace/github/abasm/src/abasm.py"
-DSK="python3 /Users/javi/workspace/github/abasm/src/dsk.py"
+ASM="python3 ../../src/abasm.py"
+DSK="python3 ../../src/dsk.py"
 
 LOADADDR=0x8000
 SOURCE=main
@@ -18,7 +18,10 @@ RUNASM="$ASM --start=$LOADADDR $SOURCE.asm"
 RUNDSK="$DSK $TARGET.dsk --new --put-bin $SOURCE.bin --load-addr $LOADADDR --map-file $SOURCE.map --start-addr MAIN"
 
 if [ "$1" = "clear" ]; then
-    rm -f "$SOURCE.bin"           "$SOURCE.lst"           "$SOURCE.map"           "$TARGET.dsk"
+    rm -f "$SOURCE.bin"
+    rm -f "$SOURCE.lst"
+    rm -f "$SOURCE.map"
+    rm -f "$TARGET.dsk"
 else
     $RUNASM && $RUNDSK
 fi

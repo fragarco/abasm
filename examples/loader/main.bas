@@ -9,4 +9,3 @@
 90 strlen%=0
 100 CALL &8000,@strlen%,@a$
 110 PRINT "The length of your string is: ";strlen%
-
