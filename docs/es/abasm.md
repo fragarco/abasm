@@ -8,6 +8,7 @@ ABASM: MANUAL DEL USUARIO
 - [Cómo se usa](#cómo-se-usa)
   - [Opciones disponibles](#opciones-disponibles)
   - [Ejemplos de uso](#ejemplos-de-uso)
+  - [Creación de un proyecto usando ASMPRJ](#creación-de-un-proyecto-usando-asmprj)
 - [Productos del ensamblado](#productos-del-ensamblado)
   - [El archivo binario](#el-archivo-binario)
   - [Listado del programa](#listado-del-programa)
@@ -99,7 +100,22 @@ Establecer la dirección de inicio en memoria que debe considerarse para el cál
 python3 ABASM.py program.asm --start 0x2000
 ```
 
-¡Claro! Aquí tienes el texto original en español con las correcciones ortográficas y gramaticales realizadas para mejorar el estilo:
+## Creación de un proyecto usando ASMPRJ
+
+En `ABASM`, la gestión de un proyecto es sencilla. Basta con crear un fichero principal en ensamblador que importe cualquier otro archivo necesario mediante la directiva `READ`. Tras ejecutar `ABASM`, se generará el fichero binario ensamblado. A continuación, solo será necesaria una llamada adicional a las herramientas `DSK` o `CDT` para empaquetar el resultado y poder utilizarlo en emuladores o en hardware real (por ejemplo, mediante dispositivos como Gotek, M4 o DDI-Revival).
+
+```bash
+python3 abasm.py main.asm
+python3 dsk.py -n main.dsk --put-bin main.bin --start-addr=0x4000 --load-addr=0x4000
+```
+
+Además, es posible generar rápidamente la estructura básica de un proyecto utilizando la herramienta `ASMPRJ`. Esta utilidad crea automáticamente un script de construcción con todo lo necesario para comenzar a trabajar: en Windows se generará un fichero `make.bat`, mientras que en Linux y macOS se creará un fichero `make.sh`. Asimismo, se incluirá un archivo `main.asm` con código de ejemplo listo para ser ensamblado y probado.
+
+```bash
+python3 asmprj.py -n myproject
+```
+
+Para conocer todas las opciones disponibles, se recomienda consultar la documentación específica de `ASMPRJ`.
 
 # Productos del ensamblado
 
@@ -1249,6 +1265,11 @@ FD AE hh    	XOR   (IY+d)    5 Realiza una OR exclusiva entre el valor en (IY+d)
 **[2]** Todas las instrucciones RST del Z80, excepto una, han sido reservadas para uso del sistema. De RST 1 a RST 5 (&08-&28) se utilizan para extender el conjunto de instrucciones añadiendo instrucciones específicas de llamada y salto que habilitan y deshabilitan los ROMs. RST 6 (&30) está disponible para el usuario. Se puede obtener más información sobre el uso de la instrucción RST aquí: [ROMs. RAM and Restart Instructions.](https://www.cpcwiki.eu/imgs/f/f6/S968se02.pdf)
 
 # Historial de cambios
+
+- Versión 1.3.1 - 28/12/2025
+  * Los ejemplos de CPCTELERA no estaban funcionando desde el DSK.
+  * Arreglo en los finales de línea de los ficheros ASCII añadidos a ficheros DSK o CDT.
+  * Se ha añadido un Make.sh en todos los ejemplos para su uso en Linux o macOS.
 
 - Versión 1.3.0 - 27/12/2025
   * Nueva directiva MDELETE para eliminar la definición de una macro.

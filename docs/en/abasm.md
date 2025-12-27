@@ -7,7 +7,8 @@ ABASM: USER MANUAL
   - [Why Another Assembler for Amstrad?](#why-another-assembler-for-amstrad)
 - [Basic Usage](#basic-usage)
   - [Available Options](#available-options)
-  - [\*\*Usage Examples](#usage-examples)
+  - [Usage Examples](#usage-examples)
+  - [Creating a Project Using ASMPRJ](#creating-a-project-using-asmprj)
 - [Assembly Output](#assembly-output)
   - [The Binary File](#the-binary-file)
   - [Program Listing](#program-listing)
@@ -79,7 +80,7 @@ This command will assemble the `program.asm` file and generate a binary file wit
 - `v` or `--output`: Shows program's version and exits.
 - `--verbose`: Prints more information in the console as the assemble progresses.
   
-## **Usage Examples
+## Usage Examples
 
 Define a constant used in the code:
 
@@ -98,6 +99,23 @@ Set the starting memory address for calculating jumps and other relative referen
 ```
 python3 abasm.py program.asm --start 0x2000
 ```
+
+## Creating a Project Using ASMPRJ
+
+In `ABASM`, project management is straightforward. It is sufficient to create a main assembly source file that imports any additional required files using the `READ` directive. After running `ABASM`, the assembled binary file will be generated. A subsequent call to the `DSK` or `CDT` tools is then enough to package the result for use in emulators or on real hardware (for example, via devices such as Gotek, M4, or DDI-Revival).
+
+```bash
+python3 abasm.py main.asm
+python3 dsk.py -n main.dsk --put-bin main.bin --start-addr=0x4000 --load-addr=0x4000
+```
+
+It is also possible to quickly generate a basic project structure using the `ASMPRJ` tool. This utility automatically creates a build script with everything needed to get started: on Windows, a `make.bat` file is generated, while on Linux and macOS a `make.sh` file is created. In addition, a `main.asm` file containing ready-to-use example code is included.
+
+```bash
+python3 asmprj.py -n myproject
+```
+
+For more detailed information, please refer to the specific `ASMPRJ` documentation.
 
 # Assembly Output
 
@@ -1240,6 +1258,11 @@ FD AE hh    	XOR   (IY+d)    5 Exclusive OR value at location in IY+d and accumu
 
 # Changelog
 
+- version 1.3.1 - 28/12/2025
+  * CPCTELERA examples were not working from the DSK.
+  * Fix EOL in ASCII files added to DSK or CDT files.
+  * Make.sh scripts added in all examples (Linux and macOS).
+ 
 - Version 1.3.0 - 27/12/2025
   * New directive MDELETE to delete an already defined macro.
   * Macros without arguments were not working as expected.
