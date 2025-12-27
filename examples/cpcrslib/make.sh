@@ -10,8 +10,11 @@
 ASM="python3 ../../src/abasm.py"
 DSK="python3 ../../src/dsk.py"
 
-LOADADDR=0x2000
-TARGET=cpctelera
+LOADADDR=0x4000
+TARGET=cpcrslib
+
+RUNASM="$ASM --start=$LOADADDR $SOURCE.asm"
+RUNDSK="$DSK $TARGET.dsk --new --put-bin $SOURCE.bin --load-addr $LOADADDR --map-file $SOURCE.map --start-addr MAIN"
 
 if [ "$1" = "clear" ]; then
     rm -f *.bin
@@ -20,8 +23,8 @@ if [ "$1" = "clear" ]; then
     rm -f *.dsk
 else
     $DSK $TARGET.dsk --new
-    for x in e01hello e02box e03struc e04hflip e05flipm e06card 
+    for x in example1 example2 example3 example4 example5 
     do
-        $ASM --start $LOADADDR $x.asm && $DSK $TARGET.dsk --put-bin $x.bin --load-addr=$LOADADDR --start-addr=$LOADADDR
+        $ASM --start $LOADADDR $x.asm && $DSK $TARGET.dsk --put-bin $x.bin
     done
 fi

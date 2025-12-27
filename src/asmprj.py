@@ -82,10 +82,10 @@ RUNASM="$ASM --start=$LOADADDR $SOURCE.asm"
 RUNDSK="$DSK $TARGET.dsk --new --put-bin $SOURCE.bin --load-addr $LOADADDR --map-file $SOURCE.map --start-addr MAIN"
 
 if [ "$1" = "clear" ]; then
-    rm -f "$SOURCE.bin" \
-          "$SOURCE.lst" \
-          "$SOURCE.map" \
-          "$TARGET.dsk"
+    rm -f "$SOURCE.bin"
+    rm -f "$SOURCE.lst"
+    rm -f "$SOURCE.map"
+    rm -f "$TARGET.dsk"
 else
     $RUNASM && $RUNDSK
 fi
@@ -210,7 +210,7 @@ def create_project(target_dir: str, is_windows: bool) -> None:
             DSK=dsk_path,
             TARGET=target_name,
         )
-
+        
     make_path: str = os.path.join(target_dir, make_name)
     with open(make_path, "w", newline="\n") as f:
         f.write(make_content)
@@ -219,14 +219,13 @@ def create_project(target_dir: str, is_windows: bool) -> None:
         st = os.stat(make_path)
         os.chmod(make_path, st.st_mode | stat.S_IXUSR | stat.S_IXGRP | stat.S_IXOTH)
 
+    print(f"Project initialized: {target_dir}")
+    print(f"- {make_name} created")
     main_asm_path: str = os.path.join(target_dir, "main.asm")
     if not os.path.exists(main_asm_path):
         with open(main_asm_path, "w", encoding="utf-8", newline="\n") as f:
             f.write(MAIN_ASM)
-
-    print(f"Project initialized: {target_dir}")
-    print(f"- {make_name}")
-    print(f"- main.asm")
+        print(f"- main.asm created")
 
 def create_argv_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
