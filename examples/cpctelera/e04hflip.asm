@@ -18,7 +18,7 @@
 
 ;; Code modified to be used with ABASM by Javier "Dwayne Hicks" Garcia
 
-org &2000
+org &4000
 jp  main
 
 ;;===============================================================================

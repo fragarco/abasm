@@ -10,7 +10,6 @@
 ASM="python3 ../../src/abasm.py"
 DSK="python3 ../../src/dsk.py"
 
-LOADADDR=0x2000
 TARGET=cpctelera
 
 if [ "$1" = "clear" ]; then
@@ -19,9 +18,12 @@ if [ "$1" = "clear" ]; then
     rm -f *.map
     rm -f *.dsk
 else
-    $DSK $TARGET.dsk --new
-    for x in e01hello e02box e03struc e04hflip e05flipm e06card 
+    FILES=(e01hello e02box e03struc e04hflip e05flipm e06card)
+    ADDRS=(0x4000 0x4000 0x4000 0x4000 0x2000 0x2000)
+
+    $DSK $TARGET.dsk --new    
+    for i in  "${!FILES[@]}"
     do
-        $ASM --start $LOADADDR $x.asm && $DSK $TARGET.dsk --put-bin $x.bin --load-addr=$LOADADDR --start-addr=$LOADADDR
+        $ASM --start ${ADDRS[i]} ${FILES[i]}.asm && $DSK $TARGET.dsk --put-bin ${FILES[i]}.bin --load-addr=${ADDRS[i]} --start-addr=${ADDRS[i]}
     done
 fi
