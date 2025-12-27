@@ -37,6 +37,9 @@ ABASM: MANUAL DEL USUARIO
     - [STOP](#stop)
     - [WHILE](#while)
   - [Expresiones y Caracteres Especiales](#expresiones-y-caracteres-especiales)
+- [Bibliotecas incluidas en ABASM](#bibliotecas-incluidas-en-abasm)
+  - [CPCRSLIB](#cpcrslib)
+  - [CPCTELERA](#cpctelera)
 - [Conjunto de instrucciones del Z80](#conjunto-de-instrucciones-del-z80)
 - [Historial de cambios](#historial-de-cambios)
 
@@ -559,6 +562,34 @@ Cuando una instrucción o directiva requiere un número como parámetro, se pued
 - **>>** es el operador *desplazamiento* a la derecha.
   
 (1) Un único carácter entre comillas dobles puede usarse para representar el valor ASCII de ese carácter en expresiones numéricas. Ni las comillas dobles ni las simples pueden aparecer dentro de una cadena de texto.
+
+# Bibliotecas incluidas en ABASM
+
+`ABASM` incluye dos bibliotecas listas para uso.. Ambas con un gran recurso para aprender más sobre los entresijos del Amstrad CPC, incluyendo su preculiar organización de la memoria de vídeo.
+
+## CPCRSLIB
+
+CPCRSlib es una biblioteca en C que proporciona rutinas y funciones para la gestión de sprites y mapas de tiles en el Amstrad CPC. La biblioteca está diseñada para su uso con los compiladores Z88DK o SDCC. CPCRSlib también incluye rutinas de teclado para la redefinición y detección de teclas, así como rutinas de propósito general para cambiar el modo de pantalla y los colores.
+
+Además, CPCRSLIB incorpora un reproductor de música y efectos de sonido desarrollado por WYZ, capaz de reproducir música creada con WYZTracker.
+
+* Una explicación detallada de cada función y rutina se puede consultar aquí:
+  [http://www.amstrad.es/programacion/cpcrslib.html](http://www.amstrad.es/programacion/cpcrslib.html)
+* La última versión oficial de la biblioteca original puede descargarse desde:
+  [http://sourceforge/cpcrslib](http://sourceforge/cpcrslib)
+
+La versión incluida con `ABASM` no incorpora soporte para el desplazamiento de tilemaps. Adicionalmente, algunas rutinas han sido renombradas para mejorar la claridad y la coherencia. Consulta los ejemplos ubicados en `examples/cpcrslib` para aprender más sobre el uso de esta biblioteca dentro de `ABASM`.
+
+## CPCTELERA
+
+CPCtelera es un framework multiplataforma para el desarrollo de videojuegos y software multimedia para el Amstrad CPC. Funciona en Linux, macOS y Windows (mediante Cygwin) y facilita el desarrollo de software para Amstrad CPC tanto en lenguaje C como en ensamblador. CPCtelera requiere el uso del compilador SDCC y el ensamblador que incluye.
+
+CPCtelera está ampliamente documentada, dispone de un completo manual de referencia y su código fuente está profusamente comentado. Todos los detalles y la documentación pueden consultarse en:
+
+* [https://lronaldo.github.io/cpctelera/](https://lronaldo.github.io/cpctelera/)
+* [https://lronaldo.github.io/cpctelera/files/readme-txt.html](https://lronaldo.github.io/cpctelera/files/readme-txt.html)
+
+El port incluido en `ABASM` cubre todas las rutinas disponibles en la versión 1.5-dev de CPCtelera. La principal diferencia es que el sufijo `_asm` ha sido eliminado de los nombres de las rutinas, ya que en este contexto no existe ambigüedad entre código C y ensamblador. Para aprender más sobre el uso de esta biblioteca dentro de `ABASM` pueden consultarse los ejemplos incluidos en `examples/cpctelera`.
 
 # Conjunto de instrucciones del Z80
 
