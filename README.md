@@ -16,6 +16,8 @@ El conjunto de utilidades ABASM, DSK y CDT son software libre; puedes redistribu
 
 Este paquete se distribuye con la esperanza de que sea útil, pero SIN NINGUNA GARANTÍA; ni siquiera la garantía implícita de COMERCIABILIDAD o IDONEIDAD PARA UN PROPÓSITO PARTICULAR. Consulta la General Public License de GNU para más detalles (en el archivo LICENSE).
 
+Además, `ABASM` distribuye adaptaciones de las bibliotecas `CPCRSLIB` y `CPCTELERA` através de sus propias licencias. Consulta los detalles de cada una en src/lib/cpcrslib y src/lib/cpctelera.
+
 ## English:
 
 ABASM is a cross-assembler focused on the Amstrad CPC platform. It is written in Python 3 without external dependencies, making it possible to use on any system with minimal Python support.
@@ -31,3 +33,5 @@ In addition to the assembler itself, two utilities are included to package the r
 ABASM, DSK and CDT utilities are free software; you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation in its version 3.
 
 This package is distributed in the hope that it will be useful but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for more details (file LICENSE).
+
+Finally, `ABASM` distributes special versions of `CPCRSLIB` and `CPCTELERA` libraries under their own licenses. Check out all the license details in src/lib/cpcrslib and src/lib/cpctelera directories.
