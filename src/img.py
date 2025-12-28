@@ -244,6 +244,7 @@ class ImgConverter:
             raise ConversionError("CPC image size doesn't match with source image")
 
     def write_bin(self, target, ext='.bin', cpcimg = None):
+        print("[img] generating BIN file...")
         try:
             data = cpcimg if cpcimg != None else self._img2mode()
             with open(target + ext, 'wb') as fd:
@@ -271,6 +272,7 @@ class ImgConverter:
             raise ConversionError("%s.inf couldn't be create due to %s" % (target + ext, str(e)))
 
     def write_c(self, target):
+        print("[img] generating C file...")
         data = self._img2mode()
         target = target.replace('.', '_')
         targetu = target.upper()
@@ -307,6 +309,7 @@ class ImgConverter:
             raise ConversionError("couldn't create C files due to %s" % str(e))
         
     def write_asm(self, target):
+        print("[img] generating ASM file...")
         data = self._img2mode()
         target = target.replace('.', '_')
         targetl = target.lower()
@@ -341,6 +344,7 @@ class ImgConverter:
         ...
         25 eigthth 25 cursor lines
         """
+        print("[img] generating SCN file...")
         requiredw = 160 if self.mode == 0 else 320 if self.mode == 1 else 640
         if self.imgw != requiredw or self.imgh != 200:
             raise ConversionError("input image must be %dx200 for mode %d" % (requiredw, self.mode))
@@ -364,9 +368,20 @@ class ImgConverter:
             interlaced.extend(padding)
         self.write_bin(target, '.scn', interlaced)
 
-def run_read_inputimg(srcfile):
+def run_read_inputimg(srcfile, format, mode):
+    """
+    We load the image. If the target format is SCN we check
+    the resolution and resize the image if needed. Finally,
+    we convert the image to RGB.
+    """
     try:
+        print(f"[img] loading {srcfile} file...")
         img = Image.open(srcfile)
+        if format == 'scn':
+            requiredw = 160 if mode == 0 else 320 if mode == 1 else 640
+            if img.width != requiredw or img.height != 200:
+                print(f"[img] resizing image to {requiredw}x200")
+                img = img.resize((requiredw, 200))
         return img.convert('RGB')
     except Exception as e:
         print("[img] error trying to read the input image", srcfile)
@@ -374,7 +389,7 @@ def run_read_inputimg(srcfile):
         sys.exit(1)
 
 def run_convert(args):
-    inputimg = run_read_inputimg(args.inimg)
+    inputimg = run_read_inputimg(args.inimg, args.format, args.mode)
     converter = ImgConverter()
     converter.build_cpcimg(inputimg, args.mode)
     target = args.name if args.name != '' else os.path.splitext(args.inimg)[0]
