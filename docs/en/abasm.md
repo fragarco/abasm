@@ -1258,7 +1258,7 @@ FD AE hh    	XOR   (IY+d)    5 Exclusive OR value at location in IY+d and accumu
 
 # Changelog
 
-- version 1.3.1 - 28/12/2025
+- Version 1.3.1 - 28/12/2025
   * CPCTELERA examples were not working from the DSK.
   * Fix EOL in ASCII files added to DSK or CDT files.
   * Make.sh scripts added in all examples (Linux and macOS).
