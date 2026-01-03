@@ -26,6 +26,7 @@ ABASM: MANUAL DEL USUARIO
     - [DW, DEFW](#dw-defw)
     - [EQU](#equ)
     - [IF](#if)
+    - [IFNOT](#ifnot)
     - [INCBIN](#incbin)
     - [MACRO](#macro)
     - [LET](#let)
@@ -409,6 +410,13 @@ Los operadores básicos que se pueden usar en estar expresiones son:
  - *!=* : distinto que.
  - *<*, *>* : menor que o mayor que.  
  - *<=*, *>=*: menor o igual que, mayor o igual que.  
+
+
+### IFNOT
+
+- IFNOT condición [ELSEIF condición | ELSE] ENDIF
+
+La directiva IFNOT permite que ciertas partes del código se incluyan o se ignoren, dependiendo del valor de una expresión lógica, de igual forma a como se comporta la directiva `IF`. Sin embargo, el ensamblador procesará las líneas que siguen a la directiva IFNOT solo cuando dicha expresión sea falsa (igual a cero).
 
 ### INCBIN
 
@@ -1265,6 +1273,10 @@ FD AE hh    	XOR   (IY+d)    5 Realiza una OR exclusiva entre el valor en (IY+d)
 **[2]** Todas las instrucciones RST del Z80, excepto una, han sido reservadas para uso del sistema. De RST 1 a RST 5 (&08-&28) se utilizan para extender el conjunto de instrucciones añadiendo instrucciones específicas de llamada y salto que habilitan y deshabilitan los ROMs. RST 6 (&30) está disponible para el usuario. Se puede obtener más información sobre el uso de la instrucción RST aquí: [ROMs. RAM and Restart Instructions.](https://www.cpcwiki.eu/imgs/f/f6/S968se02.pdf)
 
 # Historial de cambios
+
+- Versión 1.4.0 -
+  * Añadida la directiva IFNOT
+  * Añadida la herramienta `IMG`
 
 - Versión 1.3.1 - 28/12/2025
   * Los ejemplos de CPCTELERA no estaban funcionando desde el DSK.

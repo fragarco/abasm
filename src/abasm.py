@@ -1699,6 +1699,23 @@ def op_IF(p, opargs):
         g_context.ifstate = IFSTATE_FIND_END
     return 0
 
+def op_IFNOT(p, opargs):
+    check_args(opargs, 1)
+    # WinAPE supports = as equal sym in IF directive while we need ==
+    if '=' in opargs and '==' not in opargs and '!=' not in opargs:
+        opargs = opargs.replace('=','==')
+    g_context.ifstack.append((g_context.currentfile, g_context.ifstate))
+    if g_context.ifstate < IFSTATE_DISCART:
+        # This is just the oposite as a regular IF
+        cond = g_context.parse_expression(opargs)
+        if cond:
+            g_context.ifstate = IFSTATE_DISCART
+        else:
+            g_context.ifstate = IFSTATE_ASSEMBLE
+    else:
+        g_context.ifstate = IFSTATE_FIND_END
+    return 0
+
 def op_ELSE(p, opargs):
     if g_context.ifstate == IFSTATE_ASSEMBLE or g_context.ifstate == IFSTATE_FIND_END:
         g_context.ifstate = IFSTATE_FIND_END

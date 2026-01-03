@@ -26,6 +26,7 @@ ABASM: USER MANUAL
     - [DW, DEFW](#dw-defw)
     - [EQU](#equ)
     - [IF](#if)
+    - [IFNOT](#ifnot)
     - [INCBIN](#incbin)
     - [MACRO](#macro)
     - [LIMIT](#limit)
@@ -403,6 +404,12 @@ The basic logic operators are:
  - *!=* : not equal than.
  - *<*, *>* : minor than.  
  - *<=*, *>=*: major than. 
+
+### IFNOT
+
+- IFNOT condition [ELSEIF condition | ELSE] ENDIF
+
+The IFNOT directive behaves in the same way that the directive `IF`, but the assembler will process the lines following the IFNOT directive when the logical expression is false (equal to zero). If the logical expression is true (non-zero), those lines will be ignored.
 
 ### INCBIN
 
@@ -1257,6 +1264,10 @@ FD AE hh    	XOR   (IY+d)    5 Exclusive OR value at location in IY+d and accumu
 **[2]** All the Z80 restart instructions, except for one, have been reserved for system use. RST 1 to RST 5 (&08-&28) are used to extend the instruction set by implementing special call and jump instructions that enable and disable ROMs. RST 6 (&30) is available to the user. More information can be obtained here: [ROMs. RAM and Restart Instructions.](https://www.cpcwiki.eu/imgs/f/f6/S968se02.pdf)
 
 # Changelog
+
+- Version 1.4.0 - 
+  * New directive IFNOT
+  * New tool `IMG`
 
 - Version 1.3.1 - 28/12/2025
   * CPCTELERA examples were not working from the DSK.
