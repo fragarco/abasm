@@ -243,23 +243,21 @@ class ImgConverter:
         if len(self.img) != (self.imgw * self.imgh):
             raise ConversionError("CPC image size doesn't match with source image")
 
-    def write_bin(self, target, ext='.bin', cpcimg = None):
-        print("[img] generating BIN file...")
-        try:
-            data = cpcimg if cpcimg != None else self._img2mode()
-            with open(target + ext, 'wb') as fd:
-                fd.write(data)
-        except IOError as e:
-            raise ConversionError("%s couldn't be create due to %s" % (target + ext, str(e)))
+    def write_info(self, target, ext):
+        fwcols  = []
         paletteinfo = []
         for hw in self.palette:
             fw = CPC_HW_COLORS[hw]
+            fwcols.append(fw)
             color = CPC_FW_COLORS[fw][1]
-            paletteinfo.append("%d\t\t0x%02X\t"%(fw, hw) + str(color) + '\n')         
+            paletteinfo.append("%d\t\t0x%02X\t"%(fw, hw) + str(color) + '\n')
+        hwpal = ', '.join('0x%02X' % x for x in self.palette)
+        fwpal = ', '.join(str(x) for x in fwcols)
+        baspal = ': '.join(f'INK {i},{x}' for i,x in enumerate(fwcols))
         try:
             with open(target + ext + '.info', 'w') as fd:
                 fd.writelines([
-                    "FILE: %s\n" % target + ext,
+                    "FILE: %s\n" % (target + ext),
                     "WIDTH: %d\n" % self.imgw,
                     "HEIGHT: %d\n" % self.imgh,
                     "MODE: %d\n" % self.mode,
@@ -268,8 +266,35 @@ class ImgConverter:
                     "FW\t\tHW\t\tRGB\n",
                 ])
                 fd.writelines(paletteinfo)
+                fd.writelines([
+                    "\n",
+                    "; ASM HW palette\n",
+                    f"db {hwpal}\n",
+                    "; ASM FW palette\n",
+                    f"db {fwpal}\n\n",
+                    "' BAS palette\n",
+                    f"{baspal}\n\n",
+                    "// C HW palette\n",
+                    f"hwpal = {'{ %s }' % ', '.join('0x%02X' % x for x in self.palette)}\n",
+                    "// C FW palette\n",
+                    f"fwpal = {'{ %s }' % ', '.join('0x%02X' % x for x in fwcols)}\n\n",
+                    "# Python HW palette\n",
+                    "{ type: 'HW', pal: [%s]}\n" % ', '.join('0x%02X' % x for x in self.palette),
+                    "# Python FW palette\n",
+                    "{ type: 'FW', pal: [%s]}\n" % ', '.join('%d' % x for x in fwcols)
+                ])
         except IOError as e:
             raise ConversionError("%s.inf couldn't be create due to %s" % (target + ext, str(e)))
+
+    def write_bin(self, target, ext='.bin', cpcimg = None):
+        print("[img] generating BIN file...")
+        try:
+            data = cpcimg if cpcimg != None else self._img2mode()
+            with open(target + ext, 'wb') as fd:
+                fd.write(data)
+        except IOError as e:
+            raise ConversionError("%s couldn't be create due to %s" % (target + ext, str(e)))
+        self.write_info(target, '.bin')
 
     def write_c(self, target):
         print("[img] generating C file...")
@@ -282,17 +307,19 @@ class ImgConverter:
                     "// Include file for C compilers\n",
                     "// Generated automatically by img.py\n",
                     "\n",
-                    "extern const unsigned char %s_PALETTE[%d];\n" % (targetu, len(self.palette)),
+                    "// extern const unsigned char %s_PALETTE[%d];\n" % (targetu, len(self.palette)),
                     "extern const unsigned char %s_IMG[%d];\n" % (targetu, len(data))
                 ])
-            strpalette = '{ %s }' % ', '.join('0x%02X' % x for x in self.palette)
+            hwpalette = '{ %s }' % ', '.join('0x%02X' % x for x in self.palette)
+            fwpalette = '{ %s }' % ', '.join('%d' % CPC_HW_COLORS[x] for x in self.palette)
             with open(target + '.c', 'w') as fd:
                 fd.writelines([
                     "// Implementation file for C compilers\n",
                     "// Generated automatically by img.py\n",
                     "// mode %d, width %d, height %d\n" % (self.mode, self.imgw, self.imgh),
                     "\n",
-                    "const unsigned char %s_PALETTE[%d] = %s;\n\n" % (targetu, len(self.palette), strpalette),
+                    "// const unsigned char %s_HWPAL[%d] = %s;\n" % (targetu, len(self.palette), hwpalette),
+                    "// const unsigned char %s_FWPAL[%d] = %s;\n\n" % (targetu, len(self.palette), fwpalette),
                     "const unsigned char %s_IMG[%d] = {\n" % (targetu, len(data)),
                 ])
                 datalines = []
@@ -314,14 +341,17 @@ class ImgConverter:
         target = target.replace('.', '_')
         targetl = target.lower()
         try:
-            strpalette = ', '.join('0x%02X' % x for x in self.palette)
+            hwpalette = ', '.join('0x%02X' % x for x in self.palette)
+            fwpalette = ', '.join('%d' % CPC_HW_COLORS[x] for x in self.palette)
             with open(target + '.asm', 'w') as fd:
                 fd.writelines([
                     "; Image generated automatically by img.py\n",
                     "; mode %d, width %d, height %d\n" % (self.mode, self.imgw, self.imgh),
                     "\n",
-                    "%s_pal:\n" % targetl,
-                    "\tdb " + strpalette + "\n\n",
+                    "; %s_hwpal:\n" % targetl,
+                    "; \tdb " + hwpalette + "\n",
+                    "; %s_fwpal:\n" % targetl,
+                    "; \tdb " + fwpalette + "\n\n",
                     "%s_img:\n" % targetl,
                 ])
                 datalines = []
@@ -330,6 +360,38 @@ class ImgConverter:
                 while len(data) > 0:
                     line = data[0:row]
                     datalines.append('\tdb ' + ', '.join('&%02X' % x for x in line) + '\n')
+                    data = data[row:]
+                datalines.append('\n')
+                fd.writelines(datalines)
+        except IOError as e:
+            raise ConversionError("couldn't create asm file due to %s" % str(e))
+
+    def write_bas(self, target):
+        print("[img] generating BAS file...")
+        data = self._img2mode()
+        target = target.replace('.', '')
+        targetl = target.lower()
+        try:
+            hwpalette = ', '.join('0x%02X' % x for x in self.palette)
+            fwpalette = ', '.join('%d' % CPC_HW_COLORS[x] for x in self.palette)
+            with open(target + '.bas', 'w') as fd:
+                fd.writelines([
+                    "' Image generated automatically by img.py\n",
+                    "' mode %d, width %d, height %d\n" % (self.mode, self.imgw, self.imgh),
+                    "\n",
+                    "' LABEL %shwpal\n" % targetl,
+                    "' \tDATA " + hwpalette + "\n",
+                    "' %sfwpal\n" % targetl,
+                    "' \tDATA " + fwpalette + "\n\n",
+                    "LABEL %simg\n" % targetl,
+                ])
+                datalines = []
+                pixbyte = 8 if self.mode == 2 else 4 if self.mode == 1 else 2
+                row = min(16, int(self.imgw / pixbyte))
+                while len(data) > 0:
+                    line = data[0:row]
+                    imagevalues = ', '.join('&%02X%02X' % (line[i+1],line[i]) for i in range(0, len(line), 2))
+                    datalines.append(f'\tDATA {imagevalues}\n')
                     data = data[row:]
                 datalines.append('\n')
                 fd.writelines(datalines)
@@ -399,6 +461,8 @@ def run_convert(args):
         converter.write_c(target)
     elif args.format == 'asm':
         converter.write_asm(target)
+    elif args.format == 'bas':
+        converter.write_bas(target)
     elif args.format == 'scn':
         converter.write_scn(target)
     else:
@@ -412,13 +476,14 @@ def process_args():
         Amstrad CPC programs:
             'bin': binary pure files without AMSDOS header.
             'c'  : C/C++ source files for use with SDCC and the like.
+            'bas': BASIC source file using DATA. Ready for ABASC compiler.
             'asm': Maxam/WinApe assembly compatible file.
             'scn': interlaced image following the Amstrad video memory scheme.
         """
     )
     parser.add_argument('inimg', help='Input image file.')
     parser.add_argument('--name', type=str, default='', help='Name that has to be used to reference the image. If is not specified the input file name will be used.')
-    parser.add_argument('--format', type=str, default='bin', help='Format to be used for the output file: bin, c, asm or scn (bin by default).')
+    parser.add_argument('--format', type=str, default='bin', help='Format to be used for the output file: bin, c, bas, asm or scn (bin by default).')
     parser.add_argument('--mode', type=int, default=0, help='Graphic mode: 0, 1 or 2 (0 by default).')
     parser.add_argument('-v', '--version', action='version', version=f' IMG Tool Version {__version__}', help = "Shows program's version and exits")
 
