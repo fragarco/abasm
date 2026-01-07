@@ -204,6 +204,30 @@ class ImgConverter:
                              (self.img[i] & 0x08) >> (3 - pos)
         return data
 
+    def read_palette(self, palfile):
+        """
+        Reads a DICT/JSON file with a palette description (HW values or FW values)
+        and returns the palette list in HW values, converting from FW values if
+        needed.
+        """
+        palinfo = {}
+        palette = []
+        try:
+            with open(palfile, "r") as fd:
+                content = fd.read()
+                palinfo = eval(content)
+                if 'type' not in palinfo:
+                    raise ConversionError("'type' field is missing in palette file content")
+                if 'pal' not in palinfo:
+                    raise ConversionError("'pal' field is missing in palette file content")
+                if palinfo['type'] == 'HW':
+                    palette = palinfo['pal']
+                else:
+                    palette = list(map(lambda item: CPC_FW_COLORS[item][0], palinfo['pal']))   
+        except Exception as e:
+            raise ConversionError(f"couldn't process {palfile} file. " + str(e))
+        return palette
+
     def build_palette(self, rgbimg, mode):
         """
         Assigns each pixel in the image to the nearest CPC color. When
@@ -225,13 +249,19 @@ class ImgConverter:
         palette = list(map(lambda item: CPC_FW_COLORS[item[1]][0], cpccolors[0:colors]))
         return palette
 
-    def build_cpcimg(self, rgbimg, mode):
+    def build_cpcimg(self, rgbimg, mode, palfile):
         """
         Convert each RGB value to the nearest CPC HW color value included in the
-        palette.
+        palette. If palfile == '' the method identifies the most used colors and
+        builds a palette with that information.
         """
         self.mode = mode
-        self.palette = self.build_palette(rgbimg, mode)
+        if palfile != '':
+            self.palette = self.read_palette(palfile)
+            self._check_palette(mode)
+            print(f"[img] using palette (HW values): {self.palette}")
+        else:
+            self.palette = self.build_palette(rgbimg, mode)
         palettecolors = self._palette2colors()
         self.img = bytearray()
         self.imgw, self.imgh = rgbimg.size
@@ -279,9 +309,9 @@ class ImgConverter:
                     "// C FW palette\n",
                     f"fwpal = {'{ %s }' % ', '.join('0x%02X' % x for x in fwcols)}\n\n",
                     "# Python HW palette\n",
-                    "{ type: 'HW', pal: [%s]}\n" % ', '.join('0x%02X' % x for x in self.palette),
+                    "{ 'type': 'HW', 'pal': [%s]}\n" % ', '.join('0x%02X' % x for x in self.palette),
                     "# Python FW palette\n",
-                    "{ type: 'FW', pal: [%s]}\n" % ', '.join('%d' % x for x in fwcols)
+                    "{ 'type': 'FW', 'pal': [%s]}\n" % ', '.join('%d' % x for x in fwcols)
                 ])
         except IOError as e:
             raise ConversionError("%s.inf couldn't be create due to %s" % (target + ext, str(e)))
@@ -453,7 +483,7 @@ def run_read_inputimg(srcfile, format, mode):
 def run_convert(args):
     inputimg = run_read_inputimg(args.inimg, args.format, args.mode)
     converter = ImgConverter()
-    converter.build_cpcimg(inputimg, args.mode)
+    converter.build_cpcimg(inputimg, args.mode, args.palette)
     target = args.name if args.name != '' else os.path.splitext(args.inimg)[0]
     if args.format == 'bin':
         converter.write_bin(target)
@@ -485,7 +515,8 @@ def process_args():
     parser.add_argument('--name', type=str, default='', help='Name that has to be used to reference the image. If is not specified the input file name will be used.')
     parser.add_argument('--format', type=str, default='bin', help='Format to be used for the output file: bin, c, bas, asm or scn (bin by default).')
     parser.add_argument('--mode', type=int, default=0, help='Graphic mode: 0, 1 or 2 (0 by default).')
-    parser.add_argument('-v', '--version', action='version', version=f' IMG Tool Version {__version__}', help = "Shows program's version and exits")
+    parser.add_argument('--palette', type=str, default='', help='indicates a file with a palette description to be used in the conversion.')
+    parser.add_argument('-v', '--version', action='version', version=f' IMG Tool Version {__version__}', help = "Shows program's version and exits.")
 
     args = parser.parse_args()
     return args
