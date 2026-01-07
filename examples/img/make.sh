@@ -7,8 +7,8 @@
 # USAGE: ./make.sh [clear]
 #
 
-DSK="python3 /Users/javi/workspace/github/abasm/src/dsk.py"
-IMG="python3 /Users/javi/workspace/github/abasm/src/img.py"
+DSK="python3 ../../src/dsk.py"
+IMG="python3 ../../src/img.py"
 
 LOADADDR=0x1200
 SOURCE=image
