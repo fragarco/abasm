@@ -324,7 +324,7 @@ class ImgConverter:
                 fd.write(data)
         except IOError as e:
             raise ConversionError("%s couldn't be create due to %s" % (target + ext, str(e)))
-        self.write_info(target, '.bin')
+        self.write_info(target, ext)
 
     def write_c(self, target):
         print("[img] generating C file...")

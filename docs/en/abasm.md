@@ -1265,7 +1265,7 @@ FD AE hh    	XOR   (IY+d)    5 Exclusive OR value at location in IY+d and accumu
 
 # Changelog
 
-- Version 1.4.0 - 
+- Version 1.4.0 - 07/01/2026
   * New directive IFNOT
   * New tool `IMG`
 

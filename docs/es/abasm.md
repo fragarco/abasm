@@ -1274,7 +1274,7 @@ FD AE hh    	XOR   (IY+d)    5 Realiza una OR exclusiva entre el valor en (IY+d)
 
 # Historial de cambios
 
-- Versión 1.4.0 -
+- Versión 1.4.0 - 07/01/2026
   * Añadida la directiva IFNOT
   * Añadida la herramienta `IMG`
 
