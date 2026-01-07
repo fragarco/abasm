@@ -89,7 +89,7 @@ The contents of a palette specification file must be as follows:
 
 ```python
 {
-    'type': ['HW' or 'FW'],
+    'type': 'HW' or 'FW',
     'pal': [list of hardware or firmware values depending on the specified type]
 }
 ```
