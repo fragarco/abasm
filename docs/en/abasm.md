@@ -1267,6 +1267,7 @@ FD AE hh    	XOR   (IY+d)    5 Exclusive OR value at location in IY+d and accumu
 
 - Version 1.4.1 -
   * Some fixes in cpctelera assembly code.
+  * Better error messages in CDT/DSK tools.
 
 - Version 1.4.0 - 07/01/2026
   * New directive IFNOT

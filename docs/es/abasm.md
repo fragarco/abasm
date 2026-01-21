@@ -1276,6 +1276,7 @@ FD AE hh    	XOR   (IY+d)    5 Realiza una OR exclusiva entre el valor en (IY+d)
 
 - Versión 1.4.1 - 
   * Pequeños arreglos en la biblioteca CPCTELERA
+  * Mejores mensajes de error en las herramientas CDT/DSK
 
 - Versión 1.4.0 - 07/01/2026
   * Añadida la directiva IFNOT
