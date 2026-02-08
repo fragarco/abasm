@@ -38,6 +38,7 @@ __version__='1.4.1'
 import sys
 import os
 import argparse
+import glob
 from PIL import Image
 
 # Array of CPC colours in the following format:
@@ -492,22 +493,32 @@ def run_read_inputimg(srcfile, format, mode):
         sys.exit(1)
 
 def run_convert(args):
-    inputimg = run_read_inputimg(args.inimg, args.format, args.mode)
-    converter = ImgConverter()
-    converter.build_cpcimg(inputimg, args.mode, args.palette)
-    target = args.name if args.name != '' else os.path.splitext(args.inimg)[0]
-    if args.format == 'bin':
-        converter.write_bin(target)
-    elif args.format == 'c':
-        converter.write_c(target)
-    elif args.format == 'asm':
-        converter.write_asm(target)
-    elif args.format == 'bas':
-        converter.write_bas(target)
-    elif args.format == 'scn':
-        converter.write_scn(target)
-    else:
-        raise ConversionError("unkown destination format, supported formats are: bin, c, asm, bas.")
+    """
+    Windows and Linux behave differently when dealing with wildcards in 
+    file names. Linux already gives you a list while Windows passes the
+    argument unexpaded. As a result, we have to manage inimg param as a 
+    list (Linux) and check if each item can be expanded with glob (Windows)
+    """
+    images = []
+    for inputimg in args.inimg: 
+        images = images + glob.glob(inputimg)
+    for inimg in images:
+        inputimg = run_read_inputimg(inimg, args.format, args.mode)
+        converter = ImgConverter()
+        converter.build_cpcimg(inputimg, args.mode, args.palette)
+        target = args.name if args.name != '' and len(images) == 1 else os.path.splitext(inimg)[0]
+        if args.format == 'bin':
+            converter.write_bin(target)
+        elif args.format == 'c':
+            converter.write_c(target)
+        elif args.format == 'asm':
+            converter.write_asm(target)
+        elif args.format == 'bas':
+            converter.write_bas(target)
+        elif args.format == 'scn':
+            converter.write_scn(target)
+        else:
+            raise ConversionError("unkown destination format, supported formats are: bin, c, asm, bas.")
 
 def process_args():
     parser = argparse.ArgumentParser(
@@ -522,13 +533,12 @@ def process_args():
             'scn': interlaced image following the Amstrad video memory scheme.
         """
     )
-    parser.add_argument('inimg', help='Input image file.')
+    parser.add_argument('inimg', nargs='*', help='Input image file.')
     parser.add_argument('--name', type=str, default='', help='Name that has to be used to reference the image. If is not specified the input file name will be used.')
     parser.add_argument('--format', type=str, default='bin', help='Format to be used for the output file: bin, c, bas, asm or scn (bin by default).')
     parser.add_argument('--mode', type=int, default=0, help='Graphic mode: 0, 1 or 2 (0 by default).')
     parser.add_argument('--palette', type=str, default='', help='indicates a file with a palette description to be used in the conversion.')
     parser.add_argument('-v', '--version', action='version', version=f' IMG Tool Version {__version__}', help = "Shows program's version and exits.")
-
     args = parser.parse_args()
     return args
 

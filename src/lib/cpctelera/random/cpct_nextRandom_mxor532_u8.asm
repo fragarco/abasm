@@ -15,7 +15,7 @@
 ;;  You should have received a copy of the GNU Lesser General Public License
 ;;  along with this program.  If not, see <http://www.gnu.org/licenses/>.
 ;;-------------------------------------------------------------------------------
-.module cpct_random
+
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -107,8 +107,7 @@
 ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-_cpct_nextRandom_mxor532_u8::
-cpct_nextRandom_mxor532_u8_asm::
+cpct_nextRandom_mxor532_u8:
 ;;
 ;; INPUT:
 ;;  DE:HL == xz yw  (32 bits state)

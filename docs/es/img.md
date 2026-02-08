@@ -41,11 +41,19 @@ python3 img.py <inimg> [--name NAME] [--format FORMAT] [--mode MODE] [--palette 
 
 ## Opciones disponibles
 
-- **`<inimg>`**: (Obligatorio) El archivo de imagen de entrada. Puede ser un archivo PNG, JPEG u otro formato compatible.
+- **`<inimg>`**: (Obligatorio) El archivo de imagen de entrada (o una lista de ficheros de entrada). Puede ser un archivo PNG, JPEG u otro formato compatible.
 - **`--name`**: (Opcional) El nombre de referencia para la imagen convertida. Si no se especifica, se usará el nombre del archivo de entrada. Este nombre se usa para generar las etiquetas o variables que referenciarán la imagen en el código generado (opciones C/C++ y ASM).
 - **`--format`**: (Opcional) El formato de salida. Los valores válidos son `bin`, `c`, `asm`, `scn`. El valor por defecto es `bin`.
 - **`--mode`**: (Opcional) El modo gráfico del Amstrad CPC. Los valores posibles son `0`, `1`, `2`. El valor por defecto es `0`.
 - **`--palette`**: (Opcional) Un fichero con una descripción de la paleta de colores a usar en la conversión. Si no se proporciona, el programa calculará una paletta según los colores con mayor presencia en la imagen de entrada.
+
+## Procesar múltiples ficheros
+
+La herramienta `IMG` permite convertir varios archivos a la vez indicando el nombre de todos los ficheros a procesar o utilizando un patrón como imagen de entrada.
+
+Si se especifica una ruta con comodines `*` en el parámetro de entrada, `IMG` procesará automáticamente todos los ficheros que coincidan con ese patrón.
+
+Por ejemplo, si se indica `img/image*.jpg` como entrada y en el directorio `img` existen los archivos `image01.jpg` e `image02.jpg`, ambos serán procesados y convertidos.
 
 ## Ejemplos de uso
 
