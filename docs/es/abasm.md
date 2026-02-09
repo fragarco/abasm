@@ -1274,9 +1274,10 @@ FD AE hh    	XOR   (IY+d)    5 Realiza una OR exclusiva entre el valor en (IY+d)
 
 # Historial de cambios
 
-- Versión 1.4.1 - 
+- Versión 1.4.1 - 09/02/2026
   * Pequeños arreglos en la biblioteca CPCTELERA
   * Mejores mensajes de error en las herramientas CDT/DSK
+  * Soporte para procesar multiples ficheros en IMG
 
 - Versión 1.4.0 - 07/01/2026
   * Añadida la directiva IFNOT
