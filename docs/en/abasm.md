@@ -1265,7 +1265,10 @@ FD AE hh    	XOR   (IY+d)    5 Exclusive OR value at location in IY+d and accumu
 
 # Changelog
 
-- Version 1.4.2 -
+- Version 1.4.3
+  *
+
+- Version 1.4.2
   * Remove line endings from source code as it can affect error messages.
   * DSK tool can now set system and read-only flags.
 
