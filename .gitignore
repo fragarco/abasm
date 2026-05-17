@@ -173,8 +173,7 @@ cython_debug/
 *.html
 
 # ABASM DEV WIP directory
-tmp/
-extras/
+projects/
 
 # Other files
 .DS_Store
