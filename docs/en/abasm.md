@@ -1266,7 +1266,7 @@ FD AE hh    	XOR   (IY+d)    5 Exclusive OR value at location in IY+d and accumu
 # Changelog
 
 - Version 1.4.4
-  * 
+  * Some minor fixes and improvements.
   
 - Version 1.4.3
   * Fixed some error messages in DSK tool.
