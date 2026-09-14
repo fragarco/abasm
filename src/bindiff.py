@@ -19,7 +19,7 @@ along with this program; if not, write to the Free Software
 Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 """
 __author__='Javier "Dwayne Hicks" Garcia'
-__version__='1.4.4'
+__version__='1.4.5'
 
 import sys
 import argparse
@@ -40,7 +40,7 @@ def _compare_bins(path1, path2):
     diffs = 0
     if len(file1) != len(file2):
         print(f"Sizes are different: {len(file1)} <> {len(file2)}")
-    
+        return 1
     filesize = min(len(file1), len(file2))
     for i in range(0, filesize):
         if file1[i] != file2[i]:
