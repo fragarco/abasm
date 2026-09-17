@@ -212,49 +212,49 @@ class DiskTestCase(unittest.TestCase):
     """Test Disk compose/set/write/read round-trips."""
 
     def test_compose_size(self):
-        disk = dsk.Disk()
+        disk = dsk.StandardDisk()
         data = disk.compose()
         expected = 256 + DEF_TRACKS * DEF_TRACK_SZ
         self.assertEqual(len(data), expected)
 
     def test_compose_set_round_trip(self):
-        disk = dsk.Disk()
+        disk = dsk.StandardDisk()
         data = disk.compose()
-        disk2 = dsk.Disk()
+        disk2 = dsk.StandardDisk()
         disk2.set(data)
         self.assertEqual(disk2.ntracks, DEF_TRACKS)
         self.assertEqual(disk2.nsides, DEF_SIDES)
 
     def test_format_resets_disk(self):
-        disk = dsk.Disk()
+        disk = dsk.StandardDisk()
         disk.format()
         data = disk.compose()
         self.assertEqual(len(data), 256 + DEF_TRACKS * DEF_TRACK_SZ)
 
     def test_check_valid_disk(self):
-        disk = dsk.Disk()
+        disk = dsk.StandardDisk()
         disk.check()  # should not raise
 
     def test_add_and_retrieve_content(self):
-        disk = dsk.Disk()
+        disk = dsk.StandardDisk()
         payload = bytearray(range(256))
         disk.add_content([(0, 0)], payload)
         retrieved = disk.get_content(0, 0, 256)
         self.assertEqual(retrieved, payload)
 
     def test_read_nonexistent_file(self):
-        disk = dsk.Disk()
+        disk = dsk.StandardDisk()
         ok = disk.read("/nonexistent/path/file.dsk")
         self.assertFalse(ok)
 
     def test_get_dirtable(self):
-        disk = dsk.Disk()
+        disk = dsk.StandardDisk()
         dt = disk.get_dirtable()
         self.assertIsInstance(dt, dsk.DirTable)
         self.assertEqual(len(dt.entries), 64)
 
     def test_set_dirtable_round_trip(self):
-        disk = dsk.Disk()
+        disk = dsk.StandardDisk()
         dt = dsk.DirTable()
         dt.entries[0].status = 0
         dt.entries[0].name = bytearray(b'TEST    ')
@@ -529,14 +529,14 @@ class DskIntegrationTestCase(unittest.TestCase):
 
     def test_create_write_read_disk(self):
         """Create a new disk, write it, read it back, and verify."""
-        disk = dsk.Disk()
+        disk = dsk.StandardDisk()
         with tempfile.NamedTemporaryFile(suffix='.dsk', delete=False) as f:
             tmp = f.name
         try:
             disk.write(tmp)
             self.assertTrue(os.path.exists(tmp))
             self.assertEqual(os.path.getsize(tmp), len(disk.compose()))
-            disk2 = dsk.Disk()
+            disk2 = dsk.StandardDisk()
             ok = disk2.read(tmp)
             self.assertTrue(ok)
             self.assertEqual(disk2.ntracks, DEF_TRACKS)
@@ -546,13 +546,13 @@ class DskIntegrationTestCase(unittest.TestCase):
 
     def test_format_then_write(self):
         """Format a disk, then write it."""
-        disk = dsk.Disk()
+        disk = dsk.StandardDisk()
         disk.format()
         with tempfile.NamedTemporaryFile(suffix='.dsk', delete=False) as f:
             tmp = f.name
         try:
             disk.write(tmp)
-            disk2 = dsk.Disk()
+            disk2 = dsk.StandardDisk()
             disk2.read(tmp)
             disk2.check()  # fresh formatted disk should pass
         finally:
