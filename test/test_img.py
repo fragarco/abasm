@@ -95,7 +95,7 @@ class ImgConverterConversionTestCase(unittest.TestCase):
         # 8 pixels: 4 black, 4 white -> should encode as 0x0F
         rgbimg = self._create_img(8, 1, (0, 0, 0))
         c.build_cpcimg(rgbimg, 2, '')
-        data = c._img2mode()
+        data = c._encode_img()
         self.assertEqual(len(data), 1)
         self.assertEqual(data[0], 0x00)  # all black
 
@@ -108,7 +108,7 @@ class ImgConverterConversionTestCase(unittest.TestCase):
         for x in range(8):
             rgbimg.putpixel((x, 0), pixels[x])
         c.build_cpcimg(rgbimg, 2, '')
-        data = c._img2mode()
+        data = c._encode_img()
         self.assertEqual(len(data), 1)
         # Alternating black/white pixels produce 10101010 = 0xAA
         self.assertEqual(data[0], 0xAA)
@@ -119,7 +119,7 @@ class ImgConverterConversionTestCase(unittest.TestCase):
         c = img.ImgConverter(mode=1, palette=palette)
         rgbimg = self._create_img(4, 1, (0, 0, 0))
         c.build_cpcimg(rgbimg, 1, '')
-        data = c._img2mode()
+        data = c._encode_img()
         self.assertEqual(len(data), 1)
 
     def test_image_size_validation(self):
