@@ -1274,6 +1274,9 @@ FD AE hh    	XOR   (IY+d)    5 Realiza una OR exclusiva entre el valor en (IY+d)
 
 # Historial de cambios
 
+- Versión 1.4.6
+  * Otras pequeñas mejoras y arreglos.
+  
 - Versión 1.4.5
   * Arreglada la exportación de ficheros de más de 16K con la herramienta DSK
   * La herramienta DSK muestra ahora el espacio consumido/libre al usar la opción --cat

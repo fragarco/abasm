@@ -22,7 +22,7 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 from __future__ import annotations
 
 __author__='Javier "Dwayne Hicks" Garcia'
-__version__='1.4.5'
+__version__='1.4.6'
 
 import sys
 import os
