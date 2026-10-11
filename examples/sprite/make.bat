@@ -35,7 +35,7 @@ IF "%1"=="clear" (
     del %SOURCE%.lst
     del %SOURCE%.map
     del %TARGET%.dsk
-    del %TARGET%.cdt
+    
 ) ELSE (
     call %RUNASM% && call %RUNDSK%
 )

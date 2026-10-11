@@ -31,7 +31,7 @@ IF "%1"=="clear" (
     del %SOURCE%.scn
     del %SOURCE%.scn.info
     del %TARGET%.dsk
-    del %TARGET%.cdt
+    
 ) ELSE (
     call %IMG% assets/logo_aua.jpg --format scn --mode 0 --name %SOURCE%
     call %DSK% -n %TARGET%.dsk --put-ascii loadimg.bas
