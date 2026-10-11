@@ -76,7 +76,7 @@ IF "%1"=="clear" (
 @echo on
 """
 
-UNIX_TEMPLATE = """#!/bin/sh
+UNIX_TEMPLATE = """#!/usr/bin/env bash
 
 #
 # This file is just an example of how ABASM and DSK/CDT utilities can be called to assemble programs
