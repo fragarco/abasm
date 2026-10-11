@@ -500,7 +500,7 @@ class ImgConverter:
             interlaced.extend(padding)
         self.write_bin(target, '.scn', interlaced)
 
-def run_read_inputimg(srcfile:str, format: str, mode: str) -> RGBImage:
+def run_read_inputimg(srcfile:str, format: str, mode: int) -> RGBImage:
     """
     We load the image. If the target format is SCN we check
     the resolution and resize the image if needed. Finally,
