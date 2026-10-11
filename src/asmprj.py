@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+#!/usr/bin/env python
 """
 ASMPRJ.PY by Javier Garcia
 
@@ -43,10 +43,10 @@ REM * USAGE: make [clear]
 SET ABASMHOME={HOME}
 
 IF EXIST "%ABASMHOME%\bin" goto :abasm_tools_bin
-	SET ASM=python3 "%ABASMHOME%\src\abasm.py"
-	SET DSK=python3 "%ABASMHOME%\src\dsk.py"
-    SET CDT=python3 "%ABASMHOME%\src\cdt.py"
-    SET IMG=python3 "%ABASMHOME%\src\img.py"
+	SET ASM=python "%ABASMHOME%\src\abasm.py"
+	SET DSK=python "%ABASMHOME%\src\dsk.py"
+    SET CDT=python "%ABASMHOME%\src\cdt.py"
+    SET IMG=python "%ABASMHOME%\src\img.py"
 	GOTO :abasm_tools_end
 :abasm_tools_bin
 	SET ASM="%ABASMHOME%\bin\abasm.exe"
@@ -93,10 +93,10 @@ if [ -d "$ABASMHOME/bin" ]; then
     CDT="$ABASMHOME/bin/cdt"
     IMG="$ABASMHOME/bin/img"
 else
-    ASM="python3 $ABASMHOME/src/abasm.py"
-    DSK="python3 $ABASMHOME/src/dsk.py"
-    CDT="python3 $ABASMHOME/src/cdt.py"
-    IMG="python3 $ABASMHOME/src/img.py"
+    ASM="python $ABASMHOME/src/abasm.py"
+    DSK="python $ABASMHOME/src/dsk.py"
+    CDT="python $ABASMHOME/src/cdt.py"
+    IMG="python $ABASMHOME/src/img.py"
 fi
 
 LOADADDR=0x1200
