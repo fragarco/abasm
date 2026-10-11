@@ -1982,12 +1982,21 @@ def process_args() -> argparse.Namespace:
     args = parser.parse_args()
     return args
 
+def get_defautllib_path() -> str:
+    """Path to the ABASM folder (could be the PY script or the executable)"""
+    # This is the directory for our script
+    libpath = os.path.dirname(os.path.abspath(__file__))
+    if getattr(sys, 'frozen', False):
+        # We are running the exectuable file so let's get where the executable
+        # is because the __file__ path is where the system uncompresses the binary
+        libpath = os.path.dirname(os.path.abspath(sys.executable))
+    return os.path.join(libpath, "lib")
+
 def main() -> None:
     global g_context
     args = process_args()
     g_context.verbose = args.verbose
-    libpath = os.path.dirname(os.path.abspath(__file__))
-    libpath = os.path.join(libpath, "lib")
+    libpath = get_defautllib_path()
     assemble(args.inputfile, args.output, args.define, args.start, args.tolerance, libpaths=[libpath])
     if args.sfile:
         dump_assembledcode()
