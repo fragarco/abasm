@@ -1283,6 +1283,9 @@ FD AE hh    	XOR   (IY+d)    5 Exclusive OR value at location in IY+d and accumu
 # Changelog
 
 - Version 1.5.0
+  *
+
+- Version 1.5.0
   * New optional build system to generate exectuables.
   * Some other minor fixes and improvements.
   
