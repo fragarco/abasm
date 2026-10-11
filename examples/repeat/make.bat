@@ -11,10 +11,10 @@ REM * USAGE: make [clear]
 SET ABASMHOME=%~dp0..\..\
 
 IF EXIST "%ABASMHOME%\bin" goto :abasm_tools_bin
-	SET ASM=python3 "%ABASMHOME%\src\abasm.py"
-	SET DSK=python3 "%ABASMHOME%\src\dsk.py"
-    SET CDT=python3 "%ABASMHOME%\src\cdt.py"
-    SET IMG=python3 "%ABASMHOME%\src\img.py"
+	SET ASM=python "%ABASMHOME%\src\abasm.py"
+	SET DSK=python "%ABASMHOME%\src\dsk.py"
+    SET CDT=python "%ABASMHOME%\src\cdt.py"
+    SET IMG=python "%ABASMHOME%\src\img.py"
 	GOTO :abasm_tools_end
 :abasm_tools_bin
 	SET ASM="%ABASMHOME%\bin\abasm.exe"

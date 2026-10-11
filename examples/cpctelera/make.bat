@@ -8,8 +8,21 @@ REM * USAGE: make [clear]
 
 @setlocal
 
-set ASM=python3 ../../src/abasm.py %*
-set DSK=python3 ../../src/dsk.py
+SET ABASMHOME=%~dp0..\..\
+
+IF EXIST "%ABASMHOME%\bin" goto :abasm_tools_bin
+	SET ASM=python "%ABASMHOME%\src\abasm.py" %*
+	SET DSK=python "%ABASMHOME%\src\dsk.py"
+    SET CDT=python "%ABASMHOME%\src\cdt.py"
+    SET IMG=python "%ABASMHOME%\src\img.py"
+	GOTO :abasm_tools_end
+:abasm_tools_bin
+	SET ASM="%ABASMHOME%\bin\abasm.exe" %*
+	SET DSK="%ABASMHOME%\bin\dsk.exe"
+    SET CDT="%ABASMHOME%\bin\cdt.exe"
+    SET IMG="%ABASMHOME%\bin\img.exe"
+:abasm_tools_end
+
 set TARGET=cpctelera
 
 IF "%1"=="clear" (
@@ -17,6 +30,7 @@ IF "%1"=="clear" (
     del *.lst
     del *.map
     del *.dsk
+    del *.cdt
 ) ELSE (
     call %DSK% %TARGET%.dsk --new
     for %%x in (e01hello, e02box, e03struc, e04hflip) do (
