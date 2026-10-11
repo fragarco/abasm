@@ -40,15 +40,15 @@ REM * USAGE: make [clear]
 
 @setlocal
 
-SET ABASC_HOME={HOME}
+SET ABASMHOME={HOME}
 
-IF EXIST "%ABASC_HOME%\bin" goto :abasm_tools_bin
-	SET ASM=python3 "%ABASC_HOME%\src\abasm.py"
-	SET DSK=python3 "%ABASC_HOME%\src\dsk.py"
+IF EXIST "%ABASMHOME%\bin" goto :abasm_tools_bin
+	SET ASM=python3 "%ABASMHOME%\src\abasm.py"
+	SET DSK=python3 "%ABASMHOME%\src\dsk.py"
 	GOTO :abasm_tools_end
 :abasm_tools_bin
-	SET ASM="%ABASC_HOME%\bin\abasm.exe"
-	SET DSK="%ABASC_HOME%\bin\dsk.exe"
+	SET ASM="%ABASMHOME%\bin\abasm.exe"
+	SET DSK="%ABASMHOME%\bin\dsk.exe"
 :abasm_tools_end
 
 SET LOADADDR=0x1200
@@ -80,14 +80,14 @@ UNIX_TEMPLATE = """#!/bin/sh
 # USAGE: ./make.sh [clear]
 #
 
-ABASC_HOME="{HOME}"
+ABASMHOME="{HOME}"
 
-if [ -d "$ABASC_HOME/bin" ]; then
-    ASM="$ABASC_HOME/bin/abasm"
-    DSK="$ABASC_HOME/bin/dsk"
+if [ -d "$ABASMHOME/bin" ]; then
+    ASM="$ABASMHOME/bin/abasm"
+    DSK="$ABASMHOME/bin/dsk"
 else
-    ASM="python3 $ABASC_HOME/src/abasm.py"
-    DSK="python3 $ABASC_HOME/src/dsk.py"
+    ASM="python3 $ABASMHOME/src/abasm.py"
+    DSK="python3 $ABASMHOME/src/dsk.py"
 fi
 
 LOADADDR=0x1200
@@ -138,10 +138,15 @@ new_line:
     jp   OUT_CHAR
 """
 
-def abasc_home_dir() -> str:
-    """Path to the ABASC root folder (the parent of 'src')."""
+def abasm_home_dir() -> str:
+    """Path to the ABASM root folder (the parent of 'src' and 'bin')."""
+    # This is the directory for our script
     script_dir: str = os.path.dirname(os.path.abspath(__file__))
-    return os.path.normpath(os.path.join(script_dir, os.pardir, os.pardir))
+    if getattr(sys, 'frozen', False):
+        # We are running the exectuable file so let's get where the executable
+        # is because the initial path is where the system uncompresses the binary
+        script_dir = os.path.dirname(os.path.abspath(sys.executable))
+    return os.path.normpath(os.path.join(script_dir, os.pardir))
 
 def target_name_from_dir(path: str) -> str:
     return os.path.basename(os.path.normpath(path))
@@ -150,12 +155,12 @@ def update_project_win(content: str, home: str) -> str:
     """
     We have to use lamda functions to avoid the problem with Windows paths and re.sub calls
     raising errors like 're.error: bad escape'.
-    Only the ABASC_HOME line is rewritten, so everything else in the make file
+    Only the ABASM_HOME line is rewritten, so everything else in the make file
     (extra tools, customizations, ...) is preserved.
     """
     return re.sub(
-        r'^set ABASC_HOME=.*$',
-        lambda m: f'set ABASC_HOME={home}',
+        r'^set ABASM_HOME=.*$',
+        lambda m: f'set ABASMHOME={home}',
         content,
         flags=re.MULTILINE,
     )
@@ -164,12 +169,12 @@ def update_project_unix(content: str, home: str) -> str:
     """ 
     Linux shouldn't have the same problem than Windows with bars in the path, but
     lets use the lambda workaround just in case.
-    Only the ABASC_HOME line is rewritten, so everything else in the make file
+    Only the ABASMHOME line is rewritten, so everything else in the make file
     (extra tools, customizations, ...) is preserved.
     """
     return re.sub(
-        r'^ABASC_HOME=.*$',
-        lambda m: f'ABASC_HOME="{home}"',
+        r'^ABASMHOME=.*$',
+        lambda m: f'ABASMHOME="{home}"',
         content,
         flags=re.MULTILINE,
     )
@@ -182,7 +187,7 @@ def update_project(target_dir: str, is_windows: bool) -> None:
         print(f"{make_name} was not found in {target_dir}", file=sys.stderr)
         sys.exit(1)
 
-    home = abasc_home_dir()
+    home = abasm_home_dir()
 
     with open(make_path, "r", encoding="utf-8") as f:
         content: str = f.read()
@@ -191,7 +196,7 @@ def update_project(target_dir: str, is_windows: bool) -> None:
     else:
         content = update_project_unix(content, home)
     if home not in content:
-        print(f"No ABASC_HOME line found in {make_path}", file=sys.stderr)
+        print(f"No ABASMHOME line found in {make_path}", file=sys.stderr)
         print("The file is not an asmprj generated make file. Regenerate it with -n", file=sys.stderr)
         sys.exit(1)
     with open(make_path, "w", encoding="utf-8", newline="\n") as f:
@@ -200,7 +205,7 @@ def update_project(target_dir: str, is_windows: bool) -> None:
 
 def create_project(target_dir: str, is_windows: bool) -> None:
     target_name: str = target_name_from_dir(target_dir)
-    home = abasc_home_dir()
+    home = abasm_home_dir()
 
     make_name: str
     make_content: str
