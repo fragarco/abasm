@@ -5,6 +5,7 @@ ABASM: USER MANUAL
 
 - [Introduction](#introduction)
   - [Why Another Assembler for Amstrad?](#why-another-assembler-for-amstrad)
+- [Building the Executables](#building-the-executables)
 - [Basic Usage](#basic-usage)
   - [Available Options](#available-options)
   - [Usage Examples](#usage-examples)
@@ -61,15 +62,31 @@ However, if you're looking for efficiency rather than portability and ease of mo
 * [ASZ80](https://shop-pdp.net/ashtml/)
 * [Rasm](https://github.com/EdouardBERGE/rasm)
 
+# Building the Executables
+
+ABASM and all its related tools are designed to be used alongside the Python interpreter, as this allows them to run faster. However, prebuilt executables are also distributed for the main operating systems since release 1.5.0. In addition, it is possible to build the executables yourself. To do so, you first need to install the PyInstaller Python package using the following command:
+
+```bash
+pip install pyinstaller
+```
+
+Next, navigate to the `src/build` directory and run `build.bat` on Windows or `build.sh` on macOS or Linux. The resulting binaries will be saved in the `bin` directory, sibling to the `src` directory.
+
 # Basic Usage
 
-To assemble a source file written in assembly language (e.g., `program.asm`), simply run the following command:
+To assemble a source file written in assembly language (e.g., `program.asm`), simply run the following command if you are using the Python interpreter:
 
 ```
-python3 abasm.py <program.asm> [options]
+python3 abasm.py program.asm [options]
 ```
 
 This command will assemble the `program.asm` file and generate a binary file with the same name, `program.bin`.
+
+Otherwise, if you are using the binary exectuable the command will look like:
+
+```
+abasm program.asm [options]
+```
 
 ## Available Options
 
