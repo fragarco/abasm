@@ -8,9 +8,20 @@ REM * USAGE: make [clear]
 
 @setlocal
 
-set ASM=python3 ../../src/abasm.py
-set DSK=python3 ../../src/dsk.py
-set CDT=python3 ../../src/cdt.py
+SET ABASMHOME=%~dp0..\..\
+
+IF EXIST "%ABASMHOME%\bin" goto :abasm_tools_bin
+	SET ASM=python3 "%ABASMHOME%\src\abasm.py"
+	SET DSK=python3 "%ABASMHOME%\src\dsk.py"
+    SET CDT=python3 "%ABASMHOME%\src\cdt.py"
+    SET IMG=python3 "%ABASMHOME%\src\img.py"
+	GOTO :abasm_tools_end
+:abasm_tools_bin
+	SET ASM="%ABASMHOME%\bin\abasm.exe"
+	SET DSK="%ABASMHOME%\bin\dsk.exe"
+    SET CDT="%ABASMHOME%\bin\cdt.exe"
+    SET IMG="%ABASMHOME%\bin\img.exe"
+:abasm_tools_end
 
 set LOADADDR=0x8000
 set SOURCE=main
@@ -19,8 +30,6 @@ set TARGET=loader
 set RUNASM=%ASM% --start=%LOADADDR% %SOURCE%.asm 
 set DSKBAS=%DSK% %TARGET%.dsk --new --put-ascii %SOURCE%.bas
 set DSKBIN=%DSK% %TARGET%.dsk --put-bin %SOURCE%.bin --load-addr %LOADADDR%
-set CDTBAS=%CDT% %TARGET%.cdt --new --name %SOURCE%.BAS --put-ascii %SOURCE%.bas
-set CDTBIN=%CDT% %TARGET%.cdt --name %SOURCE%.BIN --put-bin %SOURCE%.bin --load-addr %LOADADDR%  
 
 IF "%1"=="clear" (
     del %SOURCE%.bin
@@ -29,7 +38,7 @@ IF "%1"=="clear" (
     del %TARGET%.dsk
     del %TARGET%.cdt
 ) ELSE (
-    call %RUNASM% && call %DSKBAS% && call %DSKBIN% && call %CDTBAS% && call %CDTBIN%
+    call %RUNASM% && call %DSKBAS% && call %DSKBIN%
 )
 
 @endlocal
