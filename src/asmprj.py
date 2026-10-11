@@ -21,7 +21,7 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 from __future__ import annotations
 
 __author__: str = 'Javier "Dwayne Hicks" Garcia'
-__version__: str = '1.4.6'
+__version__: str = '1.5.0'
 
 import argparse
 import os
@@ -40,23 +40,31 @@ REM * USAGE: make [clear]
 
 @setlocal
 
-set ASM=python3 "{ASM}"
-set DSK=python3 "{DSK}"
+SET ABASC_HOME={HOME}
 
-set LOADADDR=0x1200
-set SOURCE=main
-set TARGET={TARGET}
+IF EXIST "%ABASC_HOME%\bin" goto :abasm_tools_bin
+	SET ASM=python3 "%ABASC_HOME%\src\abasm.py"
+	SET DSK=python3 "%ABASC_HOME%\src\dsk.py"
+	GOTO :abasm_tools_end
+:abasm_tools_bin
+	SET ASM="%ABASC_HOME%\bin\abasm.exe"
+	SET DSK="%ABASC_HOME%\bin\dsk.exe"
+:abasm_tools_end
 
-set RUNASM=%ASM% --start=%LOADADDR% %SOURCE%.asm
-set RUNDSK=%DSK% %TARGET%.dsk --new --put-bin %SOURCE%.bin --load-addr %LOADADDR% --map-file %SOURCE%.map --start-addr MAIN
+SET LOADADDR=0x1200
+SET SOURCE=main
+SET TARGET={TARGET}
+
+SET RUNASM=%ASM% --start=%LOADADDR% %SOURCE%.asm
+SET RUNDSK=%DSK% %TARGET%.dsk --new --put-bin %SOURCE%.bin --load-addr %LOADADDR% --map-file %SOURCE%.map --start-addr MAIN
 
 IF "%1"=="clear" (
-    del %SOURCE%.bin
-    del %SOURCE%.lst
-    del %SOURCE%.map
-    del %TARGET%.dsk
+    DEL %SOURCE%.bin
+    DEL %SOURCE%.lst
+    DEL %SOURCE%.map
+    DEL %TARGET%.dsk
 ) ELSE (
-    call %RUNASM% && call %RUNDSK%
+    CALL %RUNASM% && CALL %RUNDSK%
 )
 
 @endlocal
@@ -72,8 +80,15 @@ UNIX_TEMPLATE = """#!/bin/sh
 # USAGE: ./make.sh [clear]
 #
 
-ASM="python3 {ASM}"
-DSK="python3 {DSK}"
+ABASC_HOME="{HOME}"
+
+if [ -d "$ABASC_HOME/bin" ]; then
+    ASM="$ABASC_HOME/bin/abasm"
+    DSK="$ABASC_HOME/bin/dsk"
+else
+    ASM="python3 $ABASC_HOME/src/abasm.py"
+    DSK="python3 $ABASC_HOME/src/dsk.py"
+fi
 
 LOADADDR=0x1200
 SOURCE=main
@@ -123,55 +138,41 @@ new_line:
     jp   OUT_CHAR
 """
 
-def script_tools_paths() -> tuple[str, str]:
+def abasc_home_dir() -> str:
+    """Path to the ABASC root folder (the parent of 'src')."""
     script_dir: str = os.path.dirname(os.path.abspath(__file__))
-    return (
-        os.path.join(script_dir, "abasm.py"),
-        os.path.join(script_dir, "dsk.py"),
-    )
+    return os.path.normpath(os.path.join(script_dir, os.pardir, os.pardir))
 
 def target_name_from_dir(path: str) -> str:
     return os.path.basename(os.path.normpath(path))
 
-def update_project_win(content: str, asm_path: str, dsk_path: str) -> str:
+def update_project_win(content: str, home: str) -> str:
     """
     We have to use lamda functions to avoid the problem with Windows paths and re.sub calls
-    raising errors like 're.error: bad escape'
+    raising errors like 're.error: bad escape'.
+    Only the ABASC_HOME line is rewritten, so everything else in the make file
+    (extra tools, customizations, ...) is preserved.
     """
-    content = re.sub(
-        r'^set ASM=.*$',
-        lambda m: f'set ASM=python3 "{asm_path}"',
+    return re.sub(
+        r'^set ABASC_HOME=.*$',
+        lambda m: f'set ABASC_HOME={home}',
         content,
         flags=re.MULTILINE,
     )
 
-    content = re.sub(
-        r'^set DSK=.*$',
-        lambda m: f'set DSK=python3 "{dsk_path}"',
-        content,
-        flags=re.MULTILINE,
-    )
-    return content
-
-def update_project_unix(content: str, asm_path: str, dsk_path: str) -> str:
+def update_project_unix(content: str, home: str) -> str:
     """ 
     Linux shouldn't have the same problem than Windows with bars in the path, but
     lets use the lambda workaround just in case.
+    Only the ABASC_HOME line is rewritten, so everything else in the make file
+    (extra tools, customizations, ...) is preserved.
     """
-    content = re.sub(
-        r'^ASM=.*$',
-        lambda m: f'ASM="python3 {asm_path}"',
+    return re.sub(
+        r'^ABASC_HOME=.*$',
+        lambda m: f'ABASC_HOME="{home}"',
         content,
         flags=re.MULTILINE,
     )
-
-    content = re.sub(
-        r'^DSK=.*$',
-        lambda m: f'DSK="python3 {dsk_path}"',
-        content,
-        flags=re.MULTILINE,
-    )
-    return content
 
 def update_project(target_dir: str, is_windows: bool) -> None:
     make_name = "make.bat" if is_windows else "make.sh"
@@ -181,36 +182,38 @@ def update_project(target_dir: str, is_windows: bool) -> None:
         print(f"{make_name} was not found in {target_dir}", file=sys.stderr)
         sys.exit(1)
 
-    asm_path, dsk_path = script_tools_paths()
+    home = abasc_home_dir()
 
     with open(make_path, "r", encoding="utf-8") as f:
         content: str = f.read()
     if is_windows:
-        content = update_project_win(content, asm_path, dsk_path)
+        content = update_project_win(content, home)
     else:
-        content = update_project_unix(content, asm_path, dsk_path)
+        content = update_project_unix(content, home)
+    if home not in content:
+        print(f"No ABASC_HOME line found in {make_path}", file=sys.stderr)
+        print("The file is not an asmprj generated make file. Regenerate it with -n", file=sys.stderr)
+        sys.exit(1)
     with open(make_path, "w", encoding="utf-8", newline="\n") as f:
         f.write(content)
     print(f"{make_name} was sucessfully updated")
 
 def create_project(target_dir: str, is_windows: bool) -> None:
     target_name: str = target_name_from_dir(target_dir)
-    asm_path, dsk_path = script_tools_paths()
+    home = abasc_home_dir()
 
     make_name: str
     make_content: str
     if is_windows:
         make_name = "make.bat"
         make_content = WINDOWS_TEMPLATE.format(
-            ASM=asm_path,
-            DSK=dsk_path,
+            HOME=home,
             TARGET=target_name,
         )
     else:
         make_name = "make.sh"
         make_content = UNIX_TEMPLATE.format(
-            ASM=asm_path,
-            DSK=dsk_path,
+            HOME=home,
             TARGET=target_name,
         )
 
