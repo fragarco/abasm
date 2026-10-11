@@ -45,10 +45,14 @@ SET ABASMHOME={HOME}
 IF EXIST "%ABASMHOME%\bin" goto :abasm_tools_bin
 	SET ASM=python3 "%ABASMHOME%\src\abasm.py"
 	SET DSK=python3 "%ABASMHOME%\src\dsk.py"
+    SET CDT=python3 "%ABASMHOME%\src\cdt.py"
+    SET IMG=python3 "%ABASMHOME%\src\img.py"
 	GOTO :abasm_tools_end
 :abasm_tools_bin
 	SET ASM="%ABASMHOME%\bin\abasm.exe"
 	SET DSK="%ABASMHOME%\bin\dsk.exe"
+    SET CDT="%ABASMHOME%\bin\cdt.exe"
+    SET IMG="%ABASMHOME%\bin\img.exe"
 :abasm_tools_end
 
 SET LOADADDR=0x1200
@@ -63,6 +67,7 @@ IF "%1"=="clear" (
     DEL %SOURCE%.lst
     DEL %SOURCE%.map
     DEL %TARGET%.dsk
+    DEL %TARGET%.cdt
 ) ELSE (
     CALL %RUNASM% && CALL %RUNDSK%
 )
@@ -85,9 +90,13 @@ ABASMHOME="{HOME}"
 if [ -d "$ABASMHOME/bin" ]; then
     ASM="$ABASMHOME/bin/abasm"
     DSK="$ABASMHOME/bin/dsk"
+    CDT="$ABASMHOME/bin/cdt"
+    IMG="$ABASMHOME/bin/img"
 else
     ASM="python3 $ABASMHOME/src/abasm.py"
     DSK="python3 $ABASMHOME/src/dsk.py"
+    CDT="python3 $ABASMHOME/src/cdt.py"
+    IMG="python3 $ABASMHOME/src/img.py"
 fi
 
 LOADADDR=0x1200
@@ -102,6 +111,7 @@ if [ "$1" = "clear" ]; then
     rm -f "$SOURCE.lst"
     rm -f "$SOURCE.map"
     rm -f "$TARGET.dsk"
+    rm -f "$TARGET.cdt"
 else
     $RUNASM && $RUNDSK
 fi
