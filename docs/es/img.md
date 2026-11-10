@@ -55,7 +55,7 @@ python3 img.py <inimg> [--name NAME] [--format FORMAT] [--mode MODE] [--palette 
 
 - **`<inimg>`**: (Obligatorio) El archivo de imagen de entrada (o una lista de ficheros de entrada). Puede ser un archivo PNG, JPEG u otro formato compatible.
 - **`--name`**: (Opcional) El nombre de referencia para la imagen convertida. Si no se especifica, se usará el nombre del archivo de entrada. Este nombre se usa para generar las etiquetas o variables que referenciarán la imagen en el código generado (opciones C/C++ y ASM).
-- **`--format`**: (Opcional) El formato de salida. Los valores válidos son `bin`, `c`, `asm`, `scn`. El valor por defecto es `bin`.
+- **`--format`**: (Opcional) El formato de salida. Los valores válidos son `bin`, `c`, `asm`, `scn` y `tixel`. El valor por defecto es `bin`.
 - **`--mode`**: (Opcional) El modo gráfico del Amstrad CPC. Los valores posibles son `0`, `1`, `2`. El valor por defecto es `0`.
 - **`--palette`**: (Opcional) Un fichero con una descripción de la paleta de colores a usar en la conversión. Si no se proporciona, el programa calculará una paletta según los colores con mayor presencia en la imagen de entrada.
 
