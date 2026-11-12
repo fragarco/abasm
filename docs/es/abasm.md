@@ -1293,6 +1293,7 @@ FD AE hh    	XOR   (IY+d)    5 Realiza una OR exclusiva entre el valor en (IY+d)
 
 - Versión 1.5.1
   * IMG soporta ahora generar proyectos de Tixel, un editor sencillo de sprites.
+  * Las expresiones de ensamblador se evalúan ahora con un evaluador seguro (no más eval()).
   * Otras pequeñas mejoras y arreglos.
 
 - Versión 1.5.0

@@ -33,6 +33,7 @@ __author__: str = 'Javier "Dwayne Hicks" Garcia'
 __version__: str = '1.5.1'
 
 import sys
+import ast
 import argparse
 import math
 from typing import Any, NoReturn
@@ -833,9 +834,12 @@ def run_read_mapfile(mapfile: str) -> Any:
     try:
         with open(mapfile, 'r') as fd:
             content: str = str.join('', fd.readlines())
-            return eval(content)  # noqa: S307
+            return ast.literal_eval(content)
     except IOError:
         print("[cdt] ERROR - trying to read file:", mapfile)
+        sys.exit(1)
+    except (ValueError, SyntaxError):
+        print("[cdt] ERROR - malformed map file:", mapfile)
         sys.exit(1)
 
 def run_get_start(startaddr: str, mapfile: dict[str, Any]) -> int:

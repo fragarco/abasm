@@ -1284,6 +1284,7 @@ FD AE hh    	XOR   (IY+d)    5 Exclusive OR value at location in IY+d and accumu
 
 - Version 1.5.1
   * IMG supports generation of Tixel projects. Tixel is a simple sprite editor.
+  * Assembly expressions are now evaluated by a safe dedicated evaluator (no eval())
   * Some other minor fixes and improvements.
 
 - Version 1.5.0
